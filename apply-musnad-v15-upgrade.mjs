@@ -21,6 +21,9 @@
  *    - Synced trimester dropdown selector in FilterBar.tsx.
  *    - Integrated trimester filtering in worksheet.service.ts and page.tsx.
  *    - Quick 1-click trimester tagging buttons in src/app/(main)/upload/page.tsx.
+ * 3. Clean Username Box in Top Bar (Navbar.tsx):
+ *    - Removed role note text beside username in the top-left box.
+ *    - Preserved distinctive role color borders and backgrounds (Purple, Indigo, Amber, Violet, Blue, Emerald).
  * ============================================================================
  */
 
@@ -132,4 +135,5 @@ console.log("   1. صفحة شروط الاستخدام والملكية الف�
 console.log("   2. رابط الشروط والملكية مدمج بتذييل الموقع وفي خريطة الموقع sitemap.xml");
 console.log("   3. أزرار وقوائم فلترة الثلاثيات المدرسية التونسية الثلاثة في شريط البحث");
 console.log("   4. أزرار الوسم السريع للثلاثيات المدرسية بضغطة زر في صفحة رفع الملفات (/upload)");
+console.log("   5. إزالة ملاحظة نوع الحساب من بجانب اسم المستخدم في المربع العلوي مع الحفاظ على تمييز الألوان لكل فئة");
 console.log("======================================================================\n");

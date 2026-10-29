@@ -646,17 +646,10 @@ export default function Navbar() {
                       size="md"
                       avatarBgClass={roleBoxStyle.avatarBgClass}
                     />
-                    <div className="flex flex-col items-start text-start">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-extrabold text-slate-900 dark:text-white max-w-[100px] truncate">
-                          {user.name}
-                        </span>
-                        <span
-                          className={`px-1.5 py-0.5 rounded-md text-[9px] font-black shrink-0 ${roleBoxStyle.badgeClass}`}
-                        >
-                          {roleBoxStyle.roleShortTag}
-                        </span>
-                      </div>
+                    <div className="flex flex-col items-start text-start min-w-0">
+                      <span className="text-xs font-extrabold text-slate-900 dark:text-white truncate max-w-[160px] sm:max-w-[200px]">
+                        {user.name}
+                      </span>
                       <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
                         {currentPresenceInfo.isGhostSelf
                           ? "👻 وضع الشبح"
