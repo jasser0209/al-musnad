@@ -1,69 +1,89 @@
-# 🏛️ Project Handover & Master Technical Audit — Al-Musnad (v12.0) — الجزء الأول: البنية التحتية، قاعدة البيانات، الخدمات، الـ API، والـ Server Actions (Part 1 of 2)
-**Project:** Al-Musnad (المسند) — Educational & Pedagogical Platform  
-**Architecture:** Next.js 15 (App Router) + TypeScript + Prisma ORM + PostgreSQL (Supabase) + Tailwind CSS + Lucide Icons  
-**Version:** 12.0.0 (Optimized < 1 MB Archive — 100% Complete Source Code & Commands)  
-**Date:** October 29, 2026  
+# 🏛️ Project Handover & Master Technical Audit — Al-Musnad (v15.0) — الجزء الأول: البنية التحتية، قاعدة البيانات، الخدمات، الـ API، والـ Server Actions (Part 1 of 2)
+**Project:** Al-Musnad (المسند) — Integrated Educational & Pedagogical Platform  
+**Architecture:** Next.js 15 (App Router) + TypeScript + Prisma ORM + PostgreSQL (Supabase) + Cloudflare R2 + Tailwind CSS + Lucide Icons  
+**Version:** 15.0.0 (Optimized Handover Archive — Complete Source Code, Security Configs & Commands)  
+**Date:** October 2026  
+**Primary Admin Account:** `bjasser123@gmail.com` (Password: `Jasserbes1M` — Role: `ADMIN`)  
+**Live Production URL:** [https://al-musnad.vercel.app](https://al-musnad.vercel.app)  
+**GitHub Repository:** [https://github.com/jasser0209/al-musnad.git](https://github.com/jasser0209/al-musnad.git)  
 
 ---
 
-## 🤖 القواعد الصارمة والتعليمات الإلزامية للذكاء الاصطناعي (STRICT AI OPERATING RULES)
+## 🤖 القواعد الصارمة والتعليمات الإلزامية للمشروع (PROJECT ARCHITECTURE & RULES)
 
-أنت المهندس المعماري المسؤول عن تطوير وصيانة منصة **«المسند» (Al-Musnad v12.0)**. عند قراءة هذا الملف أو تنفيذ أي تعديل مستقبلي، **يجب عليك الالتزام الصارم وغير القابل للتفاوض بالقواعد التالية**:
+أنت المهندس المعماري المسؤول عن تطوير وصيانة منصة **«المسند» (Al-Musnad v15.0)**. عند قراءة هذا الملف أو تنفيذ أي تعديل مستقبلي، **يجب الالتزام الصارم بالقواعد التالية**:
 
 1. **قاعدة الحجم الأقصى (< 1 MB) ومنع التكرار**:
-   - الحد الأقصى المسموح به لحجم ملف `PROJECT_HANDOVER.md` هو **أقل من 1 ميجابايت (1,000 KB)**.
-   - **يُمنع منعاً باتاً** تضمين ملفات الحزم المولّدة تلقائياً (مثل `apply-musnad-v9-infrastructure.mjs` أو `apply-musnad-v12-upgrade.mjs`) داخل `PROJECT_HANDOVER.md` لأنها تكرر نفس الأكواد بصيغة JSON وتضاعف حجم الملف فوق 1.4 MB. بدلاً من ذلك، يتم تضمين سكريبت البناء `scripts/build-v9-upgrade-script.mjs` وسكريبت الاستخراج `scripts/extract-handover.mjs` فقط.
+   - الحجم الأقصى لملف `PROJECT_HANDOVER.md` يجب أن يبقى دائماً **أقل من 1 ميجابايت (1,000 KB)**.
+   - عدم تضمين حزم JSON الضخمة المكررة داخل الملف للحفاظ على خفته وسرعة معالجته.
 2. **منع اختصار الأكواد (Zero Truncation Policy)**:
-   - يُمنع كتابة تعليقات اختصار مثل `// ... rest of code` أو `/* unchanged */`. يجب دائماً كتابة الشفرة الكاملة القابلة للتشغيل الفوري.
-3. **الحفاظ على هرم الإشراف الثلاثي وعزل الصلاحيات الصارم (`SupervisoryHierarchyBar` + Middleware + Server Actions)**:
-   - **المشرف العام (`ADMIN`)**: يتربع على قمة الهرم الرقابي؛ يمتلك وحده شريط التنقل القيادي بين اللوحات الثلاث (`/admin/dashboard`، `/moderator/dashboard`، `/inspector/dashboard`) مع زر **«الرجوع الفوري إلى لوحة المشرف العام»**، ويمتلك وحده صلاحية إصدار أكواد التوثيق، إدارة الرتب، إغلاق بلاغات المتفقدين العاجلة (`isInspectorPriority`)، ومراجعة سجل التدقيق الأمني (`AuditLog`).
-   - **المسؤول الإداري (`MODERATOR`)**: محصور حصرياً في لوحته (`/moderator/dashboard`)؛ لا يرى أزرار الانتقال للوحة المشرف العام أو المتفقد، ولا يملك صلاحية الوصول إليها.
-   - **المتفقد التربوي (`INSPECTOR`)**: محصور حصرياً في لوحته (`/inspector/dashboard`) للاعتماد البيداغوجي والتوجيهات الرسمية والبلاغات العاجلة؛ لا يرى أزرار الانتقال للوحة المشرف العام أو المسؤول.
-4. **الحفاظ على الزر الموحد في الشريط العلوي (`Navbar.tsx`)**:
-   - عندما يسجل كل من `ADMIN` أو `MODERATOR` أو `INSPECTOR` دخوله، تظهر شارة صفته واسم لوحته مدمجة في **زر واحد فقط** في الشريط العلوي (`مشرف عام • لوحة التحكم` / `مسؤول إداري • لوحة التحكم` / `متفقد معتمد • لوحة التحكم`) ينقله مباشرة إلى لوحته الحصرية دون تكرار الشارة بجانب الزر.
-5. **الحفاظ على مسار مستودع المواد والمستويات (`/levels`)**:
-   - جميع روابط «مستودع المواد والمستويات» في `Navbar.tsx` والصفحة الرئيسية والتذييل يجب أن تتجه دائماً إلى المسار المستقل `/levels` (وليس `/#levels-and-subjects`)، وتعرض الصفحة كلاً من المستويات الستة ومستودع المواد التسع (`#subjects-repository`) مع استدعاء `ensureOfficialTaxonomySeeded()`.
-6. **القواعد الأمنية الإلزامية**:
-   - عدم إرجاع `email` مطلقاً في `GET /api/users/mentions`.
-   - استخدام `POST /api/auth/resolve-username` المحمي بـ `checkRateLimit` لتحويل `@username` إلى بريد عند تسجيل الدخول.
-   - منع تمرير رتبتَي `ADMIN` أو `MODERATOR` في مشغل التسجيل العام `handle_new_user()` بقاعدة البيانات.
+   - يُمنع استخدام تعليقات الاختصار مثل `// ... rest of code`. جميع الأكواد المضمنة كاملة وقابلة للتشغيل الفوري.
+3. **شروط الاستخدام والملكية الفكرية وحماية المؤلف (/terms)**:
+   - كافة الجذاذات والفروض والامتحانات المنشورة ملك فكري لأصحابها من المعلمين والمتفقدين والمؤسسات، ومتاحة مجاناً للاستخدام البيداغوجي غير التجاري.
+   - يُحظر إعادة بيع أو تجميع أي محتوى في مطبوعات تجارية مدفوعة دون إذن كتابي مسبق.
+   - سحب شارة «معتمد بيداغوجياً» تلقائياً عند قيام الناشر بتعديل أو استبدال الملف المرفق لحين إعادة مراجعته من المتفقد المختص.
+   - تطبيق سياسة الحذف الفوري (Takedown Policy) عند الإبلاغ عن أي انتهاك للملكية الفكرية.
+4. **نظام الثلاثيات المدرسية التونسية (SCHOOL_TRIMESTERS)**:
+   - دعم رسمي للثلاثيات الثلاثة: الثلاثي الأول، الثلاثي الثاني، الثلاثي الثالث.
+   - فلاتر سريعة بضغطة زر وقائمة منسدلة متزامنة مع الرابط في `FilterBar.tsx` (`?trimester=trimester-1`).
+   - ربط فلتر الثلاثي بمحرك البحث وقاعدة البيانات في `worksheet.service.ts` و `page.tsx`.
+   - أزرار الوسم السريع للثلاثي بضغطة زر واحدة في صفحة الرفع `/upload`.
+5. **مربع اسم المستخدم في الشريط العلوي (Navbar.tsx)**:
+   - إزالة النص الدال على نوع الحساب من جانب اسم المستخدم ليظهر الاسم كاملاً وواضحاً.
+   - الحفاظ التام على تمييز الألوان في إطار وخلفية مربع الاسم حسب الفئة:
+     - المشرف العام (`ADMIN`): بنفسجي ملكي (Purple).
+     - المسؤول الإداري (`MODERATOR`): نيلي (Indigo).
+     - المتفقد التربوي (`INSPECTOR`): ذهبي كهرماني (Amber).
+     - المؤسسة التربوية (`INSTITUTION`): أرجواني (Violet).
+     - المعلم (`TEACHER`): أزرق (Blue).
+     - التلميذ (`STUDENT`): أخضر زمردي (Emerald).
+6. **ترويسات الأمان الصارمة (HTTP Security Headers - A+ Rating)**:
+   - تطبيق ترويسات الأمان الصارمة في `next.config.ts`: `X-Frame-Options: SAMEORIGIN`، `X-Content-Type-Options: nosniff`، `Strict-Transport-Security`، `Permissions-Policy`، `Referrer-Policy`، `X-XSS-Protection`.
+   - السماح بمعاينة وثائق PDF والصور بأمان من سحابة Cloudflare R2 و Supabase دون حظر CORS أو Clickjacking.
+7. **سحابة التخزين المزدوجة (Cloudflare R2 10GB + Supabase Storage Fallback)**:
+   - الاعتماد الأساسي على Cloudflare R2 بسعة 10 جيجابايت مجانية مع بقاء Supabase Storage كخيار احتياطي فوري.
+8. **تطبيق الويب التقدمي (PWA)**:
+   - ملف مواصفات رسمي `src/app/manifest.ts` مع أيقونات 192 و 512 وبنر تثبيت ذكي `InstallPwaBanner.tsx`.
+9. **محركات البحث وأدوات الويب (SEO & Google Search Console)**:
+   - كود التحقق الرسمي لمحرك بحث جوجل في `src/app/layout.tsx`.
+   - خريطة موقع ديناميكية `src/app/sitemap.ts` وملف توجيه الروبوتات `src/app/robots.ts`.
+10. **خدمة البريد الإلكتروني (Resend)**:
+    - `src/services/email.service.ts` مع قوالب HTML ترحيبية وإشعارات الدعم والاعتماد البيداغوجي وتراجع آمن (Graceful Fallback).
+11. **هرم الإشراف الثلاثي وعزل الصلاحيات الصارم**:
+    - المشرف العام (`ADMIN`): قمة الهرم والتحكم الإداري الكامل والتبديل بين اللوحات.
+    - المسؤول الإداري (`MODERATOR`): محصور في `/moderator/dashboard`.
+    - المتفقد التربوي (`INSPECTOR`): محصور في `/inspector/dashboard`.
 
 ---
 
-## 🛠️ الأوامر الرسمية للتشغيل والترقية والتحقق (All Required CLI Commands)
+## 🛠️ أوامر التشغيل والترقية الرسمية (Official CLI Commands)
 
-- **1. استخراج جميع ملفات المشروع من وثيقة التسليم مباشرة:**
+- **1. تشغيل سكريبت ترقية الإصدار 15.0 الشامل:**
   ```bash
-  node scripts/extract-handover.mjs
+  node apply-musnad-v15-upgrade.mjs
   ```
-- **2. توليد وتنفيذ سكريبت الترقية الشامل دفعة واحدة:**
-  ```bash
-  node scripts/build-v9-upgrade-script.mjs
-  node apply-musnad-v12-upgrade.mjs
-  ```
-- **3. فحص الاتصال بقاعدة البيانات ومتغيرات البيئة (Supabase & PostgreSQL):**
-  ```bash
-  node scripts/verify-and-connect.mjs
-  ```
-- **4. مزامنة مخطط Prisma وتوليد العميل وبذر البيانات الأساسية:**
-  ```bash
-  npx prisma generate
-  npx prisma db push
-  npx prisma db seed
-  ```
-- **5. الفحص الصارم للأنواع (TypeScript) وبناء نسخة الإنتاج (Next.js 15 Build):**
+- **2. فحص سلامة الأنواع البرمجية (TypeScript Check):**
   ```bash
   npx tsc --noEmit
+  ```
+- **3. بناء نسخة الإنتاج الحية (Next.js Production Build):**
+  ```bash
   npm run build
   ```
-- **6. إعادة توليد وثيقة التسليم (تلقائياً تحت سقف 1 ميجابايت + مقسمة لجزأين):**
+- **4. تحديث وثائق التسليم تلقائياً:**
   ```bash
   node scripts/generate-handover.mjs
   ```
+- **5. الالتزام والمزامنة المباشرة مع GitHub و Vercel:**
+  ```bash
+  git add .
+  git commit -m "Update project handover documentation"
+  git push
+  ```
 
 ---
 
-## 📂 Complete Source Code (69 Files)
+## 📂 Complete Source Code (72 Files)
 
 ### File: `package.json`
 
@@ -430,36 +450,36 @@ DIRECT_URL="postgresql://postgres.YOUR_PROJECT_REF:YOUR_DB_PASSWORD@aws-0-eu-cen
 
 ---
 
-### File: `apply-musnad-v14-upgrade.mjs`
+### File: `apply-musnad-v15-upgrade.mjs`
 
 ```javascript
 #!/usr/bin/env node
 /**
- * Upgrade Script — Al-Musnad (المسند) v14.0
+ * ============================================================================
+ * Upgrade Script — Al-Musnad (المسند) v15.0
+ * ============================================================================
+ * Execution: node apply-musnad-v15-upgrade.mjs
  * 
- * Execution: node apply-musnad-v14-upgrade.mjs
- * 
- * Directives Implemented in v14.0:
- * 1. Clean Login Interface (/login):
- *    - Completely removed the 6 demo account cards from visitor view.
- *    - Preserved Show/Hide password toggle (Eye / EyeOff) in both login and registration.
- *    - Replaced placeholder examples with generic `example@mail.com`.
- *    - Primary Admin account `bjasser123@gmail.com` (password: `Jasserbes1M`) enters from any of the 4 role portals.
- * 2. Role-Structured Navbar (Navbar.tsx) & Landing Page (page.tsx):
- *    - Visitor / Student: (1) الرئيسية, (2) مستودع المواد والمستويات, (3) النشرات, (4) اعرف المزيد.
- *    - Inspector: (1) الرئيسية, (2) مستودع المواد والمستويات, (3) النشرات, (4) للمتفقدين, (5) اعرف المزيد.
- *    - Teacher: (1) الرئيسية, (2) مستودع المواد والمستويات, (3) النشرات, (4) للمعلمين, (5) اعرف المزيد.
- *    - Institution: (1) الرئيسية, (2) مستودع المواد والمستويات, (3) النشرات, (4) للمؤسسات, (5) اعرف المزيد.
- *    - Removed separate Administration link; consolidated to Institutional space.
- * 3. Unified User Box on Top-Left:
- *    - Removed account role badge next to «نشر وثيقة» button completely.
- *    - Unified colored frame and concise role tag (مؤسسة, متفقد, معلم, تلميذ, مسؤول, مشرف عام).
- * 4. Stripped Permission Disclosures:
- *    - Removed explanatory paragraphs and disclosure badges from /inspector/dashboard, /moderator/dashboard, and /admin/dashboard.
- * 5. Distributed WhatsApp Channels in Support Center (/support):
- *    - Corrected Institutional WhatsApp number to 46907101 (https://wa.me/21646907101).
- *    - Teachers and Students see only: 27764985 (https://wa.me/21627764985).
- *    - Institutions and Inspectors see only: 46907101.
+ * Directives Implemented in v15.0:
+ * 1. Dedicated Terms of Use & Intellectual Property Page (/terms):
+ *    - Notice of IP and author rights for teachers, inspectors, and institutions.
+ *    - Commercial redistribution and resale strictly prohibited.
+ *    - Educational and family usage 100% free.
+ *    - Disclaimer & institutional independence compliant with Tunisian primary curriculum.
+ *    - Publishing charter & automatic endorsement badge withdrawal upon file update.
+ *    - Swift takedown policy upon copyright infringement reports.
+ *    - Personal data protection according to Tunisian legislation.
+ *    - Linked into the global footer in src/app/layout.tsx and sitemap.
+ * 2. Tunisian School Trimesters Filter & Tagging (الثلاثيات المدرسية التونسية):
+ *    - Added SCHOOL_TRIMESTERS constant (الثلاثي الأول، الثلاثي الثاني، الثلاثي الثالث).
+ *    - Quick 1-click trimester filter buttons in FilterBar.tsx (?trimester=trimester-1).
+ *    - Synced trimester dropdown selector in FilterBar.tsx.
+ *    - Integrated trimester filtering in worksheet.service.ts and page.tsx.
+ *    - Quick 1-click trimester tagging buttons in src/app/(main)/upload/page.tsx.
+ * 3. Clean Username Box in Top Bar (Navbar.tsx):
+ *    - Removed role note text beside username in the top-left box.
+ *    - Preserved distinctive role color borders and backgrounds (Purple, Indigo, Amber, Violet, Blue, Emerald).
+ * ============================================================================
  */
 
 import fs from "node:fs";
@@ -470,12 +490,12 @@ import { PrismaClient } from "@prisma/client";
 
 const rootDir = process.cwd();
 console.log("======================================================================");
-console.log("🚀 تشغيل سكريبت ترقية منصة «المسند» إلى الإصدار الرابع عشر (v14.0)");
+console.log("🚀 تشغيل سكريبت ترقية منصة «المسند» إلى الإصدار الخامس عشر (v15.0)");
 console.log("======================================================================\n");
 
 // 1. Verify Primary Admin Account & Credentials
 console.log("👤 [1/4] التحقق من حساب المشرف العام الأساسي (bjasser123@gmail.com)...");
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://wixctewkdfmsjuhjrmer.supabase.co";
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://fzokicsiqbdmwsdcuojz.supabase.co";
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (serviceRoleKey) {
@@ -498,10 +518,10 @@ if (serviceRoleKey) {
           role: "ADMIN",
         },
       });
-      console.log("  ✅ تم تأكيد كلمة مرور المشرف العام (Jasserbes1M) وربط صلاحية ADMIN بنجاح.");
+      console.log("  ✅ تم تأكيد كلمة مرور المشرف العام (Jasserbes1M) وصلاحية ADMIN بنجاح.");
     }
   } catch (err) {
-    console.warn("  ⚠️ ملاحظة أثناء تحديث حساب المشرف في Supabase:", err.message);
+    console.warn("  ⚠️ ملاحظة أثناء فحص حساب المشرف في Supabase:", err.message);
   }
 }
 
@@ -550,25 +570,27 @@ try {
 }
 
 // 5. Generate Updated PROJECT_HANDOVER.md
-console.log("\n📋 [4/4] توليد وثيقة تسليم المشروع المحدثة (PROJECT_HANDOVER.md)...");
+console.log("\n📋 [4/4] تحديث وثيقة تسليم المشروع المحدثة (PROJECT_HANDOVER.md)...");
 try {
   execSync("node scripts/generate-handover.mjs", { stdio: "inherit", cwd: rootDir });
   const handoverPath = path.join(rootDir, "PROJECT_HANDOVER.md");
   if (fs.existsSync(handoverPath)) {
     const stats = fs.statSync(handoverPath);
     const sizeKb = Math.round(stats.size / 1024);
-    console.log(`  ✅ تم توليد PROJECT_HANDOVER.md بنجاح (الحجم: ${sizeKb} كيلوبايت — أقل من 1 ميغابايت).`);
+    console.log(`  ✅ تم تحديث PROJECT_HANDOVER.md بنجاح (الحجم: ${sizeKb} كيلوبايت).`);
   }
 } catch (err) {
   console.warn("  ⚠️ ملاحظة أثناء توليد وثيقة التسليم:", err.message);
 }
 
 console.log("\n======================================================================");
-console.log("🎉 اكتمل تطبيق جميع ترقيات وإصلاحات الإصدار 14.0 لمنصة «المسند» بنجاح!");
-console.log("📌 بيانات الدخول للمشرف العام الأساسي:");
-console.log("   - البريد: bjasser123@gmail.com");
-console.log("   - كلمة المرور: Jasserbes1M");
-console.log("   - الصلاحية: يدخل من أي بوابة من البوابات الأربع إلى لوحة المشرف العام /admin/dashboard");
+console.log("🎉 اكتمل تطبيق جميع ترقيات وإصلاحات الإصدار الخامس عشر (v15.0) بنجاح!");
+console.log("📌 الميزات الجديدة المضافة:");
+console.log("   1. صفحة شروط الاستخدام والملكية الفكرية وحماية المؤلف (/terms)");
+console.log("   2. رابط الشروط والملكية مدمج بتذييل الموقع وفي خريطة الموقع sitemap.xml");
+console.log("   3. أزرار وقوائم فلترة الثلاثيات المدرسية التونسية الثلاثة في شريط البحث");
+console.log("   4. أزرار الوسم السريع للثلاثيات المدرسية بضغطة زر في صفحة رفع الملفات (/upload)");
+console.log("   5. إزالة ملاحظة نوع الحساب من بجانب اسم المستخدم في المربع العلوي مع الحفاظ على تمييز الألوان لكل فئة");
 console.log("======================================================================\n");
 
 ```
@@ -637,10 +659,9 @@ const part1Files = [
   "postcss.config.mjs",
   ".env.example",
   "README.md",
-  "apply-musnad-v14-upgrade.mjs",
+  "apply-musnad-v15-upgrade.mjs",
   "scripts/extract-handover.mjs",
   "scripts/generate-handover.mjs",
-  "scripts/build-v9-upgrade-script.mjs",
   "scripts/verify-and-connect.mjs",
   "scripts/backfill-usernames.mjs",
 
@@ -674,13 +695,17 @@ const part1Files = [
   // 5. Service Layer
   "src/services/worksheet.service.ts",
   "src/services/storage.service.ts",
+  "src/services/email.service.ts",
   "src/services/favorite.service.ts",
   "src/services/download.service.ts",
   "src/services/review.service.ts",
   "src/services/audit.service.ts",
 
-  // 6. Edge Middleware
+  // 6. Edge Middleware & Metadata Routes
   "src/middleware.ts",
+  "src/app/manifest.ts",
+  "src/app/robots.ts",
+  "src/app/sitemap.ts",
 
   // 7. API Route Handlers
   "src/app/api/auth/callback/route.ts",
@@ -726,6 +751,7 @@ const part2Files = [
   "src/components/layout/Navbar.tsx",
   "src/components/layout/SupervisoryHierarchyBar.tsx",
   "src/components/ui/InspectorBadge.tsx",
+  "src/components/ui/InstallPwaBanner.tsx",
   "src/components/ui/MentionText.tsx",
   "src/components/ui/UserPresenceIndicator.tsx",
   "src/components/ui/SubjectIcon.tsx",
@@ -740,6 +766,7 @@ const part2Files = [
 
   // 10. Application Pages & Route Views
   "src/app/page.tsx",
+  "src/app/(main)/terms/page.tsx",
   "src/app/(main)/browse/page.tsx",
   "src/app/(main)/levels/page.tsx",
   "src/app/(main)/levels/[gradeSlug]/page.tsx",
@@ -774,67 +801,87 @@ function getLanguage(filePath) {
   return "text";
 }
 
-const strictHeader = (titleSuffix = "") => `# 🏛️ Project Handover & Master Technical Audit — Al-Musnad (v12.0) ${titleSuffix}
-**Project:** Al-Musnad (المسند) — Educational & Pedagogical Platform  
-**Architecture:** Next.js 15 (App Router) + TypeScript + Prisma ORM + PostgreSQL (Supabase) + Tailwind CSS + Lucide Icons  
-**Version:** 12.0.0 (Optimized < 1 MB Archive — 100% Complete Source Code & Commands)  
-**Date:** October 29, 2026  
+const strictHeader = (titleSuffix = "") => `# 🏛️ Project Handover & Master Technical Audit — Al-Musnad (v15.0) ${titleSuffix}
+**Project:** Al-Musnad (المسند) — Integrated Educational & Pedagogical Platform  
+**Architecture:** Next.js 15 (App Router) + TypeScript + Prisma ORM + PostgreSQL (Supabase) + Cloudflare R2 + Tailwind CSS + Lucide Icons  
+**Version:** 15.0.0 (Optimized Handover Archive — Complete Source Code, Security Configs & Commands)  
+**Date:** October 2026  
+**Primary Admin Account:** \`bjasser123@gmail.com\` (Password: \`Jasserbes1M\` — Role: \`ADMIN\`)  
+**Live Production URL:** [https://al-musnad.vercel.app](https://al-musnad.vercel.app)  
+**GitHub Repository:** [https://github.com/jasser0209/al-musnad.git](https://github.com/jasser0209/al-musnad.git)  
 
 ---
 
-## 🤖 القواعد الصارمة والتعليمات الإلزامية للذكاء الاصطناعي (STRICT AI OPERATING RULES)
+## 🤖 القواعد الصارمة والتعليمات الإلزامية للمشروع (PROJECT ARCHITECTURE & RULES)
 
-أنت المهندس المعماري المسؤول عن تطوير وصيانة منصة **«المسند» (Al-Musnad v12.0)**. عند قراءة هذا الملف أو تنفيذ أي تعديل مستقبلي، **يجب عليك الالتزام الصارم وغير القابل للتفاوض بالقواعد التالية**:
+أنت المهندس المعماري المسؤول عن تطوير وصيانة منصة **«المسند» (Al-Musnad v15.0)**. عند قراءة هذا الملف أو تنفيذ أي تعديل مستقبلي، **يجب الالتزام الصارم بالقواعد التالية**:
 
 1. **قاعدة الحجم الأقصى (< 1 MB) ومنع التكرار**:
-   - الحد الأقصى المسموح به لحجم ملف \`PROJECT_HANDOVER.md\` هو **أقل من 1 ميجابايت (1,000 KB)**.
-   - **يُمنع منعاً باتاً** تضمين ملفات الحزم المولّدة تلقائياً (مثل \`apply-musnad-v9-infrastructure.mjs\` أو \`apply-musnad-v12-upgrade.mjs\`) داخل \`PROJECT_HANDOVER.md\` لأنها تكرر نفس الأكواد بصيغة JSON وتضاعف حجم الملف فوق 1.4 MB. بدلاً من ذلك، يتم تضمين سكريبت البناء \`scripts/build-v9-upgrade-script.mjs\` وسكريبت الاستخراج \`scripts/extract-handover.mjs\` فقط.
+   - الحجم الأقصى لملف \`PROJECT_HANDOVER.md\` يجب أن يبقى دائماً **أقل من 1 ميجابايت (1,000 KB)**.
+   - عدم تضمين حزم JSON الضخمة المكررة داخل الملف للحفاظ على خفته وسرعة معالجته.
 2. **منع اختصار الأكواد (Zero Truncation Policy)**:
-   - يُمنع كتابة تعليقات اختصار مثل \`// ... rest of code\` أو \`/* unchanged */\`. يجب دائماً كتابة الشفرة الكاملة القابلة للتشغيل الفوري.
-3. **الحفاظ على هرم الإشراف الثلاثي وعزل الصلاحيات الصارم (\`SupervisoryHierarchyBar\` + Middleware + Server Actions)**:
-   - **المشرف العام (\`ADMIN\`)**: يتربع على قمة الهرم الرقابي؛ يمتلك وحده شريط التنقل القيادي بين اللوحات الثلاث (\`/admin/dashboard\`، \`/moderator/dashboard\`، \`/inspector/dashboard\`) مع زر **«الرجوع الفوري إلى لوحة المشرف العام»**، ويمتلك وحده صلاحية إصدار أكواد التوثيق، إدارة الرتب، إغلاق بلاغات المتفقدين العاجلة (\`isInspectorPriority\`)، ومراجعة سجل التدقيق الأمني (\`AuditLog\`).
-   - **المسؤول الإداري (\`MODERATOR\`)**: محصور حصرياً في لوحته (\`/moderator/dashboard\`)؛ لا يرى أزرار الانتقال للوحة المشرف العام أو المتفقد، ولا يملك صلاحية الوصول إليها.
-   - **المتفقد التربوي (\`INSPECTOR\`)**: محصور حصرياً في لوحته (\`/inspector/dashboard\`) للاعتماد البيداغوجي والتوجيهات الرسمية والبلاغات العاجلة؛ لا يرى أزرار الانتقال للوحة المشرف العام أو المسؤول.
-4. **الحفاظ على الزر الموحد في الشريط العلوي (\`Navbar.tsx\`)**:
-   - عندما يسجل كل من \`ADMIN\` أو \`MODERATOR\` أو \`INSPECTOR\` دخوله، تظهر شارة صفته واسم لوحته مدمجة في **زر واحد فقط** في الشريط العلوي (\`مشرف عام • لوحة التحكم\` / \`مسؤول إداري • لوحة التحكم\` / \`متفقد معتمد • لوحة التحكم\`) ينقله مباشرة إلى لوحته الحصرية دون تكرار الشارة بجانب الزر.
-5. **الحفاظ على مسار مستودع المواد والمستويات (\`/levels\`)**:
-   - جميع روابط «مستودع المواد والمستويات» في \`Navbar.tsx\` والصفحة الرئيسية والتذييل يجب أن تتجه دائماً إلى المسار المستقل \`/levels\` (وليس \`/#levels-and-subjects\`)، وتعرض الصفحة كلاً من المستويات الستة ومستودع المواد التسع (\`#subjects-repository\`) مع استدعاء \`ensureOfficialTaxonomySeeded()\`.
-6. **القواعد الأمنية الإلزامية**:
-   - عدم إرجاع \`email\` مطلقاً في \`GET /api/users/mentions\`.
-   - استخدام \`POST /api/auth/resolve-username\` المحمي بـ \`checkRateLimit\` لتحويل \`@username\` إلى بريد عند تسجيل الدخول.
-   - منع تمرير رتبتَي \`ADMIN\` أو \`MODERATOR\` في مشغل التسجيل العام \`handle_new_user()\` بقاعدة البيانات.
+   - يُمنع استخدام تعليقات الاختصار مثل \`// ... rest of code\`. جميع الأكواد المضمنة كاملة وقابلة للتشغيل الفوري.
+3. **شروط الاستخدام والملكية الفكرية وحماية المؤلف (/terms)**:
+   - كافة الجذاذات والفروض والامتحانات المنشورة ملك فكري لأصحابها من المعلمين والمتفقدين والمؤسسات، ومتاحة مجاناً للاستخدام البيداغوجي غير التجاري.
+   - يُحظر إعادة بيع أو تجميع أي محتوى في مطبوعات تجارية مدفوعة دون إذن كتابي مسبق.
+   - سحب شارة «معتمد بيداغوجياً» تلقائياً عند قيام الناشر بتعديل أو استبدال الملف المرفق لحين إعادة مراجعته من المتفقد المختص.
+   - تطبيق سياسة الحذف الفوري (Takedown Policy) عند الإبلاغ عن أي انتهاك للملكية الفكرية.
+4. **نظام الثلاثيات المدرسية التونسية (SCHOOL_TRIMESTERS)**:
+   - دعم رسمي للثلاثيات الثلاثة: الثلاثي الأول، الثلاثي الثاني، الثلاثي الثالث.
+   - فلاتر سريعة بضغطة زر وقائمة منسدلة متزامنة مع الرابط في \`FilterBar.tsx\` (\`?trimester=trimester-1\`).
+   - ربط فلتر الثلاثي بمحرك البحث وقاعدة البيانات في \`worksheet.service.ts\` و \`page.tsx\`.
+   - أزرار الوسم السريع للثلاثي بضغطة زر واحدة في صفحة الرفع \`/upload\`.
+5. **مربع اسم المستخدم في الشريط العلوي (Navbar.tsx)**:
+   - إزالة النص الدال على نوع الحساب من جانب اسم المستخدم ليظهر الاسم كاملاً وواضحاً.
+   - الحفاظ التام على تمييز الألوان في إطار وخلفية مربع الاسم حسب الفئة:
+     - المشرف العام (\`ADMIN\`): بنفسجي ملكي (Purple).
+     - المسؤول الإداري (\`MODERATOR\`): نيلي (Indigo).
+     - المتفقد التربوي (\`INSPECTOR\`): ذهبي كهرماني (Amber).
+     - المؤسسة التربوية (\`INSTITUTION\`): أرجواني (Violet).
+     - المعلم (\`TEACHER\`): أزرق (Blue).
+     - التلميذ (\`STUDENT\`): أخضر زمردي (Emerald).
+6. **ترويسات الأمان الصارمة (HTTP Security Headers - A+ Rating)**:
+   - تطبيق ترويسات الأمان الصارمة في \`next.config.ts\`: \`X-Frame-Options: SAMEORIGIN\`، \`X-Content-Type-Options: nosniff\`، \`Strict-Transport-Security\`، \`Permissions-Policy\`، \`Referrer-Policy\`، \`X-XSS-Protection\`.
+   - السماح بمعاينة وثائق PDF والصور بأمان من سحابة Cloudflare R2 و Supabase دون حظر CORS أو Clickjacking.
+7. **سحابة التخزين المزدوجة (Cloudflare R2 10GB + Supabase Storage Fallback)**:
+   - الاعتماد الأساسي على Cloudflare R2 بسعة 10 جيجابايت مجانية مع بقاء Supabase Storage كخيار احتياطي فوري.
+8. **تطبيق الويب التقدمي (PWA)**:
+   - ملف مواصفات رسمي \`src/app/manifest.ts\` مع أيقونات 192 و 512 وبنر تثبيت ذكي \`InstallPwaBanner.tsx\`.
+9. **محركات البحث وأدوات الويب (SEO & Google Search Console)**:
+   - كود التحقق الرسمي لمحرك بحث جوجل في \`src/app/layout.tsx\`.
+   - خريطة موقع ديناميكية \`src/app/sitemap.ts\` وملف توجيه الروبوتات \`src/app/robots.ts\`.
+10. **خدمة البريد الإلكتروني (Resend)**:
+    - \`src/services/email.service.ts\` مع قوالب HTML ترحيبية وإشعارات الدعم والاعتماد البيداغوجي وتراجع آمن (Graceful Fallback).
+11. **هرم الإشراف الثلاثي وعزل الصلاحيات الصارم**:
+    - المشرف العام (\`ADMIN\`): قمة الهرم والتحكم الإداري الكامل والتبديل بين اللوحات.
+    - المسؤول الإداري (\`MODERATOR\`): محصور في \`/moderator/dashboard\`.
+    - المتفقد التربوي (\`INSPECTOR\`): محصور في \`/inspector/dashboard\`.
 
 ---
 
-## 🛠️ الأوامر الرسمية للتشغيل والترقية والتحقق (All Required CLI Commands)
+## 🛠️ أوامر التشغيل والترقية الرسمية (Official CLI Commands)
 
-- **1. استخراج جميع ملفات المشروع من وثيقة التسليم مباشرة:**
+- **1. تشغيل سكريبت ترقية الإصدار 15.0 الشامل:**
   \`\`\`bash
-  node scripts/extract-handover.mjs
+  node apply-musnad-v15-upgrade.mjs
   \`\`\`
-- **2. توليد وتنفيذ سكريبت الترقية الشامل دفعة واحدة:**
-  \`\`\`bash
-  node scripts/build-v9-upgrade-script.mjs
-  node apply-musnad-v12-upgrade.mjs
-  \`\`\`
-- **3. فحص الاتصال بقاعدة البيانات ومتغيرات البيئة (Supabase & PostgreSQL):**
-  \`\`\`bash
-  node scripts/verify-and-connect.mjs
-  \`\`\`
-- **4. مزامنة مخطط Prisma وتوليد العميل وبذر البيانات الأساسية:**
-  \`\`\`bash
-  npx prisma generate
-  npx prisma db push
-  npx prisma db seed
-  \`\`\`
-- **5. الفحص الصارم للأنواع (TypeScript) وبناء نسخة الإنتاج (Next.js 15 Build):**
+- **2. فحص سلامة الأنواع البرمجية (TypeScript Check):**
   \`\`\`bash
   npx tsc --noEmit
+  \`\`\`
+- **3. بناء نسخة الإنتاج الحية (Next.js Production Build):**
+  \`\`\`bash
   npm run build
   \`\`\`
-- **6. إعادة توليد وثيقة التسليم (تلقائياً تحت سقف 1 ميجابايت + مقسمة لجزأين):**
+- **4. تحديث وثائق التسليم تلقائياً:**
   \`\`\`bash
   node scripts/generate-handover.mjs
+  \`\`\`
+- **5. الالتزام والمزامنة المباشرة مع GitHub و Vercel:**
+  \`\`\`bash
+  git add .
+  git commit -m "Update project handover documentation"
+  git push
   \`\`\`
 
 ---
@@ -882,188 +929,6 @@ fs.writeFileSync(outputPart2, part2Md, "utf-8");
 console.log(`✅ PROJECT_HANDOVER.md (Complete): ${(Buffer.byteLength(fullMd, "utf8") / 1024).toFixed(1)} KB`);
 console.log(`✅ PROJECT_HANDOVER_PART1.md (Backend/Core): ${(Buffer.byteLength(part1Md, "utf8") / 1024).toFixed(1)} KB`);
 console.log(`✅ PROJECT_HANDOVER_PART2.md (Frontend/UI): ${(Buffer.byteLength(part2Md, "utf8") / 1024).toFixed(1)} KB`);
-
-```
-
----
-
-### File: `scripts/build-v9-upgrade-script.mjs`
-
-```javascript
-import fs from "fs";
-import path from "path";
-
-const rootDir = process.cwd();
-const outScriptV11 = path.join(rootDir, "apply-musnad-v12-upgrade.mjs");
-const outScriptV10 = path.join(rootDir, "apply-musnad-v10-upgrade.mjs");
-
-const filesList = [
-  // 1. Prisma & Database Policies
-  "prisma/schema.prisma",
-  "supabase/sql/triggers.sql",
-  "supabase/sql/rls-policies.sql",
-  "supabase/sql/setup-complete-supabase.sql",
-
-  // 2. Constants & Types
-  "src/config/constants.ts",
-  "src/types/api.ts",
-
-  // 3. Validators
-  "src/lib/validators/auth.ts",
-  "src/lib/validators/common.ts",
-  "src/lib/validators/worksheet.ts",
-  "src/lib/validators/review.ts",
-
-  // 4. Services
-  "src/services/worksheet.service.ts",
-  "src/services/download.service.ts",
-  "src/services/favorite.service.ts",
-  "src/services/review.service.ts",
-  "src/services/storage.service.ts",
-  "src/services/audit.service.ts",
-
-  // 5. Security & Middleware
-  "src/lib/security/rate-limit.ts",
-  "src/lib/supabase/middleware.ts",
-
-  // 6. Server Actions
-  "src/actions/inspector.actions.ts",
-  "src/actions/moderator.actions.ts",
-  "src/actions/profile.actions.ts",
-  "src/actions/publisher.actions.ts",
-  "src/actions/report-support.actions.ts",
-  "src/actions/admin.actions.ts",
-
-  // 7. UI, Presence, Profile & Layout Components
-  "src/components/ui/InspectorBadge.tsx",
-  "src/components/ui/MentionText.tsx",
-  "src/components/ui/UserPresenceIndicator.tsx",
-  "src/components/ui/SubjectIcon.tsx",
-  "src/components/worksheets/RolePersonalizedHub.tsx",
-  "src/components/home/PlatformIdentityAndFaqSection.tsx",
-  "src/components/profile/ArchivedSubscriptionsPlans.tsx",
-  "src/context/AppPreferencesContext.tsx",
-  "src/components/layout/Navbar.tsx",
-  "src/components/layout/SupervisoryHierarchyBar.tsx",
-  "src/components/worksheets/FilterBar.tsx",
-  "src/components/worksheets/WorksheetCard.tsx",
-  "src/components/worksheets/WorksheetDetailClient.tsx",
-  "src/components/worksheets/ReviewSection.tsx",
-  "src/components/worksheets/CurriculumAndAdminExplorer.tsx",
-
-  // 8. Auth Pages
-  "src/app/(auth)/login/page.tsx",
-  "src/app/(auth)/register/page.tsx",
-
-  // 9. Main Application Pages
-  "src/app/page.tsx",
-  "src/app/layout.tsx",
-  "src/app/(main)/publisher/[id]/page.tsx",
-  "src/app/(main)/profile/page.tsx",
-  "src/app/(main)/support/page.tsx",
-  "src/app/(main)/worksheet/[id]/page.tsx",
-  "src/app/(main)/upload/page.tsx",
-  "src/app/(main)/u/[username]/page.tsx",
-  "src/app/(main)/levels/page.tsx",
-  "src/app/(main)/levels/[gradeSlug]/page.tsx",
-  "src/app/(main)/levels/[gradeSlug]/subjects/[subjectSlug]/page.tsx",
-
-  // 10. Dedicated Dashboards (3-Tier Supervisory Hierarchy)
-  "src/app/inspector/dashboard/page.tsx",
-  "src/app/moderator/dashboard/page.tsx",
-  "src/app/admin/dashboard/page.tsx",
-
-  // 11. API Route Handlers
-  "src/app/api/auth/callback/route.ts",
-  "src/app/api/auth/me/route.ts",
-  "src/app/api/auth/resolve-username/route.ts",
-  "src/app/api/auth/login-guard/route.ts",
-  "src/app/api/me/presence/route.ts",
-  "src/app/api/worksheets/route.ts",
-  "src/app/api/worksheets/[id]/route.ts",
-  "src/app/api/worksheets/[id]/reviews/route.ts",
-  "src/app/api/users/mentions/route.ts",
-  "src/app/api/health/route.ts",
-
-  // 12. Seed & Config & Verification Scripts
-  "prisma/seed.ts",
-  "next.config.ts",
-  "scripts/verify-and-connect.mjs",
-  "scripts/extract-handover.mjs",
-  ".env.example",
-];
-
-console.log(`Checking ${filesList.length} files for v12.0 upgrade bundle...`);
-const filesDict = {};
-let missing = 0;
-
-for (const relPath of filesList) {
-  const fullPath = path.join(rootDir, relPath);
-  if (!fs.existsSync(fullPath)) {
-    console.error(`❌ Missing file: ${relPath}`);
-    missing++;
-  } else {
-    filesDict[relPath] = fs.readFileSync(fullPath, "utf8");
-  }
-}
-
-if (missing > 0) {
-  console.error(`Found ${missing} missing files. Aborting build.`);
-  process.exit(1);
-}
-
-const scriptContent = `#!/usr/bin/env node
-/**
- * ============================================================================
- * Al-Musnad (المسند) — Master Architecture, Security & UX Upgrade Script (v12.0)
- * ============================================================================
- * Contains ${filesList.length} complete, un-truncated files for Version 11.0 including:
- * 1. Security Hardening & 6-Strike Password Lockout Guard (/api/auth/login-guard):
- *    - Checks if email/@username is registered; warns user of 6-attempt limit;
- *      locks account after 6 failed password attempts; enables Admin & Moderator account unlock.
- * 2. Enter-Key Instant Login & Full Google OAuth 2.0 Integration (/api/auth/callback).
- * 3. 6-Section File Classification & Filtering (درس، تمرين، امتحان، جذاذة، نشاط تفاعلي، أخرى):
- *    - Every file displays Subject + Grade Level + Section + File Type (PDF/Word/Image).
- *    - Simplified /levels to show Approved Grade Levels only, with Materials Repository inside each Grade.
- * 4. Member Online / Offline / Ghost Mode (وضع الشبح) & Green/Gray Dot under User Avatar:
- *    - Small green dot when connected, gray dot + elapsed time when offline, and Ghost Mode browsing.
- * 5. Role-Colored Username Box & Merged Badge + Control Panel inside Navbar Dropdown.
- * 6. Subscriptions Section Marked "سيأتي قريباً" with Preserved Copy of Plans Archive.
- * ============================================================================
- */
-
-import fs from "node:fs";
-import path from "node:path";
-
-const rootDir = process.cwd();
-console.log("======================================================================");
-console.log("🚀 تطبيق ترقية منصة «المسند» الشاملة (الإصدار الثاني عشر v12.0)");
-console.log("======================================================================\\n");
-
-const files = ${JSON.stringify(filesDict, null, 2)};
-
-let writtenCount = 0;
-for (const [relPath, content] of Object.entries(files)) {
-  const fullPath = path.join(rootDir, relPath);
-  const dir = path.dirname(fullPath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  fs.writeFileSync(fullPath, content, "utf8");
-  writtenCount++;
-}
-
-console.log(\`✅ تم تحديث وتثبيت كافة ملفات الإصدار الثاني عشر v12.0 (\${writtenCount} ملفاً) بنجاح 100% دون أي اختصار!\`);
-console.log("\\nالخطوات التالية الموصى بها:");
-console.log("1. npx prisma generate");
-console.log("2. npx prisma db push");
-console.log("3. npx prisma db seed");
-console.log("4. npm run build\\n");
-`;
-
-fs.writeFileSync(outScriptV11, scriptContent, "utf8");
-fs.writeFileSync(outScriptV10, scriptContent, "utf8");
-console.log(`Successfully built ${outScriptV11} (${(scriptContent.length / 1024).toFixed(1)} KB) containing all ${filesList.length} files.`);
 
 ```
 
@@ -4961,6 +4826,334 @@ export async function uploadThumbnail(
 
 ---
 
+### File: `src/services/email.service.ts`
+
+```typescript
+/**
+ * Email Service — Al-Musnad (المسند)
+ *
+ * Powered by Resend for transactional, welcome, and notification emails.
+ *
+ * Implements:
+ * 1. sendWelcomeEmail(to, name, roleTitle): Elegant welcome email upon registration.
+ * 2. sendSupportReplyNotification(to, name, ticketSubject, replyText): Notification on support reply.
+ * 3. sendEndorsementNotification(to, teacherName, worksheetTitle): Alert when inspector endorses a worksheet.
+ * 4. Graceful fallback: If RESEND_API_KEY is missing or sending fails, logs error silently
+ *    without crashing the user flow or halting registration.
+ */
+
+import { Resend } from "resend";
+
+const apiKey = process.env.RESEND_API_KEY;
+const resend = apiKey ? new Resend(apiKey) : null;
+
+const DEFAULT_FROM =
+  process.env.RESEND_FROM_EMAIL || "منصة المسند <onboarding@resend.dev>";
+const APP_URL =
+  process.env.NEXT_PUBLIC_APP_URL || "https://al-musnad.vercel.app";
+
+interface SendEmailParams {
+  to: string | string[];
+  subject: string;
+  html: string;
+  text?: string;
+}
+
+/**
+ * Base email dispatcher with graceful fallback.
+ */
+export async function sendEmail({
+  to,
+  subject,
+  html,
+  text,
+}: SendEmailParams): Promise<{ success: boolean; data?: any; error?: any }> {
+  if (!resend || !apiKey) {
+    console.warn(
+      "⚠️ [Email Service] RESEND_API_KEY is not configured. Email skipped:",
+      subject,
+      "to:",
+      to
+    );
+    return { success: false, error: "RESEND_API_KEY_MISSING" };
+  }
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: DEFAULT_FROM,
+      to,
+      subject,
+      html,
+      text: text || subject,
+    });
+
+    if (error) {
+      console.warn("⚠️ [Email Service] Resend API error:", error.message);
+      return { success: false, error };
+    }
+
+    console.log("✅ [Email Service] Email sent successfully to:", to, "ID:", data?.id);
+    return { success: true, data };
+  } catch (err: any) {
+    console.warn("⚠️ [Email Service] Unexpected error sending email:", err?.message || err);
+    return { success: false, error: err?.message || "SEND_FAILED" };
+  }
+}
+
+/**
+ * Wraps content in Al-Musnad's branded HTML layout.
+ */
+function createEmailTemplate({
+  title,
+  preheader,
+  contentHtml,
+  ctaText,
+  ctaUrl,
+}: {
+  title: string;
+  preheader?: string;
+  contentHtml: string;
+  ctaText?: string;
+  ctaUrl?: string;
+}): string {
+  return `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title}</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      direction: rtl;
+      text-align: right;
+      color: #1e293b;
+    }
+    .wrapper {
+      max-width: 600px;
+      margin: 30px auto;
+      background: #ffffff;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e2e8f0;
+    }
+    .header {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+      padding: 36px 30px;
+      text-align: center;
+      color: #ffffff;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 26px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+    }
+    .header p {
+      margin: 8px 0 0 0;
+      font-size: 13px;
+      color: #93c5fd;
+      font-weight: 500;
+    }
+    .content {
+      padding: 32px 30px;
+      font-size: 15px;
+      line-height: 1.8;
+      color: #334155;
+    }
+    .cta-container {
+      text-align: center;
+      margin: 30px 0 10px 0;
+    }
+    .cta-button {
+      display: inline-block;
+      background-color: #2563eb;
+      color: #ffffff !important;
+      font-size: 14px;
+      font-weight: 800;
+      text-decoration: none;
+      padding: 14px 32px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 8px;
+      background-color: #eff6ff;
+      color: #1d4ed8;
+      font-weight: 800;
+      font-size: 12px;
+      margin-bottom: 15px;
+      border: 1px solid #bfdbfe;
+    }
+    .footer {
+      background-color: #f1f5f9;
+      padding: 24px 30px;
+      text-align: center;
+      font-size: 12px;
+      color: #64748b;
+      border-top: 1px solid #e2e8f0;
+      line-height: 1.6;
+    }
+    .footer a {
+      color: #2563eb;
+      text-decoration: none;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  ${preheader ? `<div style="display:none;font-size:1px;color:#333333;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">${preheader}</div>` : ""}
+  <div class="wrapper">
+    <div class="header">
+      <h1>منصة «المسند»</h1>
+      <p>الفضاء البيداغوجي الشامل للتعليم الأساسي بالجمهورية التونسية</p>
+    </div>
+    <div class="content">
+      ${contentHtml}
+      ${
+        ctaText && ctaUrl
+          ? `
+      <div class="cta-container">
+        <a href="${ctaUrl}" class="cta-button" target="_blank">${ctaText}</a>
+      </div>
+      `
+          : ""
+      }
+    </div>
+    <div class="footer">
+      <p style="margin: 0 0 8px 0;">
+        هذه الرسالة تم إرسالها تلقائياً من خوادم <strong>منصة المسند</strong>.<br>
+        للدعم الفني والاستفسار، تواصل معنا عبر واتساب: 
+        <a href="https://wa.me/21627764985">27764985</a> أو 
+        <a href="https://wa.me/21646907101">46907101</a>
+      </p>
+      <p style="margin: 0; color: #94a3b8;">
+        جميع الحقوق محفوظة © 2026 منصة المسند التربوية
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+}
+
+/**
+ * 1. sendWelcomeEmail(to, name, roleTitle)
+ * Sends an elegant welcome email upon new user registration.
+ */
+export async function sendWelcomeEmail(
+  to: string,
+  name: string,
+  roleTitle: string
+) {
+  const subject = `مرحباً بك في منصة المسند — فضاءك التربوي المتميز يا ${name}`;
+  const html = createEmailTemplate({
+    title: subject,
+    preheader: `يسعدنا انضمامك إلى مجتمع المسند التربوي كـ ${roleTitle}`,
+    contentHtml: `
+      <div class="badge">الفئة: ${roleTitle}</div>
+      <h2 style="font-size: 20px; color: #0f172a; margin-top: 0;">أهلاً بك يا أستاذ/ة ${name}،</h2>
+      <p>
+        يسرّنا أن نرحب بك في <strong>منصة «المسند»</strong>، المنظومة الوطنية المتكاملة لتبادل المذكرات،
+        الجذاذات النموذجية، الفروض والأنشطة التقييمية لكافة المستويات الدراسية في المرحلة الابتدائية.
+      </p>
+      <p>
+        حسابك الآن مفعّل وجاهز، وبإمكانك الاستفادة من فضاءك المخصص كـ <strong>${roleTitle}</strong>:
+      </p>
+      <ul style="padding-right: 20px; color: #475569;">
+        <li>تصفح وتحميل الجذاذات والفروض المعتمدة بيداغوجياً.</li>
+        <li>نشر ومشاركة الإنتاجات والملفات البيداغوجية مع الزملاء.</li>
+        <li>الحصول على شارات الاعتماد والملاحظات التوجيهية من المتفقدين التربويين.</li>
+      </ul>
+    `,
+    ctaText: "الدخول إلى منصة المسند الآن",
+    ctaUrl: `${APP_URL}/login`,
+  });
+
+  return sendEmail({ to, subject, html });
+}
+
+/**
+ * 2. sendSupportReplyNotification(to, name, ticketSubject, replyText)
+ * Notifies the user when an admin or moderator replies to their support ticket.
+ */
+export async function sendSupportReplyNotification(
+  to: string,
+  name: string,
+  ticketSubject: string,
+  replyText: string
+) {
+  const subject = `رد جديد على استفسارك في الدعم الفني: ${ticketSubject}`;
+  const html = createEmailTemplate({
+    title: subject,
+    preheader: `قام فريق إدارة المسند بالرد على تذكرتك: ${ticketSubject}`,
+    contentHtml: `
+      <div class="badge" style="background-color: #f0fdf4; color: #166534; border-color: #bbf7d0;">مركز الدعم الفني</div>
+      <h2 style="font-size: 18px; color: #0f172a; margin-top: 0;">مرحباً ${name}،</h2>
+      <p>
+        نحيطك علماً بأن فريق الإشراف والمتابعة في <strong>منصة المسند</strong> قد قام بالرد على تذكرتك الخاصة بـ:
+      </p>
+      <div style="background-color: #f8fafc; border-right: 4px solid #2563eb; padding: 14px 18px; margin: 18px 0; border-radius: 8px;">
+        <strong style="color: #1e293b; display: block; margin-bottom: 6px;">موضوع الاستفسار: ${ticketSubject}</strong>
+        <p style="margin: 0; color: #475569; font-style: italic;">« ${replyText} »</p>
+      </div>
+      <p>
+        إذا كانت لديك أي استفسارات إضافية، بإمكانك متابعة المحادثة مباشرة عبر مركز الدعم الفني.
+      </p>
+    `,
+    ctaText: "الانتقال إلى مركز الدعم الفني",
+    ctaUrl: `${APP_URL}/support`,
+  });
+
+  return sendEmail({ to, subject, html });
+}
+
+/**
+ * 3. sendEndorsementNotification(to, teacherName, worksheetTitle)
+ * Notifies the teacher when an inspector pedagogically endorses their published worksheet.
+ */
+export async function sendEndorsementNotification(
+  to: string,
+  teacherName: string,
+  worksheetTitle: string
+) {
+  const subject = `تهانينا! تم اعتماد منشورك البيداغوجي «${worksheetTitle}» رسميّاً ★`;
+  const html = createEmailTemplate({
+    title: subject,
+    preheader: `حصل منشورك ${worksheetTitle} على شارة الاعتماد البيداغوجي من المتفقد التربوي`,
+    contentHtml: `
+      <div class="badge" style="background-color: #fefce8; color: #854d0e; border-color: #fef08a;">★ اعتماد بيداغوجي رسمي</div>
+      <h2 style="font-size: 19px; color: #0f172a; margin-top: 0;">تهانينا الحارة أستاذ/ة ${teacherName}،</h2>
+      <p>
+        يسرّنا إعلامك بأن المتفقد التربوي المعتمد قد قام بمراجعة واعتماد منشورك:
+      </p>
+      <div style="background-color: #eff6ff; border-radius: 12px; padding: 18px; margin: 18px 0; border: 1px solid #bfdbfe; text-align: center;">
+        <span style="font-size: 24px;">★</span>
+        <h3 style="margin: 6px 0; font-size: 17px; color: #1e40af;">« ${worksheetTitle} »</h3>
+        <p style="margin: 0; font-size: 13px; color: #3b82f6; font-weight: 600;">تم منحه شارة الاعتماد التربوي الرسمي</p>
+      </div>
+      <p>
+        أصبح منشورك الآن يحمل شارة التميّز ويحظى بالأولوية في نتائج البحث والتوصيات لجميع المربين في تونس. نشكرك على عطائك وإثرائك للمكتبة البيداغوجية.
+      </p>
+    `,
+    ctaText: "معاينة منشورك المعتمد",
+    ctaUrl: `${APP_URL}`,
+  });
+
+  return sendEmail({ to, subject, html });
+}
+
+```
+
+---
+
 ### File: `src/services/favorite.service.ts`
 
 ```typescript
@@ -5729,6 +5922,222 @@ export const config = {
     "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|xml|txt|webmanifest|json)$).*)",
   ],
 };
+
+```
+
+---
+
+### File: `src/app/manifest.ts`
+
+```typescript
+import type { MetadataRoute } from "next";
+
+export default function manifest(): MetadataRoute.Manifest {
+  return {
+    name: "منصة المسند التربوية",
+    short_name: "المسند",
+    description: "المرجع التربوي المتكامل للمؤسسات والمتفقدين والمعلمين والتلاميذ",
+    start_url: "/",
+    display: "standalone",
+    orientation: "portrait",
+    background_color: "#0f172a",
+    theme_color: "#2563eb",
+    lang: "ar",
+    dir: "rtl",
+    categories: ["education", "books"],
+    icons: [
+      {
+        src: "/icon-192.png",
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/icon-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/icon-maskable.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
+      },
+    ],
+  };
+}
+
+```
+
+---
+
+### File: `src/app/robots.ts`
+
+```typescript
+import type { MetadataRoute } from "next";
+
+const BASE_URL = "https://al-musnad.vercel.app";
+
+export default function robots(): MetadataRoute.Robots {
+  return {
+    rules: [
+      {
+        userAgent: "*",
+        allow: [
+          "/",
+          "/levels",
+          "/levels/*",
+          "/browse",
+          "/worksheet/*",
+          "/support",
+          "/publisher/*",
+        ],
+        disallow: [
+          "/admin",
+          "/admin/*",
+          "/moderator",
+          "/moderator/*",
+          "/inspector",
+          "/inspector/*",
+          "/api",
+          "/api/*",
+          "/profile",
+          "/upload",
+        ],
+      },
+    ],
+    sitemap: `${BASE_URL}/sitemap.xml`,
+  };
+}
+
+```
+
+---
+
+### File: `src/app/sitemap.ts`
+
+```typescript
+import type { MetadataRoute } from "next";
+import { db } from "@/lib/db";
+
+const BASE_URL = "https://al-musnad.vercel.app";
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const currentDate = new Date();
+
+  // 1. Static Core Pages
+  const staticRoutes: MetadataRoute.Sitemap = [
+    {
+      url: `${BASE_URL}`,
+      lastModified: currentDate,
+      changeFrequency: "daily",
+      priority: 1.0,
+    },
+    {
+      url: `${BASE_URL}/levels`,
+      lastModified: currentDate,
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
+    {
+      url: `${BASE_URL}/browse`,
+      lastModified: currentDate,
+      changeFrequency: "daily",
+      priority: 0.8,
+    },
+    {
+      url: `${BASE_URL}/support`,
+      lastModified: currentDate,
+      changeFrequency: "weekly",
+      priority: 0.6,
+    },
+    {
+      url: `${BASE_URL}/terms`,
+      lastModified: currentDate,
+      changeFrequency: "monthly",
+      priority: 0.6,
+    },
+    {
+      url: `${BASE_URL}/login`,
+      lastModified: currentDate,
+      changeFrequency: "monthly",
+      priority: 0.4,
+    },
+    {
+      url: `${BASE_URL}/register`,
+      lastModified: currentDate,
+      changeFrequency: "monthly",
+      priority: 0.4,
+    },
+  ];
+
+  // 2. The 6 Primary Grade Levels
+  const gradeSlugs = [
+    "grade-1",
+    "grade-2",
+    "grade-3",
+    "grade-4",
+    "grade-5",
+    "grade-6",
+  ];
+
+  let gradeRoutes: MetadataRoute.Sitemap = [];
+  try {
+    const gradesFromDb = await db.grade.findMany({
+      select: { slug: true, createdAt: true },
+    });
+
+    const activeSlugs =
+      gradesFromDb.length > 0
+        ? gradesFromDb.map((g) => ({
+            slug: g.slug,
+            updatedAt: g.createdAt || currentDate,
+          }))
+        : gradeSlugs.map((s) => ({ slug: s, updatedAt: currentDate }));
+
+    gradeRoutes = activeSlugs.map((g) => ({
+      url: `${BASE_URL}/levels/${g.slug}`,
+      lastModified: g.updatedAt,
+      changeFrequency: "weekly" as const,
+      priority: 0.85,
+    }));
+  } catch {
+    gradeRoutes = gradeSlugs.map((slug) => ({
+      url: `${BASE_URL}/levels/${slug}`,
+      lastModified: currentDate,
+      changeFrequency: "weekly" as const,
+      priority: 0.85,
+    }));
+  }
+
+  // 3. Dynamic Public Worksheets
+  let worksheetRoutes: MetadataRoute.Sitemap = [];
+  try {
+    const worksheets = await db.worksheet.findMany({
+      where: {
+        status: "PUBLISHED",
+      },
+      select: {
+        id: true,
+        updatedAt: true,
+      },
+      take: 5000,
+      orderBy: { updatedAt: "desc" },
+    });
+
+    worksheetRoutes = worksheets.map((w) => ({
+      url: `${BASE_URL}/worksheet/${w.id}`,
+      lastModified: w.updatedAt || currentDate,
+      changeFrequency: "weekly" as const,
+      priority: 0.75,
+    }));
+  } catch {
+    worksheetRoutes = [];
+  }
+
+  return [...staticRoutes, ...gradeRoutes, ...worksheetRoutes];
+}
 
 ```
 
@@ -9950,4 +10359,4 @@ export async function replySupportTicketAdminAction(
 
 ---
 
-*نهاية الجزء الأول (Part 1/2) — يتبع في الجزء الثاني (PROJECT_HANDOVER_PART2.md) — Total included files: 69.*
+*نهاية الجزء الأول (Part 1/2) — يتبع في الجزء الثاني (PROJECT_HANDOVER_PART2.md) — Total included files: 72.*

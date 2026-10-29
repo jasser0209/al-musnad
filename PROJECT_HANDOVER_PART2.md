@@ -1,69 +1,89 @@
-# 🏛️ Project Handover & Master Technical Audit — Al-Musnad (v12.0) — الجزء الثاني: المكونات، الواجهات، مستودع المواد، ولوحات الإشراف الثلاث (Part 2 of 2)
-**Project:** Al-Musnad (المسند) — Educational & Pedagogical Platform  
-**Architecture:** Next.js 15 (App Router) + TypeScript + Prisma ORM + PostgreSQL (Supabase) + Tailwind CSS + Lucide Icons  
-**Version:** 12.0.0 (Optimized < 1 MB Archive — 100% Complete Source Code & Commands)  
-**Date:** October 29, 2026  
+# 🏛️ Project Handover & Master Technical Audit — Al-Musnad (v15.0) — الجزء الثاني: المكونات، الواجهات، مستودع المواد، ولوحات الإشراف الثلاث (Part 2 of 2)
+**Project:** Al-Musnad (المسند) — Integrated Educational & Pedagogical Platform  
+**Architecture:** Next.js 15 (App Router) + TypeScript + Prisma ORM + PostgreSQL (Supabase) + Cloudflare R2 + Tailwind CSS + Lucide Icons  
+**Version:** 15.0.0 (Optimized Handover Archive — Complete Source Code, Security Configs & Commands)  
+**Date:** October 2026  
+**Primary Admin Account:** `bjasser123@gmail.com` (Password: `Jasserbes1M` — Role: `ADMIN`)  
+**Live Production URL:** [https://al-musnad.vercel.app](https://al-musnad.vercel.app)  
+**GitHub Repository:** [https://github.com/jasser0209/al-musnad.git](https://github.com/jasser0209/al-musnad.git)  
 
 ---
 
-## 🤖 القواعد الصارمة والتعليمات الإلزامية للذكاء الاصطناعي (STRICT AI OPERATING RULES)
+## 🤖 القواعد الصارمة والتعليمات الإلزامية للمشروع (PROJECT ARCHITECTURE & RULES)
 
-أنت المهندس المعماري المسؤول عن تطوير وصيانة منصة **«المسند» (Al-Musnad v12.0)**. عند قراءة هذا الملف أو تنفيذ أي تعديل مستقبلي، **يجب عليك الالتزام الصارم وغير القابل للتفاوض بالقواعد التالية**:
+أنت المهندس المعماري المسؤول عن تطوير وصيانة منصة **«المسند» (Al-Musnad v15.0)**. عند قراءة هذا الملف أو تنفيذ أي تعديل مستقبلي، **يجب الالتزام الصارم بالقواعد التالية**:
 
 1. **قاعدة الحجم الأقصى (< 1 MB) ومنع التكرار**:
-   - الحد الأقصى المسموح به لحجم ملف `PROJECT_HANDOVER.md` هو **أقل من 1 ميجابايت (1,000 KB)**.
-   - **يُمنع منعاً باتاً** تضمين ملفات الحزم المولّدة تلقائياً (مثل `apply-musnad-v9-infrastructure.mjs` أو `apply-musnad-v12-upgrade.mjs`) داخل `PROJECT_HANDOVER.md` لأنها تكرر نفس الأكواد بصيغة JSON وتضاعف حجم الملف فوق 1.4 MB. بدلاً من ذلك، يتم تضمين سكريبت البناء `scripts/build-v9-upgrade-script.mjs` وسكريبت الاستخراج `scripts/extract-handover.mjs` فقط.
+   - الحجم الأقصى لملف `PROJECT_HANDOVER.md` يجب أن يبقى دائماً **أقل من 1 ميجابايت (1,000 KB)**.
+   - عدم تضمين حزم JSON الضخمة المكررة داخل الملف للحفاظ على خفته وسرعة معالجته.
 2. **منع اختصار الأكواد (Zero Truncation Policy)**:
-   - يُمنع كتابة تعليقات اختصار مثل `// ... rest of code` أو `/* unchanged */`. يجب دائماً كتابة الشفرة الكاملة القابلة للتشغيل الفوري.
-3. **الحفاظ على هرم الإشراف الثلاثي وعزل الصلاحيات الصارم (`SupervisoryHierarchyBar` + Middleware + Server Actions)**:
-   - **المشرف العام (`ADMIN`)**: يتربع على قمة الهرم الرقابي؛ يمتلك وحده شريط التنقل القيادي بين اللوحات الثلاث (`/admin/dashboard`، `/moderator/dashboard`، `/inspector/dashboard`) مع زر **«الرجوع الفوري إلى لوحة المشرف العام»**، ويمتلك وحده صلاحية إصدار أكواد التوثيق، إدارة الرتب، إغلاق بلاغات المتفقدين العاجلة (`isInspectorPriority`)، ومراجعة سجل التدقيق الأمني (`AuditLog`).
-   - **المسؤول الإداري (`MODERATOR`)**: محصور حصرياً في لوحته (`/moderator/dashboard`)؛ لا يرى أزرار الانتقال للوحة المشرف العام أو المتفقد، ولا يملك صلاحية الوصول إليها.
-   - **المتفقد التربوي (`INSPECTOR`)**: محصور حصرياً في لوحته (`/inspector/dashboard`) للاعتماد البيداغوجي والتوجيهات الرسمية والبلاغات العاجلة؛ لا يرى أزرار الانتقال للوحة المشرف العام أو المسؤول.
-4. **الحفاظ على الزر الموحد في الشريط العلوي (`Navbar.tsx`)**:
-   - عندما يسجل كل من `ADMIN` أو `MODERATOR` أو `INSPECTOR` دخوله، تظهر شارة صفته واسم لوحته مدمجة في **زر واحد فقط** في الشريط العلوي (`مشرف عام • لوحة التحكم` / `مسؤول إداري • لوحة التحكم` / `متفقد معتمد • لوحة التحكم`) ينقله مباشرة إلى لوحته الحصرية دون تكرار الشارة بجانب الزر.
-5. **الحفاظ على مسار مستودع المواد والمستويات (`/levels`)**:
-   - جميع روابط «مستودع المواد والمستويات» في `Navbar.tsx` والصفحة الرئيسية والتذييل يجب أن تتجه دائماً إلى المسار المستقل `/levels` (وليس `/#levels-and-subjects`)، وتعرض الصفحة كلاً من المستويات الستة ومستودع المواد التسع (`#subjects-repository`) مع استدعاء `ensureOfficialTaxonomySeeded()`.
-6. **القواعد الأمنية الإلزامية**:
-   - عدم إرجاع `email` مطلقاً في `GET /api/users/mentions`.
-   - استخدام `POST /api/auth/resolve-username` المحمي بـ `checkRateLimit` لتحويل `@username` إلى بريد عند تسجيل الدخول.
-   - منع تمرير رتبتَي `ADMIN` أو `MODERATOR` في مشغل التسجيل العام `handle_new_user()` بقاعدة البيانات.
+   - يُمنع استخدام تعليقات الاختصار مثل `// ... rest of code`. جميع الأكواد المضمنة كاملة وقابلة للتشغيل الفوري.
+3. **شروط الاستخدام والملكية الفكرية وحماية المؤلف (/terms)**:
+   - كافة الجذاذات والفروض والامتحانات المنشورة ملك فكري لأصحابها من المعلمين والمتفقدين والمؤسسات، ومتاحة مجاناً للاستخدام البيداغوجي غير التجاري.
+   - يُحظر إعادة بيع أو تجميع أي محتوى في مطبوعات تجارية مدفوعة دون إذن كتابي مسبق.
+   - سحب شارة «معتمد بيداغوجياً» تلقائياً عند قيام الناشر بتعديل أو استبدال الملف المرفق لحين إعادة مراجعته من المتفقد المختص.
+   - تطبيق سياسة الحذف الفوري (Takedown Policy) عند الإبلاغ عن أي انتهاك للملكية الفكرية.
+4. **نظام الثلاثيات المدرسية التونسية (SCHOOL_TRIMESTERS)**:
+   - دعم رسمي للثلاثيات الثلاثة: الثلاثي الأول، الثلاثي الثاني، الثلاثي الثالث.
+   - فلاتر سريعة بضغطة زر وقائمة منسدلة متزامنة مع الرابط في `FilterBar.tsx` (`?trimester=trimester-1`).
+   - ربط فلتر الثلاثي بمحرك البحث وقاعدة البيانات في `worksheet.service.ts` و `page.tsx`.
+   - أزرار الوسم السريع للثلاثي بضغطة زر واحدة في صفحة الرفع `/upload`.
+5. **مربع اسم المستخدم في الشريط العلوي (Navbar.tsx)**:
+   - إزالة النص الدال على نوع الحساب من جانب اسم المستخدم ليظهر الاسم كاملاً وواضحاً.
+   - الحفاظ التام على تمييز الألوان في إطار وخلفية مربع الاسم حسب الفئة:
+     - المشرف العام (`ADMIN`): بنفسجي ملكي (Purple).
+     - المسؤول الإداري (`MODERATOR`): نيلي (Indigo).
+     - المتفقد التربوي (`INSPECTOR`): ذهبي كهرماني (Amber).
+     - المؤسسة التربوية (`INSTITUTION`): أرجواني (Violet).
+     - المعلم (`TEACHER`): أزرق (Blue).
+     - التلميذ (`STUDENT`): أخضر زمردي (Emerald).
+6. **ترويسات الأمان الصارمة (HTTP Security Headers - A+ Rating)**:
+   - تطبيق ترويسات الأمان الصارمة في `next.config.ts`: `X-Frame-Options: SAMEORIGIN`، `X-Content-Type-Options: nosniff`، `Strict-Transport-Security`، `Permissions-Policy`، `Referrer-Policy`، `X-XSS-Protection`.
+   - السماح بمعاينة وثائق PDF والصور بأمان من سحابة Cloudflare R2 و Supabase دون حظر CORS أو Clickjacking.
+7. **سحابة التخزين المزدوجة (Cloudflare R2 10GB + Supabase Storage Fallback)**:
+   - الاعتماد الأساسي على Cloudflare R2 بسعة 10 جيجابايت مجانية مع بقاء Supabase Storage كخيار احتياطي فوري.
+8. **تطبيق الويب التقدمي (PWA)**:
+   - ملف مواصفات رسمي `src/app/manifest.ts` مع أيقونات 192 و 512 وبنر تثبيت ذكي `InstallPwaBanner.tsx`.
+9. **محركات البحث وأدوات الويب (SEO & Google Search Console)**:
+   - كود التحقق الرسمي لمحرك بحث جوجل في `src/app/layout.tsx`.
+   - خريطة موقع ديناميكية `src/app/sitemap.ts` وملف توجيه الروبوتات `src/app/robots.ts`.
+10. **خدمة البريد الإلكتروني (Resend)**:
+    - `src/services/email.service.ts` مع قوالب HTML ترحيبية وإشعارات الدعم والاعتماد البيداغوجي وتراجع آمن (Graceful Fallback).
+11. **هرم الإشراف الثلاثي وعزل الصلاحيات الصارم**:
+    - المشرف العام (`ADMIN`): قمة الهرم والتحكم الإداري الكامل والتبديل بين اللوحات.
+    - المسؤول الإداري (`MODERATOR`): محصور في `/moderator/dashboard`.
+    - المتفقد التربوي (`INSPECTOR`): محصور في `/inspector/dashboard`.
 
 ---
 
-## 🛠️ الأوامر الرسمية للتشغيل والترقية والتحقق (All Required CLI Commands)
+## 🛠️ أوامر التشغيل والترقية الرسمية (Official CLI Commands)
 
-- **1. استخراج جميع ملفات المشروع من وثيقة التسليم مباشرة:**
+- **1. تشغيل سكريبت ترقية الإصدار 15.0 الشامل:**
   ```bash
-  node scripts/extract-handover.mjs
+  node apply-musnad-v15-upgrade.mjs
   ```
-- **2. توليد وتنفيذ سكريبت الترقية الشامل دفعة واحدة:**
-  ```bash
-  node scripts/build-v9-upgrade-script.mjs
-  node apply-musnad-v12-upgrade.mjs
-  ```
-- **3. فحص الاتصال بقاعدة البيانات ومتغيرات البيئة (Supabase & PostgreSQL):**
-  ```bash
-  node scripts/verify-and-connect.mjs
-  ```
-- **4. مزامنة مخطط Prisma وتوليد العميل وبذر البيانات الأساسية:**
-  ```bash
-  npx prisma generate
-  npx prisma db push
-  npx prisma db seed
-  ```
-- **5. الفحص الصارم للأنواع (TypeScript) وبناء نسخة الإنتاج (Next.js 15 Build):**
+- **2. فحص سلامة الأنواع البرمجية (TypeScript Check):**
   ```bash
   npx tsc --noEmit
+  ```
+- **3. بناء نسخة الإنتاج الحية (Next.js Production Build):**
+  ```bash
   npm run build
   ```
-- **6. إعادة توليد وثيقة التسليم (تلقائياً تحت سقف 1 ميجابايت + مقسمة لجزأين):**
+- **4. تحديث وثائق التسليم تلقائياً:**
   ```bash
   node scripts/generate-handover.mjs
   ```
+- **5. الالتزام والمزامنة المباشرة مع GitHub و Vercel:**
+  ```bash
+  git add .
+  git commit -m "Update project handover documentation"
+  git push
+  ```
 
 ---
 
-## 📂 Complete Source Code (39 Files)
+## 📂 Complete Source Code (41 Files)
 
 ### File: `src/app/globals.css`
 
@@ -2597,6 +2617,185 @@ export default function InspectorBadge({
   }
 
   return null;
+}
+
+```
+
+---
+
+### File: `src/components/ui/InstallPwaBanner.tsx`
+
+```typescript
+"use client";
+
+import React, { useEffect, useState } from "react";
+import { Download, X, Smartphone, Share } from "lucide-react";
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+}
+
+export default function InstallPwaBanner() {
+  const [deferredPrompt, setDeferredPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const [isIos, setIsIos] = useState(false);
+  const [showIosGuide, setShowIosGuide] = useState(false);
+
+  useEffect(() => {
+    // Check if already in standalone mode (already installed as PWA)
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as any).standalone === true;
+
+    if (isStandalone) return;
+
+    // Check if user recently dismissed the banner (within 5 days)
+    const dismissedAt = localStorage.getItem("musnad_pwa_banner_dismissed");
+    if (dismissedAt) {
+      const fiveDaysMs = 5 * 24 * 60 * 60 * 1000;
+      if (Date.now() - Number(dismissedAt) < fiveDaysMs) {
+        return;
+      }
+    }
+
+    // Detect iOS
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    const isAppleIos =
+      /iphone|ipad|ipod/.test(userAgent) && !(window as any).MSStream;
+    setIsIos(isAppleIos);
+
+    // Handler for Android / Chromium browsers
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      setIsVisible(true);
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+
+    // Show for iOS users after a brief 3s delay on mobile screens
+    if (isAppleIos && window.innerWidth < 768) {
+      const timer = setTimeout(() => {
+        setIsVisible(true);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+
+    return () => {
+      window.removeEventListener(
+        "beforeinstallprompt",
+        handleBeforeInstallPrompt
+      );
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (isIos) {
+      setShowIosGuide(true);
+      return;
+    }
+
+    if (!deferredPrompt) return;
+
+    try {
+      await deferredPrompt.prompt();
+      const choice = await deferredPrompt.userChoice;
+      if (choice.outcome === "accepted") {
+        setIsVisible(false);
+      }
+      setDeferredPrompt(null);
+    } catch {
+      setIsVisible(false);
+    }
+  };
+
+  const handleDismiss = () => {
+    setIsVisible(false);
+    localStorage.setItem("musnad_pwa_banner_dismissed", String(Date.now()));
+  };
+
+  if (!isVisible) return null;
+
+  return (
+    <div
+      role="banner"
+      aria-label="تثبيت تطبيق المسند"
+      className="fixed bottom-4 inset-x-3 sm:inset-x-auto sm:end-6 sm:max-w-md z-50 animate-in fade-in slide-in-from-bottom-5 duration-300"
+    >
+      <div className="bg-slate-900/95 dark:bg-slate-900/95 backdrop-blur-md text-white p-4 rounded-2xl shadow-2xl border border-blue-500/30 flex flex-col gap-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 bg-gradient-to-tr from-blue-700 to-blue-500 rounded-xl flex items-center justify-center font-black text-xl text-white shadow-md shadow-blue-500/20 shrink-0">
+              م
+            </div>
+            <div>
+              <h4 className="font-extrabold text-sm text-white flex items-center gap-1.5">
+                <span>تطبيق منصة المسند</span>
+                <span className="text-[10px] bg-blue-500/20 text-blue-300 font-bold px-1.5 py-0.5 rounded-full border border-blue-500/30">
+                  PWA
+                </span>
+              </h4>
+              <p className="text-xs text-slate-300 mt-0.5">
+                ثبّت التطبيق على هاتفك لتصفح أسرع والوصول المباشر للوثائق
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleDismiss}
+            aria-label="إغلاق التنبيه"
+            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition shrink-0"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {showIosGuide && (
+          <div className="bg-slate-800/80 p-3 rounded-xl text-xs text-blue-200 border border-blue-500/20 space-y-1.5 animate-in fade-in">
+            <p className="font-bold flex items-center gap-1.5 text-white">
+              <Share className="w-3.5 h-3.5 text-blue-400" />
+              <span>خطوات التثبيت على iPhone:</span>
+            </p>
+            <p className="text-[11px] leading-relaxed text-slate-300">
+              1. اضغط على زر المشاركة (Share) في أسفل متصفح Safari.
+              <br />
+              2. انزل للأسفل واختر <strong>«إضافة إلى الشاشة الرئيسية»</strong> (Add to Home Screen).
+            </p>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 pt-1">
+          <button
+            type="button"
+            onClick={handleInstallClick}
+            className="flex-1 py-2.5 px-4 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-extrabold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-md shadow-blue-600/30 cursor-pointer"
+          >
+            {isIos ? (
+              <>
+                <Smartphone className="w-4 h-4" />
+                <span>طريقة التثبيت على iPhone</span>
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4" />
+                <span>تثبيت التطبيق الآن</span>
+              </>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={handleDismiss}
+            className="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl transition cursor-pointer"
+          >
+            لاحقاً
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 ```
@@ -7045,6 +7244,225 @@ export default async function HomePage(props: HomePageProps) {
       {/* 4. قسم من نحن + دليل فئات المشتركين والميزات + الأسئلة الشائعة        */}
       {/* =================================================================== */}
       <PlatformIdentityAndFaqSection />
+    </div>
+  );
+}
+
+```
+
+---
+
+### File: `src/app/(main)/terms/page.tsx`
+
+```typescript
+import React from "react";
+import type { Metadata } from "next";
+import Link from "next/link";
+import {
+  ShieldCheck,
+  FileCheck2,
+  Scale,
+  Lock,
+  AlertTriangle,
+  BookOpen,
+  ArrowRight,
+  Headphones,
+  CheckCircle2,
+  Sparkles,
+  FileText,
+} from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "شروط الاستخدام وميثاق الملكية الفكرية | منصة المسند",
+  description:
+    "ميثاق شروط الاستخدام وحماية حقوق المؤلف والملكية الفكرية للمربين والمؤسسات في منصة المسند التربوية بالجمهورية التونسية.",
+  alternates: {
+    canonical: "https://al-musnad.vercel.app/terms",
+  },
+};
+
+export default function TermsAndIpPolicyPage() {
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 py-12 px-4 sm:px-6 lg:px-8" dir="rtl">
+      <div className="max-w-4xl mx-auto space-y-10">
+        {/* Navigation Breadcrumb */}
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+          <Link href="/" className="hover:text-blue-600 transition flex items-center gap-1">
+            <ArrowRight className="w-3.5 h-3.5" />
+            <span>الرئيسية</span>
+          </Link>
+          <span>/</span>
+          <span className="text-slate-800 dark:text-slate-200">شروط الاستخدام والملكية الفكرية</span>
+        </div>
+
+        {/* Hero Header */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-700 via-indigo-800 to-slate-900 p-8 sm:p-12 text-white shadow-xl">
+          <div className="relative z-10 space-y-4 max-w-2xl">
+            <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-blue-200 text-xs font-bold border border-white/15">
+              <ShieldCheck className="w-4 h-4 text-amber-300" />
+              <span>ميثاق قانوني وبيداغوجي ملزم — الإصدار 15.0</span>
+            </span>
+            <h1 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight">
+              شروط الاستخدام وميثاق الملكية الفكرية وحماية المؤلف
+            </h1>
+            <p className="text-sm sm:text-base text-blue-100 leading-relaxed">
+              الإطار التنظيمي والأخلاقي لمنصة «المسند» لضمان حقوق السادة المربين والمتفقدين والمؤسسات وحماية أمان البيانات والمحتوى البيداغوجي الموجه لأبنائنا التلاميذ.
+            </p>
+            <div className="pt-2 flex items-center gap-4 text-xs text-blue-200">
+              <span>تاريخ آخر تحيين: أكتوبر 2026</span>
+              <span>•</span>
+              <span>الجمهورية التونسية</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 1: Intellectual Property & Author Rights */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
+          <div className="flex items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-800">
+            <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+              <Scale className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
+                1. إشعار حقوق الملكية الفكرية وحقوق المؤلف
+              </h2>
+              <p className="text-xs text-slate-500">حماية إنتاج المربين المعلمين والمتفقدين والمؤسسات التربوية</p>
+            </div>
+          </div>
+
+          <div className="space-y-3 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+            <p>
+              تؤكد منصة <strong>«المسند»</strong> أن جميع الجذاذات البيداغوجية، مذكرات الدروس، التمارين، أوراق العمل، الفروض، الامتحانات، والتوزيعات المنشورة في المنصة تظل ملكاً فكرياً وأدبياً حصرياً لأصحابها ومؤلفيها من السادة <strong>المعلمين والمتفقدين التربويين والمؤسسات التربوية</strong>.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+              <div className="p-4 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 space-y-1.5">
+                <div className="flex items-center gap-2 font-bold text-emerald-800 dark:text-emerald-300 text-xs">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  <span>الاستخدام البيداغوجي المسموح به:</span>
+                </div>
+                <p className="text-xs text-emerald-900/90 dark:text-emerald-300/90 leading-relaxed">
+                  يُتاح تحميل ومعاينة وطباعة كافة الوثائق مجاناً لغايات التدريس داخل الأقسام التعليمية والدعم والمراجعة المنزلية للتلاميذ وأوليائهم دون أي رسوم.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 space-y-1.5">
+                <div className="flex items-center gap-2 font-bold text-rose-800 dark:text-rose-300 text-xs">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>الحظر التجاري الصارم:</span>
+                </div>
+                <p className="text-xs text-rose-900/90 dark:text-rose-300/90 leading-relaxed">
+                  يُحظر حظراً تاماً وقانونياً نسخ أو إعادة تجميع أو بيع محتويات المنصة في مطبوعات ورقية أو كراسات أو منصات مدفوعة الأجر بهدف تحقيق ربح مادي دون إذن كتابي موثق ومسبق من صاحب العمل.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 2: Disclaimer & Institutional Independence */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
+          <div className="flex items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-800">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+              <BookOpen className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
+                2. إخلاء المسؤولية والاستقلالية البيداغوجية
+              </h2>
+              <p className="text-xs text-slate-500">التوافق مع البرامج الرسمية التونسية</p>
+            </div>
+          </div>
+
+          <div className="space-y-3 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+            <p>
+              منصة <strong>«المسند»</strong> هي مبادرة تربوية رقمية مستقلة تهدف إلى تعزيز المحتوى التربوي التونسي وتيسير المبادلات البيداغوجية والإدارية بين مختلف أطراف العملية التعليمية (المؤسسات، المتفقدون، المعلمون، والتلاميذ).
+            </p>
+            <p className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
+              📌 <strong>التوافق مع البرامج الرسمية:</strong> نحرص في كافة المستويات الدراسية الستة والمواد التعليمية على الالتزام الكامل بالمناهج والبرامج الرسمية المقررة من وزارة التربية بالجمهورية التونسية، مع التأكيد على أن المنصة فضاء تعاوني رقمي حر وليست إدارة رسمية تابعة للوزارة.
+            </p>
+          </div>
+        </div>
+
+        {/* Section 3: Publishing Charter & Takedown Policy */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
+          <div className="flex items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-800">
+            <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+              <FileCheck2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
+                3. ميثاق النشر وآلية الإبلاغ والحذف الفوري
+              </h2>
+              <p className="text-xs text-slate-500">ضوابط الاعتماد وسحب الشارات والبلاغات</p>
+            </div>
+          </div>
+
+          <div className="space-y-3 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+            <ul className="space-y-2.5">
+              <li className="flex items-start gap-2.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-2 shrink-0" />
+                <span>
+                  <strong>معايير جودة المحتوى:</strong> يلتزم كل ناشر بعدم تحميل أي ملفات مسيئة أو منتهكة للآداب العامة، أو ذات أبعاد تجارية بحتة لا علاقة لها بالعمل التربوي.
+                </span>
+              </li>
+              <li className="flex items-start gap-2.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-2 shrink-0" />
+                <span>
+                  <strong>سحب شارة الاعتماد التلقائي:</strong> عند قيام الناشر بتعديل أو استبدال الملف المرفق في أي وثيقة حاصلة على شارة <em>«معتمد بيداغوجياً»</em>، يقوم النظام تلقائياً بسحب الشارة مؤقتاً لحين إعادة مراجعة الملف وتدقيقه من قبل المتفقد التربوي المختص لضمان سلامة المحتوى المحدث.
+                </span>
+              </li>
+              <li className="flex items-start gap-2.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-2 shrink-0" />
+                <span>
+                  <strong>آلية الإبلاغ والحذف الفوري (Takedown Policy):</strong> تلتزم إدارة المنصة بحجب وحذف أي وثيقة يتبين وجود تعدٍّ فيها على حقوق مؤلف أو ناشر آخر فور إخطارنا بذلك، مع إمكانية اتخاذ تدابير انضباطية تشمل تعليق الحساب المخالف.
+                </span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Section 4: Data Protection & Privacy */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
+          <div className="flex items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-800">
+            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <Lock className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
+                4. حماية المعطيات الشخصية والخصوصية
+              </h2>
+              <p className="text-xs text-slate-500">حماية بيانات المستخدمين طبقاً للتشريع التونسي</p>
+            </div>
+          </div>
+
+          <div className="space-y-3 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+            <p>
+              تولي منصة «المسند» أهمية قصوى لحماية سرية وأمان البيانات الشخصية للمربين والمتفقدين والمؤسسات والتلاميذ طبقاً لمقتضيات التشريع التونسي المتعلق بحماية المعطيات الشخصية.
+            </p>
+            <p>
+              لا نقوم ببيع أو مشاركة عناوين البريد الإلكتروني أو أرقام الهواتف أو البيانات الحساسة مع أي أطراف ثالثة أو شركات إعلانية، وتُستخدم بيانات الحساب حصرياً لأغراض التوثيق وتسهيل التواصل البيداغوجي وتأمين الدخول.
+            </p>
+          </div>
+        </div>
+
+        {/* Contact Support & Infringement Reporting Callout */}
+        <div className="p-6 rounded-3xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-blue-950/50 border border-blue-200 dark:border-blue-900 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="space-y-1 text-center sm:text-start">
+            <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
+              هل لديك استفسار أو ترغب في الإبلاغ عن انتهاك للملكية؟
+            </h3>
+            <p className="text-xs text-slate-600 dark:text-slate-400">
+              فريق الدعم الفني والمشرف العام جاهزون لمعالجة كافة الطلبات والبلاغات على مدار الساعة.
+            </p>
+          </div>
+          <Link
+            href="/support"
+            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm inline-flex items-center gap-2 shadow-sm transition shrink-0"
+          >
+            <Headphones className="w-4 h-4" />
+            <span>التواصل مع الدعم الفني</span>
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }
@@ -15162,4 +15580,4 @@ export default function AdminDashboardPage() {
 
 ---
 
-*نهاية الجزء الثاني (Part 2/2) — اكتملت جميع ملفات المشروع — Total included files: 39.*
+*نهاية الجزء الثاني (Part 2/2) — اكتملت جميع ملفات المشروع — Total included files: 41.*
