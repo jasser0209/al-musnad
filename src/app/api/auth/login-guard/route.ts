@@ -50,6 +50,22 @@ export async function POST(request: NextRequest) {
     const isUsername = !rawIdentifier.includes("@") || rawIdentifier.startsWith("@");
     const cleanUsername = rawIdentifier.replace(/^@/, "");
 
+    const isProduction = process.env.NODE_ENV === "production";
+    const isDemoAccount =
+      rawIdentifier.endsWith("@musnad.tn") ||
+      ["admin", "moderator", "inspector", "institution", "teacher", "student"].includes(cleanUsername);
+
+    if (isProduction && isDemoAccount) {
+      return successResponse({
+        exists: false,
+        resolvedEmail: isUsername ? null : rawIdentifier,
+        isLocked: false,
+        failedAttempts: 0,
+        remainingAttempts: MAX_LOGIN_PASSWORD_ATTEMPTS,
+        isDemoDisabled: true,
+      });
+    }
+
     const user = await db.user.findFirst({
       where: isUsername
         ? { username: { equals: cleanUsername, mode: "insensitive" } }

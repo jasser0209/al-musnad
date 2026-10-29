@@ -96,12 +96,38 @@ function LoginContent() {
 
     const emailToUse = overrideEmail || email;
     const passwordToUse = overridePassword || password;
-    const roleToUse = overrideRole || selectedRole || "TEACHER";
+    const rawInput = emailToUse.trim().toLowerCase();
+
+    // In production, restrict demo accounts (@musnad.tn) strictly to development environment
+    const isProduction = process.env.NODE_ENV === "production";
+    const isMusnadDemo =
+      rawInput.endsWith("@musnad.tn") ||
+      ["admin", "moderator", "inspector", "institution", "teacher", "student"].includes(
+        rawInput.replace(/^@/, "")
+      );
+
+    if (isProduction && isMusnadDemo) {
+      setError(
+        "حسابات التجربة (@musnad.tn) محصورة في بيئة التطوير المحلية فقط، وليست متاحة في بيئة الإنتاج."
+      );
+      return;
+    }
+
+    const isPrimaryAdmin =
+      rawInput === "bjasser123@gmail.com" ||
+      rawInput === "@bjasser" ||
+      rawInput === "bjasser";
+
+    const roleToUse = isPrimaryAdmin
+      ? "ADMIN"
+      : overrideRole || selectedRole || "TEACHER";
 
     const parsed = signInSchema.safeParse({
       email: emailToUse,
       password: passwordToUse,
-      role: roleToUse,
+      role: ["INSTITUTION", "INSPECTOR", "TEACHER", "STUDENT"].includes(roleToUse)
+        ? (roleToUse as any)
+        : undefined,
     });
 
     if (!parsed.success) {

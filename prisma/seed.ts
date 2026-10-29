@@ -26,17 +26,31 @@ const supabase = createClient(supabaseUrl, serviceRoleKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-const DEMO_ACCOUNTS = [
-  {
-    email: "bjasser123@gmail.com",
-    username: "bjasser",
-    password: "Jasserbes1M",
-    name: "Jasser (المشرف العام)",
-    role: Role.ADMIN,
-    bio: "حساب المشرف العام الأساسي لمنصة المسند — إدارة النظام وصلاحيات الهرم الرقابي.",
-    isVerified: true,
-    school: "الإدارة العامة لمنصة المسند",
-  },
+interface SeedAccount {
+  email: string;
+  username: string;
+  password: string;
+  name: string;
+  role: Role;
+  bio?: string;
+  isVerified: boolean;
+  school?: string;
+  studentGrade?: string;
+  inspectorCode?: string;
+}
+
+const PRIMARY_ADMIN: SeedAccount = {
+  email: "bjasser123@gmail.com",
+  username: "bjasser",
+  password: "Jasserbes1M",
+  name: "Jasser (المشرف العام)",
+  role: Role.ADMIN,
+  bio: "حساب المشرف العام الأساسي لمنصة المسند — إدارة النظام وصلاحيات الهرم الرقابي.",
+  isVerified: true,
+  school: "الإدارة العامة لمنصة المسند",
+};
+
+const DEV_DEMO_ACCOUNTS: SeedAccount[] = [
   {
     email: "admin@musnad.tn",
     username: "admin",
@@ -173,13 +187,19 @@ async function main() {
   }
   console.log(`  ✅ ${categories.length} categories/sub-divisions seeded`);
 
-  // Seed 6 Demo Accounts
-  console.log("🌱 Seeding the 6 Demo Accounts for all user roles...");
+  // Seed Accounts (Primary Admin is always seeded, Demo accounts only in development)
+  const isProduction = process.env.NODE_ENV === "production";
+  const accountsToSeed = [
+    PRIMARY_ADMIN,
+    ...(isProduction ? [] : DEV_DEMO_ACCOUNTS),
+  ];
+
+  console.log(`🌱 Seeding accounts (${accountsToSeed.length} accounts, Environment isProduction: ${isProduction})...`);
   try {
     const { data: listData } = await supabase.auth.admin.listUsers({ page: 1, perPage: 100 });
     const authUsers = listData?.users || [];
 
-    for (const acc of DEMO_ACCOUNTS) {
+    for (const acc of accountsToSeed) {
       let authUser = authUsers.find((u) => u.email?.toLowerCase() === acc.email.toLowerCase());
 
       if (authUser) {
@@ -235,7 +255,7 @@ async function main() {
     }
   } catch (authErr) {
     console.warn("⚠️ Could not contact Supabase Admin API, seeding directly to Prisma:", authErr);
-    for (const acc of DEMO_ACCOUNTS) {
+    for (const acc of accountsToSeed) {
       await prisma.user.upsert({
         where: { email: acc.email },
         update: {
