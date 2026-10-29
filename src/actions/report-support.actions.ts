@@ -18,6 +18,7 @@ import {
   SupportTicketStatus,
   Role,
 } from "@prisma/client";
+import { sendSupportReplyNotification } from "@/services/email.service";
 
 export interface SubmitReportInput {
   targetType: "WORKSHEET" | "USER";
@@ -186,6 +187,15 @@ export async function replySupportTicketAdminAction(
         link: "/support",
       },
     });
+  }
+
+  if (ticket.email) {
+    void sendSupportReplyNotification(
+      ticket.email,
+      ticket.name,
+      ticket.subject,
+      replyText.trim()
+    ).catch(() => null);
   }
 
   revalidatePath("/admin/dashboard");

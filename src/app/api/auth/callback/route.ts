@@ -13,6 +13,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
 import { Role } from "@prisma/client";
 import { MAX_LOGIN_PASSWORD_ATTEMPTS } from "@/config/constants";
+import { sendWelcomeEmail } from "@/services/email.service";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -97,6 +98,23 @@ export async function GET(request: Request) {
               lastSeenAt: new Date(),
             },
           });
+
+          // Send welcome email gracefully (non-blocking)
+          const roleTitles: Record<string, string> = {
+            TEACHER: "معلم",
+            INSTITUTION: "مؤسسة تربوية",
+            STUDENT: "تلميذ",
+            INSPECTOR: "متفقد تربوي",
+          };
+          const userName =
+            (authUser.user_metadata?.full_name as string) ||
+            (authUser.user_metadata?.name as string) ||
+            safeUsername;
+          void sendWelcomeEmail(
+            authUser.email,
+            userName,
+            roleTitles[assignedRole] || assignedRole
+          ).catch(() => null);
         }
       } catch {
         // Proceed even if DB sync encountered a transient issue

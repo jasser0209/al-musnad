@@ -19,6 +19,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { deleteFile } from "@/services/storage.service";
 import { dispatchMentionNotifications } from "@/services/review.service";
 import { logPlatformActivity } from "@/services/audit.service";
+import { sendSupportReplyNotification } from "@/services/email.service";
 import {
   UnauthorizedError,
   ForbiddenError,
@@ -341,6 +342,15 @@ export async function replySupportTicketModeratorAction(
         link: "/support",
       },
     });
+  }
+
+  if (ticket.email) {
+    void sendSupportReplyNotification(
+      ticket.email,
+      ticket.name,
+      ticket.subject,
+      replyText.trim()
+    ).catch(() => null);
   }
 
   await dispatchMentionNotifications(

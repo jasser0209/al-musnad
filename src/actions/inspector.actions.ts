@@ -25,6 +25,7 @@ import { Role, ReportTargetType, WorksheetStatus } from "@prisma/client";
 import { upsertWorksheetReview } from "@/services/review.service";
 import { logPlatformActivity } from "@/services/audit.service";
 import { checkRateLimit } from "@/lib/security/rate-limit";
+import { sendEndorsementNotification } from "@/services/email.service";
 
 async function requireInspectorOrAdmin() {
   const supabase = await createSupabaseServerClient();
@@ -537,6 +538,11 @@ export async function toggleWorksheetEndorsementAction(worksheetId: string) {
   });
 
   if (nextEndorsed && worksheet.uploadedBy !== actor.id) {
+    const teacher = await db.user.findUnique({
+      where: { id: worksheet.uploadedBy },
+      select: { email: true, name: true },
+    });
+
     await db.notification.create({
       data: {
         userId: worksheet.uploadedBy,
@@ -547,6 +553,14 @@ export async function toggleWorksheetEndorsementAction(worksheetId: string) {
         link: `/worksheet/${worksheet.id}`,
       },
     });
+
+    if (teacher?.email) {
+      void sendEndorsementNotification(
+        teacher.email,
+        teacher.name,
+        worksheet.titleAr || worksheet.title
+      ).catch(() => null);
+    }
   }
 
   await logPlatformActivity({
