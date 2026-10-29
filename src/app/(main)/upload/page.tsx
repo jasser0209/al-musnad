@@ -31,6 +31,7 @@ import {
   Briefcase,
   BookOpen,
   Sparkles,
+  Calendar,
 } from "lucide-react";
 import {
   MAX_FILE_SIZE_BYTES,
@@ -41,6 +42,7 @@ import {
   CURRICULUM_SUBJECTS,
   SUBJECT_SUBDIVISIONS,
   ADMINISTRATIVE_CATEGORY,
+  SCHOOL_TRIMESTERS,
 } from "@/config/constants";
 import { extractPdfThumbnailAndPages } from "@/lib/utils/pdf-thumbnail";
 import type {
@@ -90,6 +92,26 @@ export default function UploadWorksheetPage() {
   const [audience, setAudience] = useState<TargetAudience>("ALL");
   const [tagInput, setTagInput] = useState<string>("");
   const [tags, setTags] = useState<string[]>([]);
+  const [selectedTrimester, setSelectedTrimester] = useState<string>("");
+
+  function handleToggleTrimester(trimesterTag: string) {
+    if (selectedTrimester === trimesterTag) {
+      setSelectedTrimester("");
+      setTags((prev) =>
+        prev.filter(
+          (t) => !SCHOOL_TRIMESTERS.some((st) => st.tag === t)
+        )
+      );
+    } else {
+      setSelectedTrimester(trimesterTag);
+      setTags((prev) => {
+        const withoutTrimesters = prev.filter(
+          (t) => !SCHOOL_TRIMESTERS.some((st) => st.tag === t)
+        );
+        return [...withoutTrimesters, trimesterTag];
+      });
+    }
+  }
 
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -667,6 +689,52 @@ export default function UploadWorksheetPage() {
             </div>
           )}
 
+          {/* Quick Trimester Selection Buttons (الثلاثيات المدرسية التونسية) */}
+          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
+                <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <span>وسم الثلاثي المدرسي (اختيار سريع بضغطة زر)</span>
+              </label>
+              {(selectedTrimester || tags.some((t) => SCHOOL_TRIMESTERS.some((st) => st.tag === t))) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedTrimester("");
+                    setTags((prev) =>
+                      prev.filter((t) => !SCHOOL_TRIMESTERS.some((st) => st.tag === t))
+                    );
+                  }}
+                  className="text-[11px] font-bold text-rose-600 hover:underline cursor-pointer"
+                >
+                  إلغاء وسم الثلاثي ✕
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              اختر الثلاثي لوسم الملف بيداغوجياً وتيسير عثور المعلمين والتلاميذ عليه في الفلترة والبحث:
+            </p>
+            <div className="grid grid-cols-3 gap-2 pt-1">
+              {SCHOOL_TRIMESTERS.map((trim) => {
+                const isSelected = selectedTrimester === trim.tag || tags.includes(trim.tag);
+                return (
+                  <button
+                    key={trim.id}
+                    type="button"
+                    onClick={() => handleToggleTrimester(trim.tag)}
+                    className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold border-2 transition-all cursor-pointer text-center ${
+                      isSelected
+                        ? "bg-blue-600 text-white border-blue-600 shadow-sm ring-2 ring-blue-600/20"
+                        : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-blue-400"
+                    }`}
+                  >
+                    {trim.nameAr}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Target Audience Control */}
           <div className="p-4 rounded-2xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 space-y-2">
             <label className="flex items-center gap-2 text-sm font-bold text-blue-950 dark:text-blue-200">
@@ -747,7 +815,10 @@ export default function UploadWorksheetPage() {
                     {t}
                     <button
                       type="button"
-                      onClick={() => setTags(tags.filter((item) => item !== t))}
+                      onClick={() => {
+                        if (t === selectedTrimester) setSelectedTrimester("");
+                        setTags(tags.filter((item) => item !== t));
+                      }}
                       className="hover:text-red-600"
                     >
                       <X className="w-3.5 h-3.5" />

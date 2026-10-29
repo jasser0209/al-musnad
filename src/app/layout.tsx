@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Cairo } from "next/font/google";
 import Link from "next/link";
-import { Headphones, ShieldCheck, BookOpen, Briefcase } from "lucide-react";
+import { Headphones, ShieldCheck, BookOpen, Briefcase, FileCheck2 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import AuthRoleModal from "@/components/auth/AuthRoleModal";
 import InstallPwaBanner from "@/components/ui/InstallPwaBanner";
@@ -174,15 +174,27 @@ export default function RootLayout({
                         <span>قسم توثيق الهوية</span>
                       </Link>
                     </li>
+                    <li>
+                      <Link href="/terms" className="hover:text-blue-600 transition inline-flex items-center gap-1.5">
+                        <FileCheck2 className="w-3.5 h-3.5" />
+                        <span>شروط الاستخدام والملكية</span>
+                      </Link>
+                    </li>
                   </ul>
                 </div>
               </div>
 
               <div className="pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-3">
                 <p>© {new Date().getFullYear()} منصة المسند التربوية. جميع الحقوق محفوظة.</p>
-                <Link href="/support" className="hover:text-blue-600 font-semibold transition">
-                  الدعم الفني وخدمة العملاء
-                </Link>
+                <div className="flex items-center gap-4">
+                  <Link href="/terms" className="hover:text-blue-600 font-semibold transition">
+                    شروط الاستخدام والملكية
+                  </Link>
+                  <span>•</span>
+                  <Link href="/support" className="hover:text-blue-600 font-semibold transition">
+                    الدعم الفني وخدمة العملاء
+                  </Link>
+                </div>
               </div>
             </div>
           </footer>

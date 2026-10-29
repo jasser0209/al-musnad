@@ -330,7 +330,7 @@ export async function listWorksheets(
 ) {
   await ensureOfficialTaxonomySeeded();
   const isGuest = !viewerRole || !viewerUserId;
-  const { page, limit, search, grade, subject, category, audience, tags, sort } =
+  const { page, limit, search, grade, subject, category, trimester, audience, tags, sort } =
     filters;
   const {
     skip,
@@ -349,6 +349,63 @@ export async function listWorksheets(
   if (grade) andConditions.push({ grade: { slug: grade } });
   if (subject) andConditions.push({ subject: { slug: subject } });
   if (category) andConditions.push({ category: { slug: category } });
+
+  // School Trimester Filtering (الثلاثي المدرسي)
+  if (trimester && trimester.trim().length > 0) {
+    const rawVal = trimester.trim().toLowerCase();
+    let trimesterTerms: string[] = [];
+    if (
+      rawVal === "trimester-1" ||
+      rawVal === "1" ||
+      rawVal.includes("أول") ||
+      rawVal.includes("اول")
+    ) {
+      trimesterTerms = [
+        "الثلاثي الأول",
+        "الثلاثي الاول",
+        "الثلاثي 1",
+        "trimester-1",
+        "Trimestre 1",
+      ];
+    } else if (
+      rawVal === "trimester-2" ||
+      rawVal === "2" ||
+      rawVal.includes("ثاني")
+    ) {
+      trimesterTerms = [
+        "الثلاثي الثاني",
+        "الثلاثي 2",
+        "trimester-2",
+        "Trimestre 2",
+      ];
+    } else if (
+      rawVal === "trimester-3" ||
+      rawVal === "3" ||
+      rawVal.includes("ثالث")
+    ) {
+      trimesterTerms = [
+        "الثلاثي الثالث",
+        "الثلاثي 3",
+        "trimester-3",
+        "Trimestre 3",
+      ];
+    } else {
+      trimesterTerms = [trimester.trim()];
+    }
+
+    andConditions.push({
+      OR: [
+        { tags: { hasSome: trimesterTerms } },
+        ...trimesterTerms.flatMap((term) => [
+          { title: { contains: term, mode: "insensitive" as const } },
+          { titleAr: { contains: term, mode: "insensitive" as const } },
+          { description: { contains: term, mode: "insensitive" as const } },
+          { descriptionAr: { contains: term, mode: "insensitive" as const } },
+        ]),
+      ],
+    });
+  }
+
   if (audience && !isGuest) andConditions.push({ audience });
   if (tags && tags.length > 0) andConditions.push({ tags: { hasSome: tags } });
 

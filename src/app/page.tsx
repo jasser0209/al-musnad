@@ -85,7 +85,7 @@ const DEMO_WORKSHEETS = [
     favoriteCount: 75,
     ratingAvg: 4.9,
     reviewCount: 14,
-    tags: ["فرنسية", "درس"],
+    tags: ["فرنسية", "درس", "الثلاثي الأول"],
     createdAt: new Date("2026-10-28"),
     updatedAt: new Date("2026-10-28"),
     gradeId: "g1",
@@ -123,7 +123,7 @@ const DEMO_WORKSHEETS = [
     favoriteCount: 52,
     ratingAvg: 4.9,
     reviewCount: 11,
-    tags: ["مؤسسات", "مشروع مؤسسة"],
+    tags: ["مؤسسات", "مشروع مؤسسة", "الثلاثي الأول"],
     createdAt: new Date("2026-10-27"),
     updatedAt: new Date("2026-10-27"),
     gradeId: "g1",
@@ -161,7 +161,7 @@ const DEMO_WORKSHEETS = [
     favoriteCount: 64,
     ratingAvg: 5.0,
     reviewCount: 15,
-    tags: ["فرنسية", "جذاذات", "إصلاح"],
+    tags: ["فرنسية", "جذاذات", "إصلاح", "الثلاثي الثاني"],
     createdAt: new Date("2026-10-27"),
     updatedAt: new Date("2026-10-27"),
     gradeId: "g1",
@@ -199,7 +199,7 @@ const DEMO_WORKSHEETS = [
     favoriteCount: 95,
     ratingAvg: 4.9,
     reviewCount: 22,
-    tags: ["وثائق إدارية", "جداول الأوقات", "مذكرات ومراسلات"],
+    tags: ["وثائق إدارية", "جداول الأوقات", "مذكرات ومراسلات", "الثلاثي الثالث"],
     createdAt: new Date("2026-10-26"),
     updatedAt: new Date("2026-10-26"),
     gradeId: "g1",
@@ -244,6 +244,10 @@ export default async function HomePage(props: HomePageProps) {
   const category =
     typeof resolvedParams.category === "string"
       ? resolvedParams.category
+      : undefined;
+  const trimester =
+    typeof resolvedParams.trimester === "string"
+      ? resolvedParams.trimester
       : undefined;
   const sort = (
     typeof resolvedParams.sort === "string" ? resolvedParams.sort : "newest"
@@ -317,6 +321,7 @@ export default async function HomePage(props: HomePageProps) {
           grade,
           subject,
           category,
+          trimester,
           sort,
         },
         viewerRole,
@@ -341,11 +346,29 @@ export default async function HomePage(props: HomePageProps) {
     meta = fetchedCatalog.meta;
   } catch {
     isDbConnected = false;
-    const visibleDemo = isAuthenticated
+    let visibleDemo = isAuthenticated
       ? DEMO_WORKSHEETS.filter((w) =>
           canUserAccessWorksheet(w, viewerRole, viewerUserId)
         )
       : DEMO_WORKSHEETS.filter((w) => w.audience === "ALL");
+
+    if (trimester) {
+      const rawTrim = trimester.toLowerCase();
+      const targetTerm =
+        rawTrim === "trimester-1" || rawTrim.includes("أول") || rawTrim.includes("اول")
+          ? "الثلاثي الأول"
+          : rawTrim === "trimester-2" || rawTrim.includes("ثاني")
+          ? "الثلاثي الثاني"
+          : rawTrim === "trimester-3" || rawTrim.includes("ثالث")
+          ? "الثلاثي الثالث"
+          : trimester;
+      visibleDemo = visibleDemo.filter(
+        (w) =>
+          w.tags.includes(targetTerm) ||
+          w.title.includes(targetTerm) ||
+          (w.titleAr && w.titleAr.includes(targetTerm))
+      );
+    }
 
     worksheets = visibleDemo;
     explorerWorksheets = visibleDemo;

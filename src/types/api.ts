@@ -252,3 +252,13 @@ export interface AuditLogItem {
   ipAddress: string | null;
   createdAt: string | Date;
 }
+
+export interface SchoolTrimester {
+  id: string;
+  name: string;
+  nameAr: string;
+  slug: string;
+  tag: string;
+  sortOrder: number;
+}
+

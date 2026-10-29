@@ -225,13 +225,15 @@ html.dark ::-webkit-scrollbar-thumb:hover {
 ### File: `src/app/layout.tsx`
 
 ```typescript
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Cairo } from "next/font/google";
 import Link from "next/link";
-import { Headphones, ShieldCheck, BookOpen, Briefcase } from "lucide-react";
+import { Headphones, ShieldCheck, BookOpen, Briefcase, FileCheck2 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import AuthRoleModal from "@/components/auth/AuthRoleModal";
+import InstallPwaBanner from "@/components/ui/InstallPwaBanner";
 import { AppPreferencesProvider } from "@/context/AppPreferencesContext";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 const cairo = Cairo({
@@ -241,7 +243,15 @@ const cairo = Cairo({
   display: "swap",
 });
 
+export const viewport: Viewport = {
+  themeColor: "#2563eb",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export const metadata: Metadata = {
+  metadataBase: new URL("https://al-musnad.vercel.app"),
   title: "المسند | المنصة التربوية والبيداغوجية المعتمدة",
   description:
     "منصة المسند التربوية والبيداغوجية المعتمدة للمؤسسات، المتفقدين، المعلمين، والتلاميذ لتصفح المستويات والمواد والوثائق الإدارية والنشرات التربوية.",
@@ -254,6 +264,29 @@ export const metadata: Metadata = {
     "امتحانات",
     "وثائق إدارية للمعلم",
   ],
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "المسند",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
+  verification: {
+    google: "cjjaOITGWrgejk9JVO2ns7HzP55iAtkWdTfmwvYFuCo",
+  },
+  alternates: {
+    canonical: "https://al-musnad.vercel.app",
+  },
 };
 
 export default function RootLayout({
@@ -273,6 +306,12 @@ export default function RootLayout({
 
           {/* Main Content Area */}
           <main className="flex-1">{children}</main>
+
+          {/* Vercel Speed Insights */}
+          <SpeedInsights />
+
+          {/* Smart PWA Install Banner */}
+          <InstallPwaBanner />
 
           {/* Global Bottom Footer with Technical Support & Customer Service at the bottom of the page */}
           <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 pt-12 pb-8 mt-16">
@@ -362,15 +401,27 @@ export default function RootLayout({
                         <span>قسم توثيق الهوية</span>
                       </Link>
                     </li>
+                    <li>
+                      <Link href="/terms" className="hover:text-blue-600 transition inline-flex items-center gap-1.5">
+                        <FileCheck2 className="w-3.5 h-3.5" />
+                        <span>شروط الاستخدام والملكية</span>
+                      </Link>
+                    </li>
                   </ul>
                 </div>
               </div>
 
               <div className="pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-3">
                 <p>© {new Date().getFullYear()} منصة المسند التربوية. جميع الحقوق محفوظة.</p>
-                <Link href="/support" className="hover:text-blue-600 font-semibold transition">
-                  الدعم الفني وخدمة العملاء
-                </Link>
+                <div className="flex items-center gap-4">
+                  <Link href="/terms" className="hover:text-blue-600 font-semibold transition">
+                    شروط الاستخدام والملكية
+                  </Link>
+                  <span>•</span>
+                  <Link href="/support" className="hover:text-blue-600 font-semibold transition">
+                    الدعم الفني وخدمة العملاء
+                  </Link>
+                </div>
               </div>
             </div>
           </footer>
@@ -4050,16 +4101,18 @@ export default function ArchivedSubscriptionsPlans(
 "use client";
 
 /**
- * Filter & Search Bar Component — Al-Musnad (المسند) v7.0
+ * Filter & Search Bar Component — Al-Musnad (المسند) v15.0
  *
  * Provides responsive multi-dimensional faceted filtering:
- * text search, grade level, subject, activity category, and sorting.
+ * text search, grade level, subject, activity category, Tunisian school trimester, and sorting.
  * Fully synchronized with Next.js URL SearchParams with Dark Mode support.
  */
 
 import React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Calendar, Filter, Sparkles } from "lucide-react";
 import type { Grade, Subject, Category } from "@/types/api";
+import { SCHOOL_TRIMESTERS } from "@/config/constants";
 
 interface FilterBarProps {
   grades: (Grade | { id: string; name: string; nameAr?: string; slug?: string })[];
@@ -4075,6 +4128,7 @@ export default function FilterBar({ grades, subjects, categories }: FilterBarPro
   const currentSubject = searchParams.get("subject") ?? searchParams.get("subjectId") ?? "";
   const currentGrade = searchParams.get("grade") ?? searchParams.get("gradeId") ?? "";
   const currentCategory = searchParams.get("category") ?? searchParams.get("categoryId") ?? "";
+  const currentTrimester = searchParams.get("trimester") ?? "";
   const currentSort = searchParams.get("sort") ?? "newest";
 
   function updateFilter(key: string, value: string) {
@@ -4097,9 +4151,59 @@ export default function FilterBar({ grades, subjects, categories }: FilterBarPro
     router.push("/");
   }
 
+  const hasActiveFilters = Boolean(
+    currentSearch ||
+    currentSubject ||
+    currentGrade ||
+    currentCategory ||
+    currentTrimester
+  );
+
   return (
     <div className="mb-8 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      {/* Tunisian School Trimesters — Quick 1-Click Filter Pills */}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2.5 pb-3 border-b border-slate-100 dark:border-slate-800/80">
+        <div className="flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+          <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+            الثلاثي المدرسي:
+          </span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <button
+            type="button"
+            onClick={() => updateFilter("trimester", "")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              !currentTrimester
+                ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-600/20"
+                : "bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700"
+            }`}
+          >
+            كل الثلاثيات
+          </button>
+
+          {SCHOOL_TRIMESTERS.map((trim) => {
+            const isActive = currentTrimester === trim.slug;
+            return (
+              <button
+                key={trim.id}
+                type="button"
+                onClick={() => updateFilter("trimester", trim.slug)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  isActive
+                    ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-600/30"
+                    : "bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700"
+                }`}
+              >
+                <span>{trim.nameAr}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
         <div className="lg:col-span-2">
           <label className="mb-1.5 block text-xs font-bold text-slate-600 dark:text-slate-300">
             البحث بالكلمات المفتاحية
@@ -4145,10 +4249,28 @@ export default function FilterBar({ grades, subjects, categories }: FilterBarPro
             onChange={(e) => updateFilter("grade", e.target.value)}
             className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:border-indigo-600 focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           >
-            <option value="">جميع المستويات الدراسية</option>
+            <option value="">جميع المستويات</option>
             {grades.map((g) => (
               <option key={g.id} value={g.slug || g.id}>
                 {g.nameAr || g.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-bold text-slate-600 dark:text-slate-300">
+            الثلاثي الدراسي
+          </label>
+          <select
+            value={currentTrimester}
+            onChange={(e) => updateFilter("trimester", e.target.value)}
+            className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:border-indigo-600 focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+          >
+            <option value="">جميع الثلاثيات</option>
+            {SCHOOL_TRIMESTERS.map((t) => (
+              <option key={t.id} value={t.slug}>
+                {t.nameAr}
               </option>
             ))}
           </select>
@@ -4185,12 +4307,15 @@ export default function FilterBar({ grades, subjects, categories }: FilterBarPro
         </div>
       </div>
 
-      {(currentSearch || currentSubject || currentGrade || currentCategory) && (
-        <div className="mt-4 flex items-center justify-end border-t border-slate-100 pt-3 dark:border-slate-800">
+      {hasActiveFilters && (
+        <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
+          <div className="text-xs text-slate-500 dark:text-slate-400">
+            الفلاتر النشطة قيد التطبيق حالياً
+          </div>
           <button
             type="button"
             onClick={resetAllFilters}
-            className="text-xs font-bold text-rose-600 hover:text-rose-700 dark:text-rose-400"
+            className="text-xs font-bold text-rose-600 hover:text-rose-700 dark:text-rose-400 cursor-pointer"
           >
             إعادة تعيين جميع الفلاتر ✕
           </button>
@@ -4201,6 +4326,7 @@ export default function FilterBar({ grades, subjects, categories }: FilterBarPro
 }
 
 export { FilterBar };
+
 
 ```
 
@@ -6335,7 +6461,7 @@ const DEMO_WORKSHEETS = [
     favoriteCount: 75,
     ratingAvg: 4.9,
     reviewCount: 14,
-    tags: ["فرنسية", "درس"],
+    tags: ["فرنسية", "درس", "الثلاثي الأول"],
     createdAt: new Date("2026-10-28"),
     updatedAt: new Date("2026-10-28"),
     gradeId: "g1",
@@ -6373,7 +6499,7 @@ const DEMO_WORKSHEETS = [
     favoriteCount: 52,
     ratingAvg: 4.9,
     reviewCount: 11,
-    tags: ["مؤسسات", "مشروع مؤسسة"],
+    tags: ["مؤسسات", "مشروع مؤسسة", "الثلاثي الأول"],
     createdAt: new Date("2026-10-27"),
     updatedAt: new Date("2026-10-27"),
     gradeId: "g1",
@@ -6411,7 +6537,7 @@ const DEMO_WORKSHEETS = [
     favoriteCount: 64,
     ratingAvg: 5.0,
     reviewCount: 15,
-    tags: ["فرنسية", "جذاذات", "إصلاح"],
+    tags: ["فرنسية", "جذاذات", "إصلاح", "الثلاثي الثاني"],
     createdAt: new Date("2026-10-27"),
     updatedAt: new Date("2026-10-27"),
     gradeId: "g1",
@@ -6449,7 +6575,7 @@ const DEMO_WORKSHEETS = [
     favoriteCount: 95,
     ratingAvg: 4.9,
     reviewCount: 22,
-    tags: ["وثائق إدارية", "جداول الأوقات", "مذكرات ومراسلات"],
+    tags: ["وثائق إدارية", "جداول الأوقات", "مذكرات ومراسلات", "الثلاثي الثالث"],
     createdAt: new Date("2026-10-26"),
     updatedAt: new Date("2026-10-26"),
     gradeId: "g1",
@@ -6494,6 +6620,10 @@ export default async function HomePage(props: HomePageProps) {
   const category =
     typeof resolvedParams.category === "string"
       ? resolvedParams.category
+      : undefined;
+  const trimester =
+    typeof resolvedParams.trimester === "string"
+      ? resolvedParams.trimester
       : undefined;
   const sort = (
     typeof resolvedParams.sort === "string" ? resolvedParams.sort : "newest"
@@ -6567,6 +6697,7 @@ export default async function HomePage(props: HomePageProps) {
           grade,
           subject,
           category,
+          trimester,
           sort,
         },
         viewerRole,
@@ -6591,11 +6722,29 @@ export default async function HomePage(props: HomePageProps) {
     meta = fetchedCatalog.meta;
   } catch {
     isDbConnected = false;
-    const visibleDemo = isAuthenticated
+    let visibleDemo = isAuthenticated
       ? DEMO_WORKSHEETS.filter((w) =>
           canUserAccessWorksheet(w, viewerRole, viewerUserId)
         )
       : DEMO_WORKSHEETS.filter((w) => w.audience === "ALL");
+
+    if (trimester) {
+      const rawTrim = trimester.toLowerCase();
+      const targetTerm =
+        rawTrim === "trimester-1" || rawTrim.includes("أول") || rawTrim.includes("اول")
+          ? "الثلاثي الأول"
+          : rawTrim === "trimester-2" || rawTrim.includes("ثاني")
+          ? "الثلاثي الثاني"
+          : rawTrim === "trimester-3" || rawTrim.includes("ثالث")
+          ? "الثلاثي الثالث"
+          : trimester;
+      visibleDemo = visibleDemo.filter(
+        (w) =>
+          w.tags.includes(targetTerm) ||
+          w.title.includes(targetTerm) ||
+          (w.titleAr && w.titleAr.includes(targetTerm))
+      );
+    }
 
     worksheets = visibleDemo;
     explorerWorksheets = visibleDemo;
@@ -7751,6 +7900,7 @@ import {
   Briefcase,
   BookOpen,
   Sparkles,
+  Calendar,
 } from "lucide-react";
 import {
   MAX_FILE_SIZE_BYTES,
@@ -7761,6 +7911,7 @@ import {
   CURRICULUM_SUBJECTS,
   SUBJECT_SUBDIVISIONS,
   ADMINISTRATIVE_CATEGORY,
+  SCHOOL_TRIMESTERS,
 } from "@/config/constants";
 import { extractPdfThumbnailAndPages } from "@/lib/utils/pdf-thumbnail";
 import type {
@@ -7810,6 +7961,26 @@ export default function UploadWorksheetPage() {
   const [audience, setAudience] = useState<TargetAudience>("ALL");
   const [tagInput, setTagInput] = useState<string>("");
   const [tags, setTags] = useState<string[]>([]);
+  const [selectedTrimester, setSelectedTrimester] = useState<string>("");
+
+  function handleToggleTrimester(trimesterTag: string) {
+    if (selectedTrimester === trimesterTag) {
+      setSelectedTrimester("");
+      setTags((prev) =>
+        prev.filter(
+          (t) => !SCHOOL_TRIMESTERS.some((st) => st.tag === t)
+        )
+      );
+    } else {
+      setSelectedTrimester(trimesterTag);
+      setTags((prev) => {
+        const withoutTrimesters = prev.filter(
+          (t) => !SCHOOL_TRIMESTERS.some((st) => st.tag === t)
+        );
+        return [...withoutTrimesters, trimesterTag];
+      });
+    }
+  }
 
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -8387,6 +8558,52 @@ export default function UploadWorksheetPage() {
             </div>
           )}
 
+          {/* Quick Trimester Selection Buttons (الثلاثيات المدرسية التونسية) */}
+          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
+                <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <span>وسم الثلاثي المدرسي (اختيار سريع بضغطة زر)</span>
+              </label>
+              {(selectedTrimester || tags.some((t) => SCHOOL_TRIMESTERS.some((st) => st.tag === t))) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedTrimester("");
+                    setTags((prev) =>
+                      prev.filter((t) => !SCHOOL_TRIMESTERS.some((st) => st.tag === t))
+                    );
+                  }}
+                  className="text-[11px] font-bold text-rose-600 hover:underline cursor-pointer"
+                >
+                  إلغاء وسم الثلاثي ✕
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              اختر الثلاثي لوسم الملف بيداغوجياً وتيسير عثور المعلمين والتلاميذ عليه في الفلترة والبحث:
+            </p>
+            <div className="grid grid-cols-3 gap-2 pt-1">
+              {SCHOOL_TRIMESTERS.map((trim) => {
+                const isSelected = selectedTrimester === trim.tag || tags.includes(trim.tag);
+                return (
+                  <button
+                    key={trim.id}
+                    type="button"
+                    onClick={() => handleToggleTrimester(trim.tag)}
+                    className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold border-2 transition-all cursor-pointer text-center ${
+                      isSelected
+                        ? "bg-blue-600 text-white border-blue-600 shadow-sm ring-2 ring-blue-600/20"
+                        : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-blue-400"
+                    }`}
+                  >
+                    {trim.nameAr}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Target Audience Control */}
           <div className="p-4 rounded-2xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 space-y-2">
             <label className="flex items-center gap-2 text-sm font-bold text-blue-950 dark:text-blue-200">
@@ -8467,7 +8684,10 @@ export default function UploadWorksheetPage() {
                     {t}
                     <button
                       type="button"
-                      onClick={() => setTags(tags.filter((item) => item !== t))}
+                      onClick={() => {
+                        if (t === selectedTrimester) setSelectedTrimester("");
+                        setTags(tags.filter((item) => item !== t));
+                      }}
                       className="hover:text-red-600"
                     >
                       <X className="w-3.5 h-3.5" />
@@ -10885,12 +11105,38 @@ function LoginContent() {
 
     const emailToUse = overrideEmail || email;
     const passwordToUse = overridePassword || password;
-    const roleToUse = overrideRole || selectedRole || "TEACHER";
+    const rawInput = emailToUse.trim().toLowerCase();
+
+    // In production, restrict demo accounts (@musnad.tn) strictly to development environment
+    const isProduction = process.env.NODE_ENV === "production";
+    const isMusnadDemo =
+      rawInput.endsWith("@musnad.tn") ||
+      ["admin", "moderator", "inspector", "institution", "teacher", "student"].includes(
+        rawInput.replace(/^@/, "")
+      );
+
+    if (isProduction && isMusnadDemo) {
+      setError(
+        "حسابات التجربة (@musnad.tn) محصورة في بيئة التطوير المحلية فقط، وليست متاحة في بيئة الإنتاج."
+      );
+      return;
+    }
+
+    const isPrimaryAdmin =
+      rawInput === "bjasser123@gmail.com" ||
+      rawInput === "@bjasser" ||
+      rawInput === "bjasser";
+
+    const roleToUse = isPrimaryAdmin
+      ? "ADMIN"
+      : overrideRole || selectedRole || "TEACHER";
 
     const parsed = signInSchema.safeParse({
       email: emailToUse,
       password: passwordToUse,
-      role: roleToUse,
+      role: ["INSTITUTION", "INSPECTOR", "TEACHER", "STUDENT"].includes(roleToUse)
+        ? (roleToUse as any)
+        : undefined,
     });
 
     if (!parsed.success) {

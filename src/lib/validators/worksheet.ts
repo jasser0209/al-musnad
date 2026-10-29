@@ -48,6 +48,7 @@ export const worksheetFilterSchema = paginationSchema.extend({
   grade: z.string().optional(),
   subject: z.string().optional(),
   category: z.string().optional(),
+  trimester: z.string().optional(),
   audience: targetAudienceSchema.optional(),
   tags: z
     .string()

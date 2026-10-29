@@ -1,11 +1,11 @@
 /**
- * Application Constants & Official Curriculum Structure — Al-Musnad (المسند) v12.0
+ * Application Constants & Official Curriculum Structure — Al-Musnad (المسند) v15.0
  */
 
 export const APP_CONFIG = {
   name: "Al-Musnad",
   nameAr: "المسند",
-  version: "13.0.0",
+  version: "15.0.0",
   description:
     "Integrated educational platform for institutions, inspectors, teachers, and students.",
   descriptionAr:
@@ -179,3 +179,34 @@ export const AUDIENCE_LABELS: Record<string, { label: string; isRestricted: bool
   TEACHERS_AND_STUDENTS: { label: "للمعلمين والتلاميذ", isRestricted: false },
   ALL: { label: "للعموم", isRestricted: false },
 };
+
+// Official School Trimesters in Tunisia (الثلاثيات المدرسية التونسية) — v15.0
+export const SCHOOL_TRIMESTERS = [
+  {
+    id: "t1",
+    name: "Trimestre 1",
+    nameAr: "الثلاثي الأول",
+    slug: "trimester-1",
+    tag: "الثلاثي الأول",
+    sortOrder: 1,
+  },
+  {
+    id: "t2",
+    name: "Trimestre 2",
+    nameAr: "الثلاثي الثاني",
+    slug: "trimester-2",
+    tag: "الثلاثي الثاني",
+    sortOrder: 2,
+  },
+  {
+    id: "t3",
+    name: "Trimestre 3",
+    nameAr: "الثلاثي الثالث",
+    slug: "trimester-3",
+    tag: "الثلاثي الثالث",
+    sortOrder: 3,
+  },
+] as const;
+
+export type SchoolTrimesterSlug = (typeof SCHOOL_TRIMESTERS)[number]["slug"];
+

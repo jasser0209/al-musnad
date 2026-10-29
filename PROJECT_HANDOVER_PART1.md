@@ -78,6 +78,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "postinstall": "prisma generate",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
     "db:seed": "prisma db seed",
@@ -89,14 +90,18 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1160.0",
+    "@aws-sdk/s3-request-presigner": "^3.1160.0",
     "@prisma/client": "^6.0.0",
     "@supabase/ssr": "^0.5.0",
     "@supabase/supabase-js": "^2.45.0",
+    "@vercel/speed-insights": "^2.0.0",
     "lucide-react": "^0.460.0",
     "next": "^15.0.0",
     "pdfjs-dist": "^4.10.38",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "resend": "^6.35.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {
@@ -108,6 +113,7 @@
     "eslint-config-next": "^15.0.0",
     "postcss": "^8.4.49",
     "prisma": "^6.0.0",
+    "sharp": "^0.35.5",
     "tailwindcss": "^3.4.15",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0"
@@ -180,6 +186,19 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "*.googleusercontent.com",
       },
+      // Cloudflare R2 Public CDN & Storage
+      {
+        protocol: "https",
+        hostname: "pub-210f91ecac0344349d57385d435f04a3.r2.dev",
+      },
+      {
+        protocol: "https",
+        hostname: "*.r2.dev",
+      },
+      {
+        protocol: "https",
+        hostname: "*.r2.cloudflarestorage.com",
+      },
     ],
   },
   experimental: {
@@ -190,19 +209,32 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: "/(.*)",
+        // Apply strict security headers to all application routes
+        source: "/:path*",
         headers: [
-          {
-            key: "X-Content-Type-Options",
-            value: "nosniff",
-          },
           {
             key: "X-Frame-Options",
             value: "SAMEORIGIN",
           },
           {
+            key: "X-Content-Type-Options",
+            value: "nosniff",
+          },
+          {
             key: "X-XSS-Protection",
             value: "1; mode=block",
+          },
+          {
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
+          },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=()",
+          },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
           },
           {
             key: "X-DNS-Prefetch-Control",
@@ -212,17 +244,19 @@ const nextConfig: NextConfig = {
             key: "Cross-Origin-Opener-Policy",
             value: "same-origin-allow-popups",
           },
+        ],
+      },
+      {
+        // Allow PDF viewer and media previews to load from storage domains
+        source: "/worksheet/:path*",
+        headers: [
           {
-            key: "Referrer-Policy",
-            value: "strict-origin-when-cross-origin",
+            key: "X-Frame-Options",
+            value: "SAMEORIGIN",
           },
           {
-            key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=(), payment=()",
-          },
-          {
-            key: "Strict-Transport-Security",
-            value: "max-age=63072000; includeSubDomains; preload",
+            key: "Cross-Origin-Resource-Policy",
+            value: "cross-origin",
           },
         ],
       },
@@ -1625,7 +1659,31 @@ const supabase = createClient(supabaseUrl, serviceRoleKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-const DEMO_ACCOUNTS = [
+interface SeedAccount {
+  email: string;
+  username: string;
+  password: string;
+  name: string;
+  role: Role;
+  bio?: string;
+  isVerified: boolean;
+  school?: string;
+  studentGrade?: string;
+  inspectorCode?: string;
+}
+
+const PRIMARY_ADMIN: SeedAccount = {
+  email: "bjasser123@gmail.com",
+  username: "bjasser",
+  password: "Jasserbes1M",
+  name: "Jasser (المشرف العام)",
+  role: Role.ADMIN,
+  bio: "حساب المشرف العام الأساسي لمنصة المسند — إدارة النظام وصلاحيات الهرم الرقابي.",
+  isVerified: true,
+  school: "الإدارة العامة لمنصة المسند",
+};
+
+const DEV_DEMO_ACCOUNTS: SeedAccount[] = [
   {
     email: "admin@musnad.tn",
     username: "admin",
@@ -1762,13 +1820,19 @@ async function main() {
   }
   console.log(`  ✅ ${categories.length} categories/sub-divisions seeded`);
 
-  // Seed 6 Demo Accounts
-  console.log("🌱 Seeding the 6 Demo Accounts for all user roles...");
+  // Seed Accounts (Primary Admin is always seeded, Demo accounts only in development)
+  const isProduction = process.env.NODE_ENV === "production";
+  const accountsToSeed = [
+    PRIMARY_ADMIN,
+    ...(isProduction ? [] : DEV_DEMO_ACCOUNTS),
+  ];
+
+  console.log(`🌱 Seeding accounts (${accountsToSeed.length} accounts, Environment isProduction: ${isProduction})...`);
   try {
     const { data: listData } = await supabase.auth.admin.listUsers({ page: 1, perPage: 100 });
     const authUsers = listData?.users || [];
 
-    for (const acc of DEMO_ACCOUNTS) {
+    for (const acc of accountsToSeed) {
       let authUser = authUsers.find((u) => u.email?.toLowerCase() === acc.email.toLowerCase());
 
       if (authUser) {
@@ -1824,7 +1888,7 @@ async function main() {
     }
   } catch (authErr) {
     console.warn("⚠️ Could not contact Supabase Admin API, seeding directly to Prisma:", authErr);
-    for (const acc of DEMO_ACCOUNTS) {
+    for (const acc of accountsToSeed) {
       await prisma.user.upsert({
         where: { email: acc.email },
         update: {
@@ -2298,13 +2362,13 @@ ALTER TABLE public.users ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ DEFAU
 
 ```typescript
 /**
- * Application Constants & Official Curriculum Structure — Al-Musnad (المسند) v12.0
+ * Application Constants & Official Curriculum Structure — Al-Musnad (المسند) v15.0
  */
 
 export const APP_CONFIG = {
   name: "Al-Musnad",
   nameAr: "المسند",
-  version: "13.0.0",
+  version: "15.0.0",
   description:
     "Integrated educational platform for institutions, inspectors, teachers, and students.",
   descriptionAr:
@@ -2478,6 +2542,37 @@ export const AUDIENCE_LABELS: Record<string, { label: string; isRestricted: bool
   TEACHERS_AND_STUDENTS: { label: "للمعلمين والتلاميذ", isRestricted: false },
   ALL: { label: "للعموم", isRestricted: false },
 };
+
+// Official School Trimesters in Tunisia (الثلاثيات المدرسية التونسية) — v15.0
+export const SCHOOL_TRIMESTERS = [
+  {
+    id: "t1",
+    name: "Trimestre 1",
+    nameAr: "الثلاثي الأول",
+    slug: "trimester-1",
+    tag: "الثلاثي الأول",
+    sortOrder: 1,
+  },
+  {
+    id: "t2",
+    name: "Trimestre 2",
+    nameAr: "الثلاثي الثاني",
+    slug: "trimester-2",
+    tag: "الثلاثي الثاني",
+    sortOrder: 2,
+  },
+  {
+    id: "t3",
+    name: "Trimestre 3",
+    nameAr: "الثلاثي الثالث",
+    slug: "trimester-3",
+    tag: "الثلاثي الثالث",
+    sortOrder: 3,
+  },
+] as const;
+
+export type SchoolTrimesterSlug = (typeof SCHOOL_TRIMESTERS)[number]["slug"];
+
 
 ```
 
@@ -2740,6 +2835,16 @@ export interface AuditLogItem {
   ipAddress: string | null;
   createdAt: string | Date;
 }
+
+export interface SchoolTrimester {
+  id: string;
+  name: string;
+  nameAr: string;
+  slug: string;
+  tag: string;
+  sortOrder: number;
+}
+
 
 ```
 
@@ -3635,6 +3740,7 @@ export const worksheetFilterSchema = paginationSchema.extend({
   grade: z.string().optional(),
   subject: z.string().optional(),
   category: z.string().optional(),
+  trimester: z.string().optional(),
   audience: targetAudienceSchema.optional(),
   tags: z
     .string()
@@ -4017,7 +4123,7 @@ export async function listWorksheets(
 ) {
   await ensureOfficialTaxonomySeeded();
   const isGuest = !viewerRole || !viewerUserId;
-  const { page, limit, search, grade, subject, category, audience, tags, sort } =
+  const { page, limit, search, grade, subject, category, trimester, audience, tags, sort } =
     filters;
   const {
     skip,
@@ -4036,6 +4142,63 @@ export async function listWorksheets(
   if (grade) andConditions.push({ grade: { slug: grade } });
   if (subject) andConditions.push({ subject: { slug: subject } });
   if (category) andConditions.push({ category: { slug: category } });
+
+  // School Trimester Filtering (الثلاثي المدرسي)
+  if (trimester && trimester.trim().length > 0) {
+    const rawVal = trimester.trim().toLowerCase();
+    let trimesterTerms: string[] = [];
+    if (
+      rawVal === "trimester-1" ||
+      rawVal === "1" ||
+      rawVal.includes("أول") ||
+      rawVal.includes("اول")
+    ) {
+      trimesterTerms = [
+        "الثلاثي الأول",
+        "الثلاثي الاول",
+        "الثلاثي 1",
+        "trimester-1",
+        "Trimestre 1",
+      ];
+    } else if (
+      rawVal === "trimester-2" ||
+      rawVal === "2" ||
+      rawVal.includes("ثاني")
+    ) {
+      trimesterTerms = [
+        "الثلاثي الثاني",
+        "الثلاثي 2",
+        "trimester-2",
+        "Trimestre 2",
+      ];
+    } else if (
+      rawVal === "trimester-3" ||
+      rawVal === "3" ||
+      rawVal.includes("ثالث")
+    ) {
+      trimesterTerms = [
+        "الثلاثي الثالث",
+        "الثلاثي 3",
+        "trimester-3",
+        "Trimestre 3",
+      ];
+    } else {
+      trimesterTerms = [trimester.trim()];
+    }
+
+    andConditions.push({
+      OR: [
+        { tags: { hasSome: trimesterTerms } },
+        ...trimesterTerms.flatMap((term) => [
+          { title: { contains: term, mode: "insensitive" as const } },
+          { titleAr: { contains: term, mode: "insensitive" as const } },
+          { description: { contains: term, mode: "insensitive" as const } },
+          { descriptionAr: { contains: term, mode: "insensitive" as const } },
+        ]),
+      ],
+    });
+  }
+
   if (audience && !isGuest) andConditions.push({ audience });
   if (tags && tags.length > 0) andConditions.push({ tags: { hasSome: tags } });
 
@@ -4471,14 +4634,24 @@ export async function getUserUploads(
 
 ```typescript
 /**
- * Storage Service — Al-Musnad (المسند) v6.0
+ * Storage Service — Al-Musnad (المسند) v15.0
  *
- * Supports uploading:
+ * Primary: Cloudflare R2 Storage (10GB Free Tier) via AWS S3 Client SDK
+ * Fallback: Supabase Storage Bucket ("worksheets")
+ *
+ * Supports:
  * - PDF documents (`.pdf`)
  * - Microsoft Word documents (`.doc`, `.docx`)
  * - Images (`.png`, `.jpg`, `.jpeg`, `.webp`)
  */
 
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import {
   FileTooLargeError,
@@ -4490,16 +4663,55 @@ import {
   isSupportedUploadFile,
 } from "@/config/constants";
 
-const BUCKET_NAME = process.env.SUPABASE_STORAGE_BUCKET ?? "worksheets";
+const SUPABASE_BUCKET_NAME = process.env.SUPABASE_STORAGE_BUCKET ?? "worksheets";
 const MAX_FILE_SIZE =
   (Number(process.env.MAX_FILE_SIZE_MB) || 20) * 1024 * 1024;
 
-interface UploadResult {
+export interface UploadResult {
   fileUrl: string;
   fileName: string;
   fileSize: number;
+  storageProvider?: "R2" | "SUPABASE";
 }
 
+/**
+ * Checks if Cloudflare R2 credentials are valid and provided.
+ */
+export function isR2Configured(): boolean {
+  const accountId = process.env.R2_ACCOUNT_ID?.trim();
+  const accessKeyId = process.env.R2_ACCESS_KEY_ID?.trim();
+  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY?.trim();
+  const bucketName = process.env.R2_BUCKET_NAME?.trim();
+
+  return Boolean(
+    accountId &&
+      !accountId.includes("[") &&
+      !accountId.includes("الصق") &&
+      accountId.length >= 8 &&
+      accessKeyId &&
+      secretAccessKey &&
+      bucketName
+  );
+}
+
+/**
+ * Creates an S3Client targeted at Cloudflare R2 endpoint.
+ */
+export function getR2Client(): S3Client {
+  const accountId = process.env.R2_ACCOUNT_ID!.trim();
+  return new S3Client({
+    region: "auto",
+    endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+    credentials: {
+      accessKeyId: process.env.R2_ACCESS_KEY_ID!.trim(),
+      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!.trim(),
+    },
+  });
+}
+
+/**
+ * Uploads a file with Cloudflare R2 primary and Supabase fallback.
+ */
 export async function uploadFile(
   file: File,
   userId: string
@@ -4524,60 +4736,169 @@ export async function uploadFile(
       ? "application/msword"
       : "application/octet-stream");
 
+  // 1. Attempt Cloudflare R2 Upload
+  if (isR2Configured()) {
+    try {
+      const r2Client = getR2Client();
+      const r2Bucket = process.env.R2_BUCKET_NAME ?? "musnad-worksheets";
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      await r2Client.send(
+        new PutObjectCommand({
+          Bucket: r2Bucket,
+          Key: filePath,
+          Body: buffer,
+          ContentType: contentType,
+        })
+      );
+
+      console.log(`✅ [R2 Storage] File uploaded successfully to R2 bucket: ${r2Bucket}/${filePath}`);
+      return {
+        fileUrl: filePath,
+        fileName: file.name,
+        fileSize: file.size,
+        storageProvider: "R2",
+      };
+    } catch (r2Error: any) {
+      console.warn("⚠️ [R2 Storage] Failed to upload to Cloudflare R2, falling back to Supabase Storage:", r2Error?.message || r2Error);
+    }
+  }
+
+  // 2. Fallback to Supabase Storage
   const supabase = createSupabaseAdminClient();
-  const { error } = await supabase.storage
-    .from(BUCKET_NAME)
+  const { error: supabaseError } = await supabase.storage
+    .from(SUPABASE_BUCKET_NAME)
     .upload(filePath, file, {
       contentType,
       upsert: false,
     });
 
-  if (error) {
-    console.error("Storage upload error:", error);
-    throw new AppError("Failed to upload file", "UPLOAD_FAILED", 500);
+  if (supabaseError) {
+    console.error("Storage upload error (Supabase):", supabaseError);
+    throw new AppError("Failed to upload file to storage", "UPLOAD_FAILED", 500);
   }
 
+  console.log(`✅ [Supabase Storage] File uploaded to Supabase fallback: ${SUPABASE_BUCKET_NAME}/${filePath}`);
   return {
     fileUrl: filePath,
     fileName: file.name,
     fileSize: file.size,
+    storageProvider: "SUPABASE",
   };
 }
 
+/**
+ * Generates a presigned or public download URL with R2 and Supabase fallback.
+ */
 export async function getSignedDownloadUrl(
   filePath: string,
   expiresInSeconds: number = 3600
 ): Promise<string> {
-  const supabase = createSupabaseAdminClient();
+  // 1. Try Cloudflare R2
+  if (isR2Configured()) {
+    try {
+      const r2Client = getR2Client();
+      const r2Bucket = process.env.R2_BUCKET_NAME ?? "musnad-worksheets";
+      const command = new GetObjectCommand({
+        Bucket: r2Bucket,
+        Key: filePath,
+      });
 
+      const signedUrl = await getSignedUrl(r2Client, command, {
+        expiresIn: expiresInSeconds,
+      });
+      return signedUrl;
+    } catch (r2Error) {
+      console.warn("⚠️ [R2 Storage] Error generating R2 signed URL, falling back to public or Supabase:", r2Error);
+      if (process.env.R2_PUBLIC_URL) {
+        const cleanBase = process.env.R2_PUBLIC_URL.replace(/\/$/, "");
+        return `${cleanBase}/${filePath}`;
+      }
+    }
+  }
+
+  // If R2 Public URL is explicitly configured, use direct fast CDN link
+  if (process.env.R2_PUBLIC_URL && isR2Configured()) {
+    const cleanBase = process.env.R2_PUBLIC_URL.replace(/\/$/, "");
+    return `${cleanBase}/${filePath}`;
+  }
+
+  // 2. Fallback to Supabase Storage
+  const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase.storage
-    .from(BUCKET_NAME)
+    .from(SUPABASE_BUCKET_NAME)
     .createSignedUrl(filePath, expiresInSeconds);
 
   if (error || !data?.signedUrl) {
-    console.error("Signed URL error:", error);
-    throw new AppError(
-      "Failed to generate download URL",
-      "DOWNLOAD_FAILED",
-      500
-    );
+    console.error("Signed URL error (Supabase):", error);
+    // As a last-resort fallback, if public URL is configured
+    if (process.env.R2_PUBLIC_URL) {
+      const cleanBase = process.env.R2_PUBLIC_URL.replace(/\/$/, "");
+      return `${cleanBase}/${filePath}`;
+    }
+    throw new AppError("Failed to generate download URL", "DOWNLOAD_FAILED", 500);
   }
 
   return data.signedUrl;
 }
 
-export async function deleteFile(filePath: string): Promise<void> {
+/**
+ * Returns direct public URL via Cloudflare R2 CDN if configured, or Supabase public URL.
+ */
+export function getPublicDownloadUrl(filePath: string): string {
+  if (process.env.R2_PUBLIC_URL) {
+    const cleanBase = process.env.R2_PUBLIC_URL.replace(/\/$/, "");
+    return `${cleanBase}/${filePath}`;
+  }
+
   const supabase = createSupabaseAdminClient();
+  const { data } = supabase.storage
+    .from(SUPABASE_BUCKET_NAME)
+    .getPublicUrl(filePath);
 
-  const { error } = await supabase.storage
-    .from(BUCKET_NAME)
-    .remove([filePath]);
+  return data.publicUrl;
+}
 
-  if (error) {
-    console.error("Storage delete error:", error);
+/**
+ * Deletes a file from Cloudflare R2 and Supabase Storage.
+ */
+export async function deleteFile(filePath: string): Promise<void> {
+  // 1. Try deleting from R2
+  if (isR2Configured()) {
+    try {
+      const r2Client = getR2Client();
+      const r2Bucket = process.env.R2_BUCKET_NAME ?? "musnad-worksheets";
+      await r2Client.send(
+        new DeleteObjectCommand({
+          Bucket: r2Bucket,
+          Key: filePath,
+        })
+      );
+      console.log(`🗑️ [R2 Storage] Deleted object from R2: ${filePath}`);
+    } catch (r2Error: any) {
+      console.warn("⚠️ [R2 Storage] Error deleting from R2:", r2Error?.message || r2Error);
+    }
+  }
+
+  // 2. Also ensure deletion from Supabase Storage fallback
+  try {
+    const supabase = createSupabaseAdminClient();
+    const { error } = await supabase.storage
+      .from(SUPABASE_BUCKET_NAME)
+      .remove([filePath]);
+
+    if (error) {
+      console.warn("Storage delete notice (Supabase):", error.message);
+    }
+  } catch (err: any) {
+    console.warn("Supabase delete notice:", err?.message || err);
   }
 }
 
+/**
+ * Uploads a thumbnail with R2 primary and Supabase fallback.
+ */
 export async function uploadThumbnail(
   thumbnailFile: File,
   userId: string
@@ -4590,9 +4911,34 @@ export async function uploadThumbnail(
   const timestamp = Date.now();
   const thumbPath = `thumbnails/${userId}/${timestamp}-thumb.webp`;
 
+  // 1. Try R2
+  if (isR2Configured()) {
+    try {
+      const r2Client = getR2Client();
+      const r2Bucket = process.env.R2_BUCKET_NAME ?? "musnad-worksheets";
+      const arrayBuffer = await thumbnailFile.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      await r2Client.send(
+        new PutObjectCommand({
+          Bucket: r2Bucket,
+          Key: thumbPath,
+          Body: buffer,
+          ContentType: thumbnailFile.type,
+        })
+      );
+
+      const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
+      return getSignedDownloadUrl(thumbPath, ONE_YEAR_SECONDS);
+    } catch (r2Err) {
+      console.warn("⚠️ [R2 Storage] Thumbnail upload fallback to Supabase:", r2Err);
+    }
+  }
+
+  // 2. Fallback to Supabase Storage
   const supabase = createSupabaseAdminClient();
   const { error } = await supabase.storage
-    .from(BUCKET_NAME)
+    .from(SUPABASE_BUCKET_NAME)
     .upload(thumbPath, thumbnailFile, {
       contentType: thumbnailFile.type,
       upsert: false,
@@ -4610,6 +4956,7 @@ export async function uploadThumbnail(
   const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
   return getSignedDownloadUrl(thumbPath, ONE_YEAR_SECONDS);
 }
+
 ```
 
 ---
@@ -5376,9 +5723,10 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - robots.txt, sitemap.xml, manifest.webmanifest
      * - Public assets (svg, png, jpg, etc.)
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|xml|txt|webmanifest|json)$).*)",
   ],
 };
 
@@ -5404,6 +5752,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
 import { Role } from "@prisma/client";
 import { MAX_LOGIN_PASSWORD_ATTEMPTS } from "@/config/constants";
+import { sendWelcomeEmail } from "@/services/email.service";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -5488,6 +5837,23 @@ export async function GET(request: Request) {
               lastSeenAt: new Date(),
             },
           });
+
+          // Send welcome email gracefully (non-blocking)
+          const roleTitles: Record<string, string> = {
+            TEACHER: "معلم",
+            INSTITUTION: "مؤسسة تربوية",
+            STUDENT: "تلميذ",
+            INSPECTOR: "متفقد تربوي",
+          };
+          const userName =
+            (authUser.user_metadata?.full_name as string) ||
+            (authUser.user_metadata?.name as string) ||
+            safeUsername;
+          void sendWelcomeEmail(
+            authUser.email,
+            userName,
+            roleTitles[assignedRole] || assignedRole
+          ).catch(() => null);
         }
       } catch {
         // Proceed even if DB sync encountered a transient issue
@@ -5747,6 +6113,22 @@ export async function POST(request: NextRequest) {
 
     const isUsername = !rawIdentifier.includes("@") || rawIdentifier.startsWith("@");
     const cleanUsername = rawIdentifier.replace(/^@/, "");
+
+    const isProduction = process.env.NODE_ENV === "production";
+    const isDemoAccount =
+      rawIdentifier.endsWith("@musnad.tn") ||
+      ["admin", "moderator", "inspector", "institution", "teacher", "student"].includes(cleanUsername);
+
+    if (isProduction && isDemoAccount) {
+      return successResponse({
+        exists: false,
+        resolvedEmail: isUsername ? null : rawIdentifier,
+        isLocked: false,
+        failedAttempts: 0,
+        remainingAttempts: MAX_LOGIN_PASSWORD_ATTEMPTS,
+        isDemoDisabled: true,
+      });
+    }
 
     const user = await db.user.findFirst({
       where: isUsername
@@ -6878,6 +7260,7 @@ export async function GET(request: NextRequest) {
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { APP_CONFIG, STORAGE_BUCKETS } from "@/config/constants";
+import { isR2Configured } from "@/services/storage.service";
 
 export async function GET() {
   const startedAt = Date.now();
@@ -6903,16 +7286,20 @@ export async function GET() {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   );
 
+  const r2Ready = isR2Configured();
+
   return NextResponse.json({
     success: true,
     platform: APP_CONFIG.nameAr,
-    version: "13.0.0",
+    version: "15.0.0",
     status: databaseConnected && supabaseConfigured ? "HEALTHY" : "DEGRADED",
     latencyMs: Date.now() - startedAt,
     services: {
       postgresqlDatabase: databaseConnected ? "CONNECTED" : "DISCONNECTED",
-      supabaseAuthAndStorage: supabaseConfigured ? "CONFIGURED" : "MISSING_ENV",
-      storageBucket: STORAGE_BUCKETS.WORKSHEETS,
+      supabaseAuth: supabaseConfigured ? "CONFIGURED" : "MISSING_ENV",
+      storageProvider: r2Ready ? "CLOUDFLARE_R2_10GB" : "SUPABASE_STORAGE",
+      cloudflareR2: r2Ready ? "ACTIVE_10GB" : "FALLBACK",
+      storageBucket: r2Ready ? (process.env.R2_BUCKET_NAME || "musnad-worksheets") : STORAGE_BUCKETS.WORKSHEETS,
     },
     metrics: databaseConnected
       ? {
@@ -7943,6 +8330,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { deleteFile } from "@/services/storage.service";
 import { dispatchMentionNotifications } from "@/services/review.service";
 import { logPlatformActivity } from "@/services/audit.service";
+import { sendSupportReplyNotification } from "@/services/email.service";
 import {
   UnauthorizedError,
   ForbiddenError,
@@ -8267,6 +8655,15 @@ export async function replySupportTicketModeratorAction(
     });
   }
 
+  if (ticket.email) {
+    void sendSupportReplyNotification(
+      ticket.email,
+      ticket.name,
+      ticket.subject,
+      replyText.trim()
+    ).catch(() => null);
+  }
+
   await dispatchMentionNotifications(
     replyText.trim(),
     actor.id,
@@ -8470,6 +8867,7 @@ import { Role, ReportTargetType, WorksheetStatus } from "@prisma/client";
 import { upsertWorksheetReview } from "@/services/review.service";
 import { logPlatformActivity } from "@/services/audit.service";
 import { checkRateLimit } from "@/lib/security/rate-limit";
+import { sendEndorsementNotification } from "@/services/email.service";
 
 async function requireInspectorOrAdmin() {
   const supabase = await createSupabaseServerClient();
@@ -8982,6 +9380,11 @@ export async function toggleWorksheetEndorsementAction(worksheetId: string) {
   });
 
   if (nextEndorsed && worksheet.uploadedBy !== actor.id) {
+    const teacher = await db.user.findUnique({
+      where: { id: worksheet.uploadedBy },
+      select: { email: true, name: true },
+    });
+
     await db.notification.create({
       data: {
         userId: worksheet.uploadedBy,
@@ -8992,6 +9395,14 @@ export async function toggleWorksheetEndorsementAction(worksheetId: string) {
         link: `/worksheet/${worksheet.id}`,
       },
     });
+
+    if (teacher?.email) {
+      void sendEndorsementNotification(
+        teacher.email,
+        teacher.name,
+        worksheet.titleAr || worksheet.title
+      ).catch(() => null);
+    }
   }
 
   await logPlatformActivity({
@@ -9350,6 +9761,7 @@ import {
   SupportTicketStatus,
   Role,
 } from "@prisma/client";
+import { sendSupportReplyNotification } from "@/services/email.service";
 
 export interface SubmitReportInput {
   targetType: "WORKSHEET" | "USER";
@@ -9518,6 +9930,15 @@ export async function replySupportTicketAdminAction(
         link: "/support",
       },
     });
+  }
+
+  if (ticket.email) {
+    void sendSupportReplyNotification(
+      ticket.email,
+      ticket.name,
+      ticket.subject,
+      replyText.trim()
+    ).catch(() => null);
   }
 
   revalidatePath("/admin/dashboard");
