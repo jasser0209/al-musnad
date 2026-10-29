@@ -16,6 +16,7 @@ const cairo = Cairo({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://al-musnad.vercel.app"),
   title: "المسند | المنصة التربوية والبيداغوجية المعتمدة",
   description:
     "منصة المسند التربوية والبيداغوجية المعتمدة للمؤسسات، المتفقدين، المعلمين، والتلاميذ لتصفح المستويات والمواد والوثائق الإدارية والنشرات التربوية.",
@@ -28,6 +29,12 @@ export const metadata: Metadata = {
     "امتحانات",
     "وثائق إدارية للمعلم",
   ],
+  verification: {
+    google: "cjjaOITGWrgejk9JVO2ns7HzP55iAtkWdTfmwvYFuCo",
+  },
+  alternates: {
+    canonical: "https://al-musnad.vercel.app",
+  },
 };
 
 export default function RootLayout({
