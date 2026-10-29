@@ -1,0 +1,14926 @@
+# 🏛️ Project Handover & Master Technical Audit — Al-Musnad (v12.0) — الجزء الثاني: المكونات، الواجهات، مستودع المواد، ولوحات الإشراف الثلاث (Part 2 of 2)
+**Project:** Al-Musnad (المسند) — Educational & Pedagogical Platform  
+**Architecture:** Next.js 15 (App Router) + TypeScript + Prisma ORM + PostgreSQL (Supabase) + Tailwind CSS + Lucide Icons  
+**Version:** 12.0.0 (Optimized < 1 MB Archive — 100% Complete Source Code & Commands)  
+**Date:** October 29, 2026  
+
+---
+
+## 🤖 القواعد الصارمة والتعليمات الإلزامية للذكاء الاصطناعي (STRICT AI OPERATING RULES)
+
+أنت المهندس المعماري المسؤول عن تطوير وصيانة منصة **«المسند» (Al-Musnad v12.0)**. عند قراءة هذا الملف أو تنفيذ أي تعديل مستقبلي، **يجب عليك الالتزام الصارم وغير القابل للتفاوض بالقواعد التالية**:
+
+1. **قاعدة الحجم الأقصى (< 1 MB) ومنع التكرار**:
+   - الحد الأقصى المسموح به لحجم ملف `PROJECT_HANDOVER.md` هو **أقل من 1 ميجابايت (1,000 KB)**.
+   - **يُمنع منعاً باتاً** تضمين ملفات الحزم المولّدة تلقائياً (مثل `apply-musnad-v9-infrastructure.mjs` أو `apply-musnad-v12-upgrade.mjs`) داخل `PROJECT_HANDOVER.md` لأنها تكرر نفس الأكواد بصيغة JSON وتضاعف حجم الملف فوق 1.4 MB. بدلاً من ذلك، يتم تضمين سكريبت البناء `scripts/build-v9-upgrade-script.mjs` وسكريبت الاستخراج `scripts/extract-handover.mjs` فقط.
+2. **منع اختصار الأكواد (Zero Truncation Policy)**:
+   - يُمنع كتابة تعليقات اختصار مثل `// ... rest of code` أو `/* unchanged */`. يجب دائماً كتابة الشفرة الكاملة القابلة للتشغيل الفوري.
+3. **الحفاظ على هرم الإشراف الثلاثي وعزل الصلاحيات الصارم (`SupervisoryHierarchyBar` + Middleware + Server Actions)**:
+   - **المشرف العام (`ADMIN`)**: يتربع على قمة الهرم الرقابي؛ يمتلك وحده شريط التنقل القيادي بين اللوحات الثلاث (`/admin/dashboard`، `/moderator/dashboard`، `/inspector/dashboard`) مع زر **«الرجوع الفوري إلى لوحة المشرف العام»**، ويمتلك وحده صلاحية إصدار أكواد التوثيق، إدارة الرتب، إغلاق بلاغات المتفقدين العاجلة (`isInspectorPriority`)، ومراجعة سجل التدقيق الأمني (`AuditLog`).
+   - **المسؤول الإداري (`MODERATOR`)**: محصور حصرياً في لوحته (`/moderator/dashboard`)؛ لا يرى أزرار الانتقال للوحة المشرف العام أو المتفقد، ولا يملك صلاحية الوصول إليها.
+   - **المتفقد التربوي (`INSPECTOR`)**: محصور حصرياً في لوحته (`/inspector/dashboard`) للاعتماد البيداغوجي والتوجيهات الرسمية والبلاغات العاجلة؛ لا يرى أزرار الانتقال للوحة المشرف العام أو المسؤول.
+4. **الحفاظ على الزر الموحد في الشريط العلوي (`Navbar.tsx`)**:
+   - عندما يسجل كل من `ADMIN` أو `MODERATOR` أو `INSPECTOR` دخوله، تظهر شارة صفته واسم لوحته مدمجة في **زر واحد فقط** في الشريط العلوي (`مشرف عام • لوحة التحكم` / `مسؤول إداري • لوحة التحكم` / `متفقد معتمد • لوحة التحكم`) ينقله مباشرة إلى لوحته الحصرية دون تكرار الشارة بجانب الزر.
+5. **الحفاظ على مسار مستودع المواد والمستويات (`/levels`)**:
+   - جميع روابط «مستودع المواد والمستويات» في `Navbar.tsx` والصفحة الرئيسية والتذييل يجب أن تتجه دائماً إلى المسار المستقل `/levels` (وليس `/#levels-and-subjects`)، وتعرض الصفحة كلاً من المستويات الستة ومستودع المواد التسع (`#subjects-repository`) مع استدعاء `ensureOfficialTaxonomySeeded()`.
+6. **القواعد الأمنية الإلزامية**:
+   - عدم إرجاع `email` مطلقاً في `GET /api/users/mentions`.
+   - استخدام `POST /api/auth/resolve-username` المحمي بـ `checkRateLimit` لتحويل `@username` إلى بريد عند تسجيل الدخول.
+   - منع تمرير رتبتَي `ADMIN` أو `MODERATOR` في مشغل التسجيل العام `handle_new_user()` بقاعدة البيانات.
+
+---
+
+## 🛠️ الأوامر الرسمية للتشغيل والترقية والتحقق (All Required CLI Commands)
+
+- **1. استخراج جميع ملفات المشروع من وثيقة التسليم مباشرة:**
+  ```bash
+  node scripts/extract-handover.mjs
+  ```
+- **2. توليد وتنفيذ سكريبت الترقية الشامل دفعة واحدة:**
+  ```bash
+  node scripts/build-v9-upgrade-script.mjs
+  node apply-musnad-v12-upgrade.mjs
+  ```
+- **3. فحص الاتصال بقاعدة البيانات ومتغيرات البيئة (Supabase & PostgreSQL):**
+  ```bash
+  node scripts/verify-and-connect.mjs
+  ```
+- **4. مزامنة مخطط Prisma وتوليد العميل وبذر البيانات الأساسية:**
+  ```bash
+  npx prisma generate
+  npx prisma db push
+  npx prisma db seed
+  ```
+- **5. الفحص الصارم للأنواع (TypeScript) وبناء نسخة الإنتاج (Next.js 15 Build):**
+  ```bash
+  npx tsc --noEmit
+  npm run build
+  ```
+- **6. إعادة توليد وثيقة التسليم (تلقائياً تحت سقف 1 ميجابايت + مقسمة لجزأين):**
+  ```bash
+  node scripts/generate-handover.mjs
+  ```
+
+---
+
+## 📂 Complete Source Code (39 Files)
+
+### File: `src/app/globals.css`
+
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222.2 84% 4.9%;
+    color-scheme: light;
+  }
+
+  html.dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    color-scheme: dark;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    background-color: #f8fafc;
+    color: #0f172a;
+    font-family: var(--font-cairo), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+  }
+
+  html.dark body {
+    background-color: #020617;
+    color: #f8fafc;
+  }
+}
+
+/* Comprehensive Dark Mode Surface & Component Overrides Across 100% of Al-Musnad Sections */
+html.dark .bg-white {
+  background-color: #0f172a !important;
+}
+
+html.dark .bg-slate-50,
+html.dark .bg-slate-50\/50,
+html.dark .bg-slate-50\/60,
+html.dark .bg-slate-50\/70,
+html.dark .bg-slate-100 {
+  background-color: #1e293b !important;
+}
+
+html.dark .text-slate-900 {
+  color: #f8fafc !important;
+}
+
+html.dark .text-slate-800 {
+  color: #f1f5f9 !important;
+}
+
+html.dark .text-slate-700 {
+  color: #cbd5e1 !important;
+}
+
+html.dark .text-slate-600,
+html.dark .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+html.dark .border-slate-200,
+html.dark .border-slate-100,
+html.dark .border-slate-300 {
+  border-color: #1e293b !important;
+}
+
+/* Form Controls, Inputs, Dropdowns & Modals */
+html.dark input:not([type="checkbox"]):not([type="radio"]),
+html.dark select,
+html.dark textarea {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #64748b !important;
+}
+
+html.dark input:focus,
+html.dark select:focus,
+html.dark textarea:focus {
+  border-color: #3b82f6 !important;
+  outline: none;
+}
+
+/* Tables in Dark Mode */
+html.dark table {
+  background-color: #0f172a !important;
+}
+
+html.dark thead th {
+  background-color: #1e293b !important;
+  color: #e2e8f0 !important;
+  border-color: #334155 !important;
+}
+
+html.dark tbody td {
+  border-color: #1e293b !important;
+}
+
+html.dark tbody tr:hover {
+  background-color: #1e293b/60 !important;
+}
+
+/* Floating Modals, Dropdowns & Popovers */
+html.dark .shadow-2xl,
+html.dark .shadow-xl,
+html.dark .shadow-lg {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+html.dark ::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+```
+
+---
+
+### File: `src/app/layout.tsx`
+
+```typescript
+import type { Metadata } from "next";
+import { Cairo } from "next/font/google";
+import Link from "next/link";
+import { Headphones, ShieldCheck, BookOpen, Briefcase } from "lucide-react";
+import Navbar from "@/components/layout/Navbar";
+import AuthRoleModal from "@/components/auth/AuthRoleModal";
+import { AppPreferencesProvider } from "@/context/AppPreferencesContext";
+import "./globals.css";
+
+const cairo = Cairo({
+  subsets: ["arabic", "latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  variable: "--font-cairo",
+  display: "swap",
+});
+
+export const metadata: Metadata = {
+  title: "المسند | المنصة التربوية والبيداغوجية المعتمدة",
+  description:
+    "منصة المسند التربوية والبيداغوجية المعتمدة للمؤسسات، المتفقدين، المعلمين، والتلاميذ لتصفح المستويات والمواد والوثائق الإدارية والنشرات التربوية.",
+  keywords: [
+    "المسند",
+    "السنة الأولى ابتدائي",
+    "السنة السادسة ابتدائي",
+    "جذاذات",
+    "تمارين",
+    "امتحانات",
+    "وثائق إدارية للمعلم",
+  ],
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="ar" dir="rtl" className={cairo.variable} suppressHydrationWarning>
+      <body className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-cairo transition-colors">
+        <AppPreferencesProvider>
+          {/* Global Top Navbar */}
+          <Navbar />
+
+          {/* Fullscreen Role Selection Modal */}
+          <AuthRoleModal />
+
+          {/* Main Content Area */}
+          <main className="flex-1">{children}</main>
+
+          {/* Global Bottom Footer with Technical Support & Customer Service at the bottom of the page */}
+          <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 pt-12 pb-8 mt-16">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+              {/* Dedicated Support & Customer Service Banner at the bottom of the page */}
+              <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-blue-600 via-indigo-700 to-slate-900 text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-lg">
+                <div className="flex items-start sm:items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-md flex items-center justify-center shrink-0">
+                    <Headphones className="w-7 h-7 text-amber-300" />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="inline-block px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-[11px] font-bold">
+                      مركز المساعدة والمرافقة
+                    </span>
+                    <h3 className="text-lg sm:text-xl font-black">
+                      قسم الدعم الفني وخدمة العملاء
+                    </h3>
+                    <p className="text-xs sm:text-sm text-blue-100 max-w-xl leading-relaxed">
+                      هل تواجه أي استفسار تقني أو ترغب في التواصل مع المشرف العام لتوثيق هويتك التربوية؟ فريق الدعم الفني في خدمتك على مدار الساعة.
+                    </p>
+                  </div>
+                </div>
+
+                <Link
+                  href="/support"
+                  className="px-6 py-3.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-900 font-extrabold text-xs sm:text-sm inline-flex items-center gap-2 shadow-md transition shrink-0"
+                >
+                  <Headphones className="w-4 h-4" />
+                  <span>الانتقال إلى صفحة الدعم الفني وخدمة العملاء</span>
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div className="md:col-span-2 space-y-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 bg-blue-600 text-white rounded-xl flex items-center justify-center font-black text-lg shadow-sm">
+                      م
+                    </div>
+                    <span className="text-xl font-extrabold text-slate-900 dark:text-white">
+                      المسند
+                    </span>
+                  </div>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed max-w-md">
+                    المنصة التربوية والبيداغوجية المعتمدة للمؤسسات، المتفقدين، المعلمين، والتلاميذ لتصفح المستويات الدراسية، المواد، الجذاذات، التمارين، والوثائق الإدارية.
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm mb-3">
+                    أقسام المنصة
+                  </h4>
+                  <ul className="space-y-2 text-sm text-slate-500 dark:text-slate-400">
+                    <li>
+                      <Link href="/levels" className="hover:text-blue-600 transition inline-flex items-center gap-1.5">
+                        <BookOpen className="w-3.5 h-3.5" />
+                        <span>مستودع المواد والمستويات</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/#administration-section" className="hover:text-blue-600 transition inline-flex items-center gap-1.5">
+                        <Briefcase className="w-3.5 h-3.5" />
+                        <span>قسم الإدارة والمعاملات الإدارية</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/#catalog" className="hover:text-blue-600 transition">
+                        النشرات العامة
+                      </Link>
+                    </li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm mb-3">
+                    الدعم الفني والتوثيق
+                  </h4>
+                  <ul className="space-y-2 text-sm text-slate-500 dark:text-slate-400">
+                    <li>
+                      <Link href="/support" className="hover:text-blue-600 font-bold text-blue-600 dark:text-blue-400 transition inline-flex items-center gap-1.5">
+                        <Headphones className="w-3.5 h-3.5" />
+                        <span>الدعم الفني وخدمة العملاء</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/profile?tab=verification" className="hover:text-blue-600 transition inline-flex items-center gap-1.5">
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        <span>قسم توثيق الهوية</span>
+                      </Link>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-3">
+                <p>© {new Date().getFullYear()} منصة المسند التربوية. جميع الحقوق محفوظة.</p>
+                <Link href="/support" className="hover:text-blue-600 font-semibold transition">
+                  الدعم الفني وخدمة العملاء
+                </Link>
+              </div>
+            </div>
+          </footer>
+        </AppPreferencesProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+---
+
+### File: `src/app/not-found.tsx`
+
+```typescript
+import Link from "next/link";
+import { FileQuestion, Home, Search } from "lucide-react";
+
+export default function NotFound() {
+  return (
+    <div className="min-h-[70vh] flex items-center justify-center px-4 py-16">
+      <div className="max-w-md w-full text-center space-y-6">
+        <div className="w-20 h-20 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-3xl flex items-center justify-center mx-auto border border-blue-100 dark:border-blue-900 shadow-sm">
+          <FileQuestion className="w-10 h-10" />
+        </div>
+
+        <div className="space-y-2">
+          <h1 className="text-4xl font-extrabold text-slate-900 dark:text-white">
+            404
+          </h1>
+          <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">
+            الصفحة المطلوبة غير موجودة
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+            عذراً، الوثيقة أو الصفحة التي تبحث عنها غير متوفرة أو قد تم نقلها أو حذفها من منصة «المسند».
+          </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
+          <Link
+            href="/"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors shadow-sm"
+          >
+            <Home className="w-4 h-4" />
+            الرئيسية
+          </Link>
+          <Link
+            href="/browse"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl transition-colors"
+          >
+            <Search className="w-4 h-4" />
+            استكشاف الأنشطة
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+```
+
+---
+
+### File: `src/app/error.tsx`
+
+```typescript
+"use client";
+
+import { useEffect } from "react";
+import Link from "next/link";
+import { AlertTriangle, RotateCcw, Home } from "lucide-react";
+
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  useEffect(() => {
+    console.error("Global application error:", error);
+  }, [error]);
+
+  return (
+    <div className="min-h-[70vh] flex items-center justify-center px-4 py-16">
+      <div className="max-w-md w-full text-center space-y-6">
+        <div className="w-20 h-20 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 rounded-3xl flex items-center justify-center mx-auto border border-rose-100 dark:border-rose-900 shadow-sm">
+          <AlertTriangle className="w-10 h-10" />
+        </div>
+
+        <div className="space-y-2">
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white">
+            حدث خطأ غير متوقع
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+            واجه النظام مشكلة أثناء معالجة طلبك على منصة «المسند». يرجى إعادة المحاولة أو العودة للرئيسية.
+          </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
+          <button
+            onClick={() => reset()}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors shadow-sm"
+          >
+            <RotateCcw className="w-4 h-4" />
+            إعادة المحاولة
+          </button>
+          <Link
+            href="/"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl transition-colors"
+          >
+            <Home className="w-4 h-4" />
+            الرئيسية
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+```
+
+---
+
+### File: `src/context/AppPreferencesContext.tsx`
+
+```typescript
+"use client";
+
+/**
+ * Global Theme & Trilingual Context — Al-Musnad (المسند) v4.0
+ *
+ * Updates:
+ * - Renamed "بنك المنشورات" to "النشرات".
+ * - Added "التوثيق" (`verification`) right under "الاشتراكات" (`subscriptions`).
+ * - Added "الدعم الفني وخدمة العملاء" (`support`).
+ * - Removed all example names of people, schools, or institutions from placeholders!
+ */
+
+import React, { createContext, useContext, useState, useEffect } from "react";
+import type { AccountRoleOption } from "@/types/api";
+
+export type Locale = "ar" | "fr" | "en";
+export type ThemeMode = "light" | "dark";
+
+export interface RoleMetadataTranslations {
+  title: string;
+  subtitle: string;
+  badge: string;
+  orgLabel: string;
+  orgPlaceholder: string;
+  nameLabel: string;
+  namePlaceholder: string;
+}
+
+export interface Dictionary {
+  dir: "rtl" | "ltr";
+  brandName: string;
+  brandTagline: string;
+  nav: {
+    home: string;
+    browse: string;
+    upload: string;
+    support: string;
+    adminPanel: string;
+    login: string;
+    register: string;
+    logout: string;
+    profile: string;
+    editProfile: string;
+    subscriptions: string;
+    verification: string;
+    settings: string;
+    notifications: string;
+    markAllRead: string;
+    noNotifications: string;
+    themeLight: string;
+    themeDark: string;
+    language: string;
+  };
+  authModal: {
+    loginTitle: string;
+    loginSubtitle: string;
+    registerTitle: string;
+    registerSubtitle: string;
+    switchToRegister: string;
+    switchToLogin: string;
+    close: string;
+    continueBtn: string;
+    changeRoleBtn: string;
+  };
+  roles: Record<AccountRoleOption, RoleMetadataTranslations>;
+  authForm: {
+    emailLabel: string;
+    passwordLabel: string;
+    passwordHint: string;
+    studentGradeLabel: string;
+    studentGradePlaceholder: string;
+    termsLabel: string;
+    submitLogin: string;
+    submitRegister: string;
+    googleContinue: string;
+    orDivider: string;
+    verificationNote: string;
+    haveCodeQuestion: string;
+    activateCodeLink: string;
+  };
+}
+
+export const DICTIONARIES: Record<Locale, Dictionary> = {
+  ar: {
+    dir: "rtl",
+    brandName: "المسند",
+    brandTagline: "المنصة التربوية والبيداغوجية المعتمدة",
+    nav: {
+      home: "الرئيسية",
+      browse: "النشرات",
+      upload: "نشر وثيقة",
+      support: "الدعم الفني",
+      adminPanel: "لوحة المشرف",
+      login: "تسجيل الدخول",
+      register: "إنشاء حساب",
+      logout: "تسجيل الخروج",
+      profile: "الملف الشخصي ومساحتي",
+      editProfile: "تعديل الملف الشخصي",
+      subscriptions: "الاشتراكات",
+      verification: "التوثيق",
+      settings: "الإعدادات",
+      notifications: "التنبيهات والإشعارات",
+      markAllRead: "تحديد الكل كمقروء",
+      noNotifications: "لا توجد تنبيهات جديدة حالياً",
+      themeLight: "الوضع النهاري",
+      themeDark: "الوضع الليلي",
+      language: "اللغة",
+    },
+    authModal: {
+      loginTitle: "اختر صفتك لتسجيل الدخول إلى المسند",
+      loginSubtitle: "حدد فضاءك التربوي للوصول المباشر إلى النشرات وأدوات العمل المخصصة لك",
+      registerTitle: "اختر نوع الحساب الذي تريد إنشاءه في المسند",
+      registerSubtitle: "يمكنك إنشاء حسابك مباشرة، وتوثيق هويتك لاحقاً بكود من المشرف للحصول على شارة التوثيق",
+      switchToRegister: "ليس لديك حساب؟ انتقل إلى إنشاء حساب جديد",
+      switchToLogin: "لديك حساب بالفعل؟ انتقل إلى تسجيل الدخول",
+      close: "إغلاق النافذة",
+      continueBtn: "متابعة",
+      changeRoleBtn: "تغيير نوع الحساب",
+    },
+    roles: {
+      INSTITUTION: {
+        title: "حساب مؤسسة تربوية",
+        subtitle: "للمدارس، المعاهد، والمؤسسات التعليمية لإدارة ونشر الرصيد البيداغوجي والوثائق المدرسية.",
+        badge: "فضاء المؤسسات",
+        orgLabel: "اسم المؤسسة التربوية / المدرسة *",
+        orgPlaceholder: "أدخل الاسم الرسمي للمؤسسة التربوية",
+        nameLabel: "صفة أو اسم المسؤول التربوي *",
+        namePlaceholder: "أدخل الاسم الكامل للمسؤول",
+      },
+      INSPECTOR: {
+        title: "حساب متفقد تربوي",
+        subtitle: "للمتفقدين والموجهين البيداغوجيين لاعتماد صحة النشرات علمياً وتربوياً وتقديم التوجيهات الرسمية.",
+        badge: "فضاء المتفقدين",
+        orgLabel: "الدائرة التفقدية / المندوبية الجهوية *",
+        orgPlaceholder: "أدخل اسم الدائرة التفقدية أو المندوبية",
+        nameLabel: "الاسم الكامل للمتفقد *",
+        namePlaceholder: "أدخل الاسم الكامل",
+      },
+      TEACHER: {
+        title: "حساب معلم",
+        subtitle: "للمعلمين والأساتذة لنشر المذكرات، التمارين، وإصلاح الاختبارات مع التحكم الكامل في جمهور النشر.",
+        badge: "فضاء المعلمين",
+        orgLabel: "المؤسسة التربوية التي تدرّس بها (اختياري)",
+        orgPlaceholder: "أدخل اسم المدرسة أو المؤسسة",
+        nameLabel: "الاسم الكامل للمعلم *",
+        namePlaceholder: "أدخل الاسم الكامل",
+      },
+      STUDENT: {
+        title: "حساب تلميذ",
+        subtitle: "للتلاميذ وأولياء الأمور لتصفح وتحميل التمارين، المراجعات، والأنشطة الموجهة للتلاميذ.",
+        badge: "فضاء التلاميذ",
+        orgLabel: "المؤسسة التعليمية / المدرسة (اختياري)",
+        orgPlaceholder: "أدخل اسم المدرسة",
+        nameLabel: "الاسم الكامل للتلميذ *",
+        namePlaceholder: "أدخل الاسم الكامل",
+      },
+    },
+    authForm: {
+      emailLabel: "البريد الإلكتروني *",
+      passwordLabel: "كلمة المرور *",
+      passwordHint: "8 أحرف على الأقل",
+      studentGradeLabel: "المستوى الدراسي للتلميذ (إجباري) *",
+      studentGradePlaceholder: "اختر المستوى الدراسي...",
+      termsLabel: "أوافق على شروط وأحكام الاستخدام وسياسة الخصوصية لمنصة المسند *",
+      submitLogin: "تسجيل الدخول الآن",
+      submitRegister: "إنشاء الحساب الآن",
+      googleContinue: "المتابعة باستخدام حساب Google",
+      orDivider: "أو",
+      verificationNote: "ملاحظة التوثيق: يمكنك إنشاء حسابك الآن واستخدام المنصة، ولإضافة شارة التوثيق الرسمية (للمؤسسات، المعلمين، والمتفقدين) يتم تأكيد الهوية بكود من المشرف في قسم التوثيق.",
+      haveCodeQuestion: "هل لديك كود توثيق الحساب؟",
+      activateCodeLink: "تفعيل كود التوثيق",
+    },
+  },
+
+  fr: {
+    dir: "ltr",
+    brandName: "Al-Musnad",
+    brandTagline: "Plateforme Pédagogique Certifiée",
+    nav: {
+      home: "Accueil",
+      browse: "Publications",
+      upload: "Publier",
+      support: "Support & Aide",
+      adminPanel: "Administration",
+      login: "Connexion",
+      register: "Créer un compte",
+      logout: "Déconnexion",
+      profile: "Mon Espace & Profil",
+      editProfile: "Modifier le profil",
+      subscriptions: "Abonnements",
+      verification: "Vérification",
+      settings: "Paramètres",
+      notifications: "Notifications",
+      markAllRead: "Tout marquer comme lu",
+      noNotifications: "Aucune notification pour le moment",
+      themeLight: "Mode Clair",
+      themeDark: "Mode Sombre",
+      language: "Langue",
+    },
+    authModal: {
+      loginTitle: "Choisissez votre profil de connexion sur Al-Musnad",
+      loginSubtitle: "Accédez à votre espace pédagogique dédié",
+      registerTitle: "Choisissez le type de compte à créer",
+      registerSubtitle: "Créez votre compte et vérifiez votre identité via un code administrateur pour obtenir le badge certifié",
+      switchToRegister: "Pas encore de compte ? Créer un nouveau compte",
+      switchToLogin: "Déjà inscrit ? Se connecter à mon compte",
+      close: "Fermer",
+      continueBtn: "Continuer",
+      changeRoleBtn: "Changer le type de compte",
+    },
+    roles: {
+      INSTITUTION: {
+        title: "Espace Établissement",
+        subtitle: "Pour les écoles et institutions éducatives afin de gérer et diffuser leurs ressources.",
+        badge: "Établissement",
+        orgLabel: "Nom de l'établissement scolaire *",
+        orgPlaceholder: "Saisissez le nom officiel de l'établissement",
+        nameLabel: "Nom du responsable *",
+        namePlaceholder: "Saisissez le nom complet",
+      },
+      INSPECTOR: {
+        title: "Espace Inspecteur",
+        subtitle: "Pour les inspecteurs pédagogiques afin d'homologuer les publications et publier des directives.",
+        badge: "Inspecteur",
+        orgLabel: "Circonscription / Délégation régionale *",
+        orgPlaceholder: "Saisissez la circonscription pédagogique",
+        nameLabel: "Nom complet de l'inspecteur *",
+        namePlaceholder: "Saisissez le nom complet",
+      },
+      TEACHER: {
+        title: "Espace Enseignant",
+        subtitle: "Pour les enseignants afin de publier des exercices ou des corrigés réservés aux enseignants.",
+        badge: "Enseignant",
+        orgLabel: "Établissement scolaire (optionnel)",
+        orgPlaceholder: "Saisissez le nom de l'école",
+        nameLabel: "Nom complet de l'enseignant *",
+        namePlaceholder: "Saisissez le nom complet",
+      },
+      STUDENT: {
+        title: "Espace Élève",
+        subtitle: "Pour les élèves et parents afin de consulter et télécharger les fiches d'exercices.",
+        badge: "Élève",
+        orgLabel: "École (optionnel)",
+        orgPlaceholder: "Saisissez le nom de l'école",
+        nameLabel: "Nom complet de l'élève *",
+        namePlaceholder: "Saisissez le nom complet",
+      },
+    },
+    authForm: {
+      emailLabel: "Adresse e-mail *",
+      passwordLabel: "Mot de passe *",
+      passwordHint: "8 caractères minimum",
+      studentGradeLabel: "Niveau scolaire de l'élève (obligatoire) *",
+      studentGradePlaceholder: "Sélectionnez le niveau scolaire...",
+      termsLabel: "J'accepte les conditions générales d'utilisation et la politique de confidentialité d'Al-Musnad *",
+      submitLogin: "Se connecter",
+      submitRegister: "Créer mon compte",
+      googleContinue: "Continuer avec Google",
+      orDivider: "OU",
+      verificationNote: "Note : Vous pouvez créer un compte sans vérification immédiate. Le badge de certification (Établissement, Enseignant, Inspecteur) s'active avec un code fourni par l'administrateur.",
+      haveCodeQuestion: "Vous avez un code de vérification ?",
+      activateCodeLink: "Activer mon code",
+    },
+  },
+
+  en: {
+    dir: "ltr",
+    brandName: "Al-Musnad",
+    brandTagline: "Certified Educational & Pedagogical Platform",
+    nav: {
+      home: "Home",
+      browse: "Publications",
+      upload: "Publish",
+      support: "Support",
+      adminPanel: "Admin Panel",
+      login: "Log In",
+      register: "Sign Up",
+      logout: "Sign Out",
+      profile: "My Workspace & Profile",
+      editProfile: "Edit Profile",
+      subscriptions: "Subscriptions",
+      verification: "Verification",
+      settings: "Settings",
+      notifications: "Notifications",
+      markAllRead: "Mark all read",
+      noNotifications: "No new notifications",
+      themeLight: "Light Mode",
+      themeDark: "Dark Mode",
+      language: "Language",
+    },
+    authModal: {
+      loginTitle: "Select Your Account Type on Al-Musnad",
+      loginSubtitle: "Access your tailored educational workspace",
+      registerTitle: "Select the Account Type to Create",
+      registerSubtitle: "Create your account now and verify your identity anytime via an admin code to unlock the verified badge",
+      switchToRegister: "Don't have an account? Create a new account",
+      switchToLogin: "Already have an account? Log in here",
+      close: "Close",
+      continueBtn: "Continue",
+      changeRoleBtn: "Change Account Type",
+    },
+    roles: {
+      INSTITUTION: {
+        title: "Educational Institution",
+        subtitle: "For schools and educational centers to manage and publish institutional curricula.",
+        badge: "Institution",
+        orgLabel: "Official Institution / School Name *",
+        orgPlaceholder: "Enter official institution name",
+        nameLabel: "Coordinator Full Name *",
+        namePlaceholder: "Enter full name",
+      },
+      INSPECTOR: {
+        title: "Pedagogical Inspector",
+        subtitle: "For certified inspectors to endorse scientific & pedagogical accuracy and pin official directives.",
+        badge: "Inspector",
+        orgLabel: "Inspection District / Regional Directorate *",
+        orgPlaceholder: "Enter inspection district",
+        nameLabel: "Inspector Full Name *",
+        namePlaceholder: "Enter full name",
+      },
+      TEACHER: {
+        title: "Teacher Account",
+        subtitle: "For teachers to publish worksheets for students or answer keys exclusively for fellow teachers.",
+        badge: "Teacher",
+        orgLabel: "School Name (Optional)",
+        orgPlaceholder: "Enter school name",
+        nameLabel: "Teacher Full Name *",
+        namePlaceholder: "Enter full name",
+      },
+      STUDENT: {
+        title: "Student Account",
+        subtitle: "For students and parents to browse, preview, and download worksheets and study materials.",
+        badge: "Student",
+        orgLabel: "School Name (Optional)",
+        orgPlaceholder: "Enter school name",
+        nameLabel: "Student Full Name *",
+        namePlaceholder: "Enter full name",
+      },
+    },
+    authForm: {
+      emailLabel: "Email Address *",
+      passwordLabel: "Password *",
+      passwordHint: "At least 8 characters",
+      studentGradeLabel: "Student Grade Level (Required) *",
+      studentGradePlaceholder: "Select grade level...",
+      termsLabel: "I agree to Al-Musnad Terms & Conditions and Privacy Policy *",
+      submitLogin: "Log In Now",
+      submitRegister: "Create Account",
+      googleContinue: "Continue with Google",
+      orDivider: "OR",
+      verificationNote: "Verification Note: You can create an account without immediate verification. Official verification badges for Institutions, Teachers, and Inspectors are unlocked via an admin code.",
+      haveCodeQuestion: "Have a verification code?",
+      activateCodeLink: "Activate Code",
+    },
+  },
+};
+
+interface AppPreferencesContextValue {
+  locale: Locale;
+  setLocale: (loc: Locale) => void;
+  theme: ThemeMode;
+  toggleTheme: () => void;
+  setTheme: (theme: ThemeMode) => void;
+  t: Dictionary;
+  authModalMode: "login" | "register" | null;
+  openAuthModal: (mode: "login" | "register") => void;
+  closeAuthModal: () => void;
+}
+
+const AppPreferencesContext = createContext<AppPreferencesContextValue | undefined>(undefined);
+
+export function AppPreferencesProvider({ children }: { children: React.ReactNode }) {
+  const [locale, setLocaleState] = useState<Locale>("ar");
+  const [theme, setThemeState] = useState<ThemeMode>("light");
+  const [authModalMode, setAuthModalMode] = useState<"login" | "register" | null>(null);
+
+  useEffect(() => {
+    try {
+      const savedLocale = localStorage.getItem("musnad_locale") as Locale | null;
+      if (savedLocale && (savedLocale === "ar" || savedLocale === "fr" || savedLocale === "en")) {
+        setLocaleState(savedLocale);
+      }
+
+      const savedTheme = localStorage.getItem("musnad_theme") as ThemeMode | null;
+      if (savedTheme === "dark" || savedTheme === "light") {
+        setThemeState(savedTheme);
+      } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        setThemeState("dark");
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    const dict = DICTIONARIES[locale];
+    document.documentElement.lang = locale;
+    document.documentElement.dir = dict.dir;
+    document.body.style.direction = dict.dir;
+    document.body.style.textAlign = dict.dir === "rtl" ? "right" : "left";
+    try {
+      localStorage.setItem("musnad_locale", locale);
+    } catch {
+      // ignore
+    }
+  }, [locale]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === "dark") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+    try {
+      localStorage.setItem("musnad_theme", theme);
+    } catch {
+      // ignore
+    }
+  }, [theme]);
+
+  const setLocale = (loc: Locale) => setLocaleState(loc);
+  const setTheme = (mode: ThemeMode) => setThemeState(mode);
+  const toggleTheme = () => setThemeState((prev) => (prev === "light" ? "dark" : "light"));
+
+  const openAuthModal = (mode: "login" | "register") => setAuthModalMode(mode);
+  const closeAuthModal = () => setAuthModalMode(null);
+
+  return (
+    <AppPreferencesContext.Provider
+      value={{
+        locale,
+        setLocale,
+        theme,
+        toggleTheme,
+        setTheme,
+        t: DICTIONARIES[locale],
+        authModalMode,
+        openAuthModal,
+        closeAuthModal,
+      }}
+    >
+      {children}
+    </AppPreferencesContext.Provider>
+  );
+}
+
+export function useAppPreferences() {
+  const ctx = useContext(AppPreferencesContext);
+  if (!ctx) {
+    throw new Error("useAppPreferences must be used inside AppPreferencesProvider");
+  }
+  return ctx;
+}
+```
+
+---
+
+### File: `src/components/auth/AuthRoleModal.tsx`
+
+```typescript
+"use client";
+
+/**
+ * Full-Screen 4-Role Selection Overlay — Al-Musnad (المسند) v3.0
+ *
+ * Clean badges without "Option 1 / 2 / 3 / 4" wording, rebranded with "م" logo for Al-Musnad.
+ */
+
+import React, { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Building2,
+  ShieldCheck,
+  BookOpen,
+  GraduationCap,
+  X,
+  ArrowLeft,
+  ArrowRight,
+  Sparkles,
+} from "lucide-react";
+import { useAppPreferences } from "@/context/AppPreferencesContext";
+import type { AccountRoleOption } from "@/types/api";
+
+export interface RoleOptionVisual {
+  role: AccountRoleOption;
+  icon: React.ComponentType<{ className?: string }>;
+  gradient: string;
+  borderHover: string;
+  badgeStyle: string;
+  iconBg: string;
+}
+
+export const ROLE_VISUAL_CARDS: RoleOptionVisual[] = [
+  {
+    role: "INSTITUTION",
+    icon: Building2,
+    gradient: "from-indigo-600 to-violet-700",
+    borderHover: "hover:border-indigo-500 dark:hover:border-indigo-400",
+    badgeStyle:
+      "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800",
+    iconBg: "bg-indigo-600 text-white shadow-indigo-500/25",
+  },
+  {
+    role: "INSPECTOR",
+    icon: ShieldCheck,
+    gradient: "from-amber-500 to-orange-600",
+    borderHover: "hover:border-amber-500 dark:hover:border-amber-400",
+    badgeStyle:
+      "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800",
+    iconBg: "bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-amber-500/25",
+  },
+  {
+    role: "TEACHER",
+    icon: BookOpen,
+    gradient: "from-blue-600 to-cyan-600",
+    borderHover: "hover:border-blue-500 dark:hover:border-blue-400",
+    badgeStyle:
+      "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800",
+    iconBg: "bg-blue-600 text-white shadow-blue-500/25",
+  },
+  {
+    role: "STUDENT",
+    icon: GraduationCap,
+    gradient: "from-emerald-600 to-teal-600",
+    borderHover: "hover:border-emerald-500 dark:hover:border-emerald-400",
+    badgeStyle:
+      "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800",
+    iconBg: "bg-emerald-600 text-white shadow-emerald-500/25",
+  },
+];
+
+export default function AuthRoleModal() {
+  const router = useRouter();
+  const { authModalMode, closeAuthModal, openAuthModal, t } = useAppPreferences();
+
+  useEffect(() => {
+    if (!authModalMode) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeAuthModal();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [authModalMode, closeAuthModal]);
+
+  if (!authModalMode) return null;
+
+  const isLogin = authModalMode === "login";
+  const ArrowIcon = t.dir === "rtl" ? ArrowLeft : ArrowRight;
+
+  const handleSelectRole = (role: AccountRoleOption) => {
+    const targetPath = isLogin ? `/login?role=${role}` : `/register?role=${role}`;
+    closeAuthModal();
+    router.push(targetPath);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-xl flex flex-col justify-between overflow-y-auto animate-fadeIn p-4 sm:p-8"
+      dir={t.dir}
+    >
+      {/* Top Bar */}
+      <div className="max-w-7xl w-full mx-auto flex items-center justify-between py-2">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center font-black text-xl shadow-lg shadow-blue-500/30">
+            م
+          </div>
+          <div>
+            <span className="text-lg font-extrabold text-white block leading-none">
+              {t.brandName}
+            </span>
+            <span className="text-xs text-slate-400">{t.brandTagline}</span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={closeAuthModal}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/15 transition cursor-pointer"
+        >
+          <span>{t.authModal.close}</span>
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Center Content: 4 Full-Screen Portals */}
+      <div className="max-w-7xl w-full mx-auto my-auto py-8 space-y-8">
+        <div className="text-center space-y-3 max-w-2xl mx-auto">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-200 text-xs font-bold">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>{isLogin ? t.nav.login : t.nav.register}</span>
+          </div>
+          <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
+            {isLogin ? t.authModal.loginTitle : t.authModal.registerTitle}
+          </h2>
+          <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
+            {isLogin ? t.authModal.loginSubtitle : t.authModal.registerSubtitle}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {ROLE_VISUAL_CARDS.map((card) => {
+            const Icon = card.icon;
+            const roleText = t.roles[card.role];
+
+            return (
+              <button
+                key={card.role}
+                type="button"
+                onClick={() => handleSelectRole(card.role)}
+                className={`group relative text-start bg-white dark:bg-slate-900 border-2 border-slate-200/90 dark:border-slate-800 ${card.borderHover} rounded-3xl p-6 sm:p-7 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1.5 flex flex-col justify-between cursor-pointer overflow-hidden`}
+              >
+                <div
+                  className={`absolute top-0 inset-x-0 h-2 bg-gradient-to-r ${card.gradient}`}
+                />
+
+                <div className="space-y-5 pt-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span
+                      className={`px-3 py-1 rounded-full text-[11px] font-extrabold border ${card.badgeStyle}`}
+                    >
+                      {roleText.badge}
+                    </span>
+                    <div
+                      className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ${card.iconBg} group-hover:scale-110 transition-transform`}
+                    >
+                      <Icon className="w-6 h-6" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-black text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                      {roleText.title}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                      {roleText.subtitle}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-6 mt-6 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs font-extrabold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                  <span>
+                    {isLogin ? t.nav.login : t.nav.register} ({roleText.title})
+                  </span>
+                  <ArrowIcon className="w-4 h-4 transform group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform" />
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="text-center pt-2">
+          <button
+            type="button"
+            onClick={() => openAuthModal(isLogin ? "register" : "login")}
+            className="text-sm font-bold text-blue-300 hover:text-white underline underline-offset-4 transition cursor-pointer"
+          >
+            {isLogin ? t.authModal.switchToRegister : t.authModal.switchToLogin}
+          </button>
+        </div>
+      </div>
+
+      <div className="text-center text-xs text-slate-500">
+        © {new Date().getFullYear()} {t.brandName}
+      </div>
+    </div>
+  );
+}
+
+```
+
+---
+
+### File: `src/components/layout/Navbar.tsx`
+
+```typescript
+"use client";
+
+/**
+ * Upgraded Navigation Bar — Al-Musnad (المسند) v11.0
+ *
+ * Implements all v11.0 User Directives:
+ * 1. Role-Distinguished Username Box in Top Bar:
+ *    - Surrounds the username & avatar box with a distinctive colored frame (`border-2` + `ring-2`)
+ *      according to the user's supervisory rank:
+ *      • `ADMIN` (المشرف العام): Royal Purple/Blue frame (`border-purple-500 ring-purple-400/40`)
+ *      • `MODERATOR` (المسؤول الإداري): Indigo frame (`border-indigo-500 ring-indigo-400/40`)
+ *      • `INSPECTOR` (المتفقد التربوي): Amber/Gold frame (`border-amber-500 ring-amber-400/40`)
+ * 2. Merged Supervisory Badge + Dashboard Control Panel Inside the User Dropdown Menu:
+ *    - When clicking the username box, directly below «ملفي الشخصي» (`/profile`) and
+ *      «صفحتي العامة كناشر» (`/publisher/${user.id}`), we place the unified Supervisory Badge +
+ *      Control Panel button for `ADMIN`, `MODERATOR`, and `INSPECTOR`.
+ * 3. Live Online / Offline / Ghost Mode (`وضع الشبح`) Presence System:
+ *    - Displays the small green dot below the user picture when connected (`ONLINE`)
+ *      and gray dot when disconnected (`OFFLINE` / `GHOST`), with elapsed offline duration,
+ *      plus one-click switching between `متصل`، `غير متصل`، and `👻 وضع الشبح`.
+ */
+
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  ShieldCheck,
+  ShieldAlert,
+  Sun,
+  Moon,
+  Globe,
+  LogIn,
+  UserPlus,
+  Upload,
+  Menu,
+  X,
+  Bell,
+  UserCog,
+  CreditCard,
+  Settings,
+  LogOut,
+  User as UserIcon,
+  ChevronDown,
+  ExternalLink,
+  CheckCheck,
+  BadgeCheck,
+  Library,
+  Ghost,
+} from "lucide-react";
+import {
+  UserAvatarWithPresence,
+  getPublicPresenceState,
+  type PresenceMode,
+} from "@/components/ui/UserPresenceIndicator";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { useAppPreferences, type Locale } from "@/context/AppPreferencesContext";
+import type { NotificationItem } from "@/types/api";
+
+interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl: string | null;
+  role?: string;
+  isVerified?: boolean;
+  isBanned?: boolean;
+  presenceStatus?: PresenceMode | string;
+  lastSeenAt?: string | null;
+}
+
+const LANGUAGES: { code: Locale; label: string; short: string }[] = [
+  { code: "ar", label: "العربية", short: "AR" },
+  { code: "fr", label: "Français", short: "FR" },
+  { code: "en", label: "English", short: "EN" },
+];
+
+function getRoleUsernameBoxStyle(role?: string): {
+  boxClass: string;
+  avatarBgClass: string;
+  roleLabel: string;
+  roleShortTag: string;
+  badgeClass: string;
+} {
+  if (role === "ADMIN") {
+    return {
+      boxClass:
+        "border-2 border-purple-500/80 bg-purple-50/70 dark:bg-purple-950/40 text-purple-950 dark:text-purple-200 hover:border-purple-600 shadow-sm",
+      avatarBgClass: "bg-gradient-to-br from-purple-600 to-indigo-700 text-white",
+      roleLabel: "المشرف العام",
+      roleShortTag: "مشرف عام",
+      badgeClass:
+        "bg-purple-100 text-purple-800 dark:bg-purple-900/60 dark:text-purple-200 border border-purple-300 dark:border-purple-700",
+    };
+  }
+  if (role === "MODERATOR") {
+    return {
+      boxClass:
+        "border-2 border-indigo-500/80 bg-indigo-50/70 dark:bg-indigo-950/40 text-indigo-950 dark:text-indigo-200 hover:border-indigo-600 shadow-sm",
+      avatarBgClass: "bg-gradient-to-br from-indigo-600 to-purple-600 text-white",
+      roleLabel: "المسؤول الإداري",
+      roleShortTag: "مسؤول",
+      badgeClass:
+        "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-200 border border-indigo-300 dark:border-indigo-700",
+    };
+  }
+  if (role === "INSPECTOR") {
+    return {
+      boxClass:
+        "border-2 border-amber-500/80 bg-amber-50/70 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 hover:border-amber-600 shadow-sm",
+      avatarBgClass: "bg-gradient-to-br from-amber-500 to-orange-600 text-white",
+      roleLabel: "المتفقد التربوي",
+      roleShortTag: "متفقد",
+      badgeClass:
+        "bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-200 border border-amber-300 dark:border-amber-700",
+    };
+  }
+  if (role === "INSTITUTION") {
+    return {
+      boxClass:
+        "border-2 border-violet-500/80 bg-violet-50/70 dark:bg-violet-950/40 text-violet-950 dark:text-violet-200 hover:border-violet-600 shadow-sm",
+      avatarBgClass: "bg-gradient-to-br from-violet-600 to-indigo-600 text-white",
+      roleLabel: "المؤسسة التربوية",
+      roleShortTag: "مؤسسة",
+      badgeClass:
+        "bg-violet-100 text-violet-800 dark:bg-violet-900/60 dark:text-violet-200 border border-violet-300 dark:border-violet-700",
+    };
+  }
+  if (role === "STUDENT") {
+    return {
+      boxClass:
+        "border-2 border-emerald-500/80 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-950 dark:text-emerald-200 hover:border-emerald-600 shadow-sm",
+      avatarBgClass: "bg-gradient-to-br from-emerald-600 to-teal-600 text-white",
+      roleLabel: "التلميذ",
+      roleShortTag: "تلميذ",
+      badgeClass:
+        "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700",
+    };
+  }
+  return {
+    boxClass:
+      "border-2 border-blue-500/80 bg-blue-50/70 dark:bg-blue-950/40 text-blue-950 dark:text-blue-200 hover:border-blue-600 shadow-sm",
+    avatarBgClass: "bg-gradient-to-br from-blue-600 to-cyan-600 text-white",
+    roleLabel: "المعلم / الأستاذ",
+    roleShortTag: "معلم",
+    badgeClass:
+      "bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-200 border border-blue-300 dark:border-blue-700",
+  };
+}
+
+export default function Navbar() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const supabase = createSupabaseBrowserClient();
+  const { locale, setLocale, theme, toggleTheme, t, openAuthModal } =
+    useAppPreferences();
+
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [notifMenuOpen, setNotifMenuOpen] = useState(false);
+  const [updatingPresence, setUpdatingPresence] = useState(false);
+
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await fetch("/api/notifications", { cache: "no-store" });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          setNotifications(json.data.notifications || []);
+          setUnreadCount(json.data.unreadCount || 0);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleChangePresence = async (nextMode: PresenceMode) => {
+    if (!user || updatingPresence) return;
+    try {
+      setUpdatingPresence(true);
+      const res = await fetch("/api/me/presence", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ presenceStatus: nextMode }),
+      });
+      const json = await res.json();
+      if (json.success && json.data) {
+        setUser((prev) =>
+          prev
+            ? {
+                ...prev,
+                presenceStatus: json.data.presenceStatus,
+                lastSeenAt: json.data.lastSeenAt,
+              }
+            : null
+        );
+      }
+    } catch {
+      // ignore
+    } finally {
+      setUpdatingPresence(false);
+    }
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function checkUser() {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (session?.user && isMounted) {
+          const initialUser: UserProfile = {
+            id: session.user.id,
+            name:
+              session.user.user_metadata?.name ||
+              session.user.email?.split("@")[0] ||
+              "عضو المسند",
+            email: session.user.email || "",
+            avatarUrl: session.user.user_metadata?.avatar_url || null,
+            presenceStatus: "ONLINE",
+            lastSeenAt: new Date().toISOString(),
+          };
+
+          try {
+            const res = await fetch("/api/auth/me", { cache: "no-store" });
+            if (res.ok) {
+              const json = await res.json();
+              if (json.success && json.data) {
+                initialUser.role = json.data.role;
+                initialUser.name = json.data.name || initialUser.name;
+                initialUser.avatarUrl =
+                  json.data.avatarUrl || initialUser.avatarUrl;
+                initialUser.isVerified = json.data.isVerified;
+                initialUser.isBanned = json.data.isBanned;
+                initialUser.presenceStatus =
+                  json.data.presenceStatus || "ONLINE";
+                initialUser.lastSeenAt =
+                  json.data.lastSeenAt || new Date().toISOString();
+              }
+            }
+          } catch {
+            // fallback
+          }
+
+          if (isMounted) {
+            setUser(initialUser);
+            fetchNotifications();
+          }
+        } else if (isMounted) {
+          setUser(null);
+        }
+      } catch (err) {
+        console.error("Auth status error:", err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+
+    checkUser();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        const updatedUser: UserProfile = {
+          id: session.user.id,
+          name:
+            session.user.user_metadata?.name ||
+            session.user.email?.split("@")[0] ||
+            "عضو المسند",
+          email: session.user.email || "",
+          avatarUrl: session.user.user_metadata?.avatar_url || null,
+          presenceStatus: "ONLINE",
+          lastSeenAt: new Date().toISOString(),
+        };
+
+        try {
+          const res = await fetch("/api/auth/me", { cache: "no-store" });
+          if (res.ok) {
+            const json = await res.json();
+            if (json.success && json.data) {
+              updatedUser.role = json.data.role;
+              updatedUser.name = json.data.name || updatedUser.name;
+              updatedUser.avatarUrl =
+                json.data.avatarUrl || updatedUser.avatarUrl;
+              updatedUser.isVerified = json.data.isVerified;
+              updatedUser.isBanned = json.data.isBanned;
+              updatedUser.presenceStatus =
+                json.data.presenceStatus || "ONLINE";
+              updatedUser.lastSeenAt =
+                json.data.lastSeenAt || new Date().toISOString();
+            }
+          }
+        } catch {
+          // ignore
+        }
+
+        setUser(updatedUser);
+        fetchNotifications();
+      } else {
+        setUser(null);
+        setNotifications([]);
+        setUnreadCount(0);
+      }
+    });
+
+    // Periodic heartbeat every 3 minutes while active in ONLINE mode
+    const heartbeatTimer = setInterval(() => {
+      fetch("/api/me/presence", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ heartbeat: true }),
+      }).catch(() => null);
+    }, 3 * 60_000);
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+      clearInterval(heartbeatTimer);
+    };
+  }, []);
+
+  const handleMarkAllNotificationsRead = async () => {
+    try {
+      await fetch("/api/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      setUnreadCount(0);
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleSignOut = async () => {
+    setProfileMenuOpen(false);
+    await fetch("/api/me/presence", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ presenceStatus: "OFFLINE" }),
+    }).catch(() => null);
+    await supabase.auth.signOut();
+    setUser(null);
+    router.push("/login");
+    router.refresh();
+  };
+
+  const getNavLinks = () => {
+    const base = [
+      { label: t.nav.home, href: "/" },
+      { label: "مستودع المواد والمستويات", href: "/levels" },
+      { label: "النشرات", href: "/#catalog" },
+    ];
+
+    if (user?.role === "INSPECTOR") {
+      return [
+        ...base,
+        { label: "للمتفقدين", href: "/#inspectors-hub" },
+        { label: "اعرف المزيد", href: "/#learn-more" },
+      ];
+    }
+
+    if (user?.role === "TEACHER") {
+      return [
+        ...base,
+        { label: "للمعلمين", href: "/#teachers-hub" },
+        { label: "اعرف المزيد", href: "/#learn-more" },
+      ];
+    }
+
+    if (user?.role === "INSTITUTION") {
+      return [
+        ...base,
+        { label: "للمؤسسات", href: "/#institutions-hub" },
+        { label: "اعرف المزيد", href: "/#learn-more" },
+      ];
+    }
+
+    if (user?.role === "ADMIN") {
+      return [
+        ...base,
+        { label: "لوحة المشرف", href: "/admin/dashboard" },
+        { label: "اعرف المزيد", href: "/#learn-more" },
+      ];
+    }
+
+    if (user?.role === "MODERATOR") {
+      return [
+        ...base,
+        { label: "لوحة المسؤول", href: "/moderator/dashboard" },
+        { label: "اعرف المزيد", href: "/#learn-more" },
+      ];
+    }
+
+    return [
+      ...base,
+      { label: "اعرف المزيد", href: "/#learn-more" },
+    ];
+  };
+
+  const navLinks = getNavLinks();
+
+  const isSupervisoryRole =
+    user?.role === "ADMIN" ||
+    user?.role === "MODERATOR" ||
+    user?.role === "INSPECTOR";
+
+  const roleBoxStyle = getRoleUsernameBoxStyle(user?.role);
+  const currentPresenceInfo = getPublicPresenceState(
+    {
+      presenceStatus: user?.presenceStatus,
+      lastSeenAt: user?.lastSeenAt,
+    },
+    true
+  );
+
+  return (
+    <header className="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-18 py-3 gap-4">
+          {/* Brand Logo: المسند */}
+          <div className="flex items-center gap-6">
+            <Link href="/" className="flex items-center gap-2.5 group shrink-0">
+              <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center font-black text-xl shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
+                م
+              </div>
+              <div className="flex flex-col">
+                <span className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  {t.brandName}
+                </span>
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                  {t.brandTagline}
+                </span>
+              </div>
+            </Link>
+
+            <nav className="hidden lg:flex items-center gap-1">
+              {navLinks.map((link) => {
+                const isActive =
+                  pathname === link.href ||
+                  (link.href === "/levels" && pathname?.startsWith("/levels"));
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`px-3.5 py-2 rounded-xl text-sm font-bold transition ${
+                      isActive
+                        ? "text-blue-600 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-950/50"
+                        : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+
+          {/* Action Area */}
+          <div className="hidden md:flex items-center gap-2.5">
+            {/* Language Switcher */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setLangMenuOpen((prev) => !prev)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-extrabold text-slate-700 dark:text-slate-200 transition cursor-pointer"
+                title={t.nav.language}
+              >
+                <Globe className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <span>{locale.toUpperCase()}</span>
+              </button>
+
+              {langMenuOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setLangMenuOpen(false)}
+                  />
+                  <div className="absolute top-full mt-2 end-0 z-20 w-36 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl p-1.5 space-y-1">
+                    {LANGUAGES.map((lang) => (
+                      <button
+                        key={lang.code}
+                        type="button"
+                        onClick={() => {
+                          setLocale(lang.code);
+                          setLangMenuOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                          locale === lang.code
+                            ? "bg-blue-600 text-white"
+                            : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                        }`}
+                      >
+                        <span>{lang.label}</span>
+                        <span className="text-[10px] opacity-80">
+                          {lang.short}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Theme Toggle */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-amber-300 transition cursor-pointer"
+              title={theme === "light" ? t.nav.themeDark : t.nav.themeLight}
+              aria-label="Toggle Theme"
+            >
+              {theme === "light" ? (
+                <Moon className="w-4 h-4 text-slate-700" />
+              ) : (
+                <Sun className="w-4 h-4 text-amber-400" />
+              )}
+            </button>
+
+            <div className="h-5 w-px bg-slate-200 dark:bg-slate-700 mx-0.5" />
+
+            {/* Authenticated vs Unauthenticated */}
+            {!loading && user ? (
+              <div className="flex items-center gap-2.5">
+                {user.role !== "STUDENT" && !user.isBanned && (
+                  <Link
+                    href="/upload"
+                    className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl shadow-sm transition"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>{t.nav.upload}</span>
+                  </Link>
+                )}
+
+                {/* Notification Bell Icon */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNotifMenuOpen((prev) => !prev);
+                      setProfileMenuOpen(false);
+                      if (!notifMenuOpen) fetchNotifications();
+                    }}
+                    className="relative p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition cursor-pointer"
+                    title={t.nav.notifications}
+                  >
+                    <Bell className="w-4 h-4" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-[10px] font-black flex items-center justify-center shadow-sm">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {notifMenuOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setNotifMenuOpen(false)}
+                      />
+                      <div className="absolute top-full mt-2 end-0 z-20 w-80 sm:w-96 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl overflow-hidden">
+                        <div className="px-4 py-3 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                          <span className="text-xs font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
+                            <Bell className="w-3.5 h-3.5 text-blue-600" />
+                            <span>{t.nav.notifications}</span>
+                          </span>
+                          {unreadCount > 0 && (
+                            <button
+                              type="button"
+                              onClick={handleMarkAllNotificationsRead}
+                              className="text-[11px] font-bold text-blue-600 hover:underline inline-flex items-center gap-1 cursor-pointer"
+                            >
+                              <CheckCheck className="w-3.5 h-3.5" />
+                              <span>{t.nav.markAllRead}</span>
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                          {notifications.length === 0 ? (
+                            <div className="py-8 px-4 text-center text-xs text-slate-400">
+                              {t.nav.noNotifications}
+                            </div>
+                          ) : (
+                            notifications.map((n) => (
+                              <div
+                                key={n.id}
+                                onClick={() => {
+                                  setNotifMenuOpen(false);
+                                  if (n.link) router.push(n.link);
+                                }}
+                                className={`p-3.5 text-start transition cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 ${
+                                  !n.isRead
+                                    ? "bg-blue-50/40 dark:bg-blue-950/20"
+                                    : ""
+                                }`}
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <p className="text-xs font-bold text-slate-900 dark:text-white">
+                                    {n.title}
+                                  </p>
+                                  {!n.isRead && (
+                                    <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0 mt-1" />
+                                  )}
+                                </div>
+                                <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
+                                  {n.message}
+                                </p>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Unified Role-Distinguished Username Box & Dropdown Menu */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProfileMenuOpen((prev) => !prev);
+                      setNotifMenuOpen(false);
+                    }}
+                    className={`flex items-center gap-2.5 px-3 py-1.5 rounded-2xl transition cursor-pointer ${roleBoxStyle.boxClass}`}
+                    title={`${user.name} — ${roleBoxStyle.roleLabel}`}
+                  >
+                    <UserAvatarWithPresence
+                      name={user.name}
+                      avatarUrl={user.avatarUrl}
+                      presenceStatus={user.presenceStatus}
+                      lastSeenAt={user.lastSeenAt}
+                      isSelf={true}
+                      size="md"
+                      avatarBgClass={roleBoxStyle.avatarBgClass}
+                    />
+                    <div className="flex flex-col items-start text-start">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-extrabold text-slate-900 dark:text-white max-w-[100px] truncate">
+                          {user.name}
+                        </span>
+                        <span
+                          className={`px-1.5 py-0.5 rounded-md text-[9px] font-black shrink-0 ${roleBoxStyle.badgeClass}`}
+                        >
+                          {roleBoxStyle.roleShortTag}
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+                        {currentPresenceInfo.isGhostSelf
+                          ? "👻 وضع الشبح"
+                          : currentPresenceInfo.isOnlinePublicly
+                          ? "🟢 متصل الآن"
+                          : `⚪ غير متصل (${currentPresenceInfo.durationLabelAr || ""})`}
+                      </span>
+                    </div>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  </button>
+
+                  {profileMenuOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setProfileMenuOpen(false)}
+                      />
+                      <div className="absolute top-full mt-2 end-0 z-20 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-2.5 space-y-1">
+                        {/* User Summary, Role Hint & Presence Switcher */}
+                        <div className="px-3 py-2.5 border-b border-slate-100 dark:border-slate-800 mb-1 space-y-2.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="truncate">
+                              <p className="text-xs font-extrabold text-slate-900 dark:text-white truncate">
+                                {user.name}
+                              </p>
+                              <p className="text-[11px] text-slate-400 truncate">
+                                {user.email}
+                              </p>
+                            </div>
+                            <span
+                              className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black shrink-0 ${roleBoxStyle.badgeClass}`}
+                              title={`فئة الحساب: ${roleBoxStyle.roleLabel}`}
+                            >
+                              {roleBoxStyle.roleLabel}
+                            </span>
+                          </div>
+
+                          <div className="rounded-xl bg-slate-50 dark:bg-slate-800/80 p-2 border border-slate-200/70 dark:border-slate-700">
+                            <span className="block text-[10px] font-extrabold text-slate-500 dark:text-slate-400 mb-1.5">
+                              حالة الظهور والاتصال في المنصة:
+                            </span>
+                            <div className="grid grid-cols-3 gap-1">
+                              <button
+                                type="button"
+                                disabled={updatingPresence}
+                                onClick={() => handleChangePresence("ONLINE")}
+                                className={`flex items-center justify-center gap-1 py-1.5 px-1.5 rounded-lg text-[10px] font-extrabold transition cursor-pointer ${
+                                  (user.presenceStatus || "ONLINE") === "ONLINE"
+                                    ? "bg-emerald-600 text-white shadow-sm"
+                                    : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-emerald-50"
+                                }`}
+                              >
+                                <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                                <span>متصل</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                disabled={updatingPresence}
+                                onClick={() => handleChangePresence("OFFLINE")}
+                                className={`flex items-center justify-center gap-1 py-1.5 px-1.5 rounded-lg text-[10px] font-extrabold transition cursor-pointer ${
+                                  user.presenceStatus === "OFFLINE"
+                                    ? "bg-slate-700 text-white shadow-sm"
+                                    : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100"
+                                }`}
+                              >
+                                <span className="w-2 h-2 rounded-full bg-slate-400" />
+                                <span>غير متصل</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                disabled={updatingPresence}
+                                onClick={() => handleChangePresence("GHOST")}
+                                title="تصفح الموقع دون ظهور أنك متصل"
+                                className={`flex items-center justify-center gap-1 py-1.5 px-1.5 rounded-lg text-[10px] font-extrabold transition cursor-pointer ${
+                                  user.presenceStatus === "GHOST"
+                                    ? "bg-purple-700 text-white shadow-sm"
+                                    : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-purple-50"
+                                }`}
+                              >
+                                <Ghost className="w-3 h-3" />
+                                <span>الشبح</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 1. ملفي الشخصي */}
+                        <Link
+                          href="/profile"
+                          onClick={() => setProfileMenuOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                        >
+                          <UserIcon className="w-4 h-4 text-blue-600" />
+                          <span>{t.nav.profile}</span>
+                        </Link>
+
+                        {/* 2. صفحتي العامة كناشر */}
+                        <Link
+                          href={`/publisher/${user.id}`}
+                          onClick={() => setProfileMenuOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                        >
+                          <ExternalLink className="w-4 h-4 text-indigo-600" />
+                          <span>صفحتي العامة كناشر</span>
+                        </Link>
+
+                        {/* 3. شارة الرتبة المدمجة مع لوحة التحكم مباشرة أسفل الملف الشخصي وصفحتي العامة كناشر */}
+                        {user.role === "ADMIN" && (
+                          <div className="my-1.5 p-2 rounded-2xl bg-gradient-to-l from-purple-50 via-blue-50 to-indigo-50 dark:from-purple-950/50 dark:via-slate-800 dark:to-indigo-950/40 border border-purple-200 dark:border-purple-800/70 space-y-1.5">
+                            <Link
+                              href="/admin/dashboard"
+                              onClick={() => setProfileMenuOpen(false)}
+                              className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-purple-700 to-blue-700 hover:from-purple-800 hover:to-blue-800 text-white text-xs font-black shadow-sm transition"
+                            >
+                              <span className="flex items-center gap-2">
+                                <ShieldCheck className="w-4 h-4 shrink-0" />
+                                <span>مشرف عام • لوحة التحكم</span>
+                              </span>
+                              <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-md">
+                                القمة
+                              </span>
+                            </Link>
+                            <div className="grid grid-cols-2 gap-1 pt-0.5">
+                              <Link
+                                href="/moderator/dashboard"
+                                onClick={() => setProfileMenuOpen(false)}
+                                className="flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg bg-white/80 dark:bg-slate-900/80 hover:bg-indigo-100 text-[10px] font-extrabold text-indigo-700 dark:text-indigo-300 border border-indigo-200/70 dark:border-indigo-800 transition"
+                              >
+                                <ShieldAlert className="w-3 h-3" />
+                                <span>لوحة المسؤول</span>
+                              </Link>
+                              <Link
+                                href="/inspector/dashboard"
+                                onClick={() => setProfileMenuOpen(false)}
+                                className="flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg bg-white/80 dark:bg-slate-900/80 hover:bg-amber-100 text-[10px] font-extrabold text-amber-800 dark:text-amber-300 border border-amber-200/70 dark:border-amber-800 transition"
+                              >
+                                <BadgeCheck className="w-3 h-3" />
+                                <span>لوحة المتفقد</span>
+                              </Link>
+                            </div>
+                          </div>
+                        )}
+
+                        {user.role === "MODERATOR" && (
+                          <div className="my-1.5 p-1.5 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/70">
+                            <Link
+                              href="/moderator/dashboard"
+                              onClick={() => setProfileMenuOpen(false)}
+                              className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-black shadow-sm transition"
+                            >
+                              <span className="flex items-center gap-2">
+                                <ShieldAlert className="w-4 h-4 shrink-0" />
+                                <span>مسؤول إداري • لوحة التحكم</span>
+                              </span>
+                              <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-md">
+                                دخول
+                              </span>
+                            </Link>
+                          </div>
+                        )}
+
+                        {user.role === "INSPECTOR" && (
+                          <div className="my-1.5 p-1.5 rounded-2xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/70">
+                            <Link
+                              href="/inspector/dashboard"
+                              onClick={() => setProfileMenuOpen(false)}
+                              className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-xs font-black shadow-sm transition"
+                            >
+                              <span className="flex items-center gap-2">
+                                <BadgeCheck className="w-4 h-4 shrink-0" />
+                                <span>متفقد معتمد • لوحة التحكم</span>
+                              </span>
+                              <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-md">
+                                دخول
+                              </span>
+                            </Link>
+                          </div>
+                        )}
+
+                        <Link
+                          href="/levels"
+                          onClick={() => setProfileMenuOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                        >
+                          <Library className="w-4 h-4 text-blue-600" />
+                          <span>مستودع المواد والمستويات</span>
+                        </Link>
+
+                        <Link
+                          href="/profile?tab=edit"
+                          onClick={() => setProfileMenuOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                        >
+                          <UserCog className="w-4 h-4 text-emerald-600" />
+                          <span>{t.nav.editProfile}</span>
+                        </Link>
+
+                        <Link
+                          href="/profile?tab=subscriptions"
+                          onClick={() => setProfileMenuOpen(false)}
+                          className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                        >
+                          <span className="flex items-center gap-2.5">
+                            <CreditCard className="w-4 h-4 text-amber-600" />
+                            <span>{t.nav.subscriptions}</span>
+                          </span>
+                          <span className="rounded-md bg-amber-100 dark:bg-amber-950/70 px-1.5 py-0.5 text-[9px] font-extrabold text-amber-800 dark:text-amber-300">
+                            قريباً
+                          </span>
+                        </Link>
+
+                        <Link
+                          href="/profile?tab=verification"
+                          onClick={() => setProfileMenuOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                        >
+                          <BadgeCheck className="w-4 h-4 text-blue-600" />
+                          <span>{t.nav.verification}</span>
+                        </Link>
+
+                        <Link
+                          href="/profile?tab=settings"
+                          onClick={() => setProfileMenuOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                        >
+                          <Settings className="w-4 h-4 text-slate-500" />
+                          <span>{t.nav.settings}</span>
+                        </Link>
+
+                        <div className="pt-1 mt-1 border-t border-slate-100 dark:border-slate-800">
+                          <button
+                            type="button"
+                            onClick={handleSignOut}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
+                          >
+                            <LogOut className="w-4 h-4" />
+                            <span>{t.nav.logout}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            ) : !loading ? (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => openAuthModal("login")}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 bg-slate-100/80 dark:bg-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-700 rounded-xl transition cursor-pointer"
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span>{t.nav.login}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => openAuthModal("register")}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-xl shadow-sm shadow-blue-500/20 transition cursor-pointer"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>{t.nav.register}</span>
+                </button>
+              </div>
+            ) : null}
+          </div>
+
+          {/* Mobile Controls */}
+          <div className="flex items-center gap-2 md:hidden">
+            <button
+              type="button"
+              onClick={() =>
+                setLocale(
+                  locale === "ar" ? "fr" : locale === "fr" ? "en" : "ar"
+                )
+              }
+              className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-extrabold text-slate-700 dark:text-slate-200"
+            >
+              {locale.toUpperCase()}
+            </button>
+
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-amber-300"
+            >
+              {theme === "light" ? (
+                <Moon className="w-4 h-4" />
+              ) : (
+                <Sun className="w-4 h-4" />
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"
+              aria-label="Menu"
+            >
+              {mobileMenuOpen ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Menu className="w-6 h-6" />
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Drawer */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 pt-3 pb-6 space-y-3">
+          <nav className="flex flex-col gap-1">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3 py-2 rounded-lg text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+            {user ? (
+              <>
+                <div className={`p-3 rounded-2xl ${roleBoxStyle.boxClass}`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <UserAvatarWithPresence
+                        name={user.name}
+                        avatarUrl={user.avatarUrl}
+                        presenceStatus={user.presenceStatus}
+                        lastSeenAt={user.lastSeenAt}
+                        isSelf={true}
+                        size="md"
+                        avatarBgClass={roleBoxStyle.avatarBgClass}
+                      />
+                      <div>
+                        <p className="text-xs font-extrabold text-slate-900 dark:text-white">
+                          {user.name}
+                        </p>
+                        <p className="text-[10px] text-slate-500">
+                          {currentPresenceInfo.statusLabelAr}
+                        </p>
+                      </div>
+                    </div>
+                    <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black ${roleBoxStyle.badgeClass}`}>
+                      {roleBoxStyle.roleLabel}
+                    </span>
+                  </div>
+                </div>
+
+                <Link
+                  href="/profile"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100"
+                >
+                  {t.nav.profile}
+                </Link>
+                <Link
+                  href={`/publisher/${user.id}`}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-lg text-sm font-bold text-indigo-700 dark:text-indigo-300"
+                >
+                  صفحتي العامة كناشر
+                </Link>
+
+                {/* Merged Supervisory Badge + Control Panel right below Profile & Public Publisher Page */}
+                {user.role === "ADMIN" && (
+                  <Link
+                    href="/admin/dashboard"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-purple-700 to-blue-700 text-white text-xs font-extrabold shadow-sm"
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>مشرف عام • لوحة التحكم</span>
+                  </Link>
+                )}
+                {user.role === "MODERATOR" && (
+                  <Link
+                    href="/moderator/dashboard"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-extrabold shadow-sm"
+                  >
+                    <ShieldAlert className="w-4 h-4" />
+                    <span>مسؤول إداري • لوحة التحكم</span>
+                  </Link>
+                )}
+                {user.role === "INSPECTOR" && (
+                  <Link
+                    href="/inspector/dashboard"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white text-xs font-extrabold shadow-sm"
+                  >
+                    <BadgeCheck className="w-4 h-4" />
+                    <span>متفقد معتمد • لوحة التحكم</span>
+                  </Link>
+                )}
+
+                <Link
+                  href="/profile?tab=subscriptions"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-lg text-sm font-bold text-slate-700 dark:text-slate-200"
+                >
+                  {t.nav.subscriptions} (سيأتي قريباً)
+                </Link>
+                <Link
+                  href="/profile?tab=verification"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-lg text-sm font-bold text-blue-600 dark:text-blue-400"
+                >
+                  {t.nav.verification}
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleSignOut();
+                  }}
+                  className="w-full text-start px-3 py-2 text-sm font-bold text-red-600 rounded-lg"
+                >
+                  {t.nav.logout}
+                </button>
+              </>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    openAuthModal("login");
+                  }}
+                  className="py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 rounded-xl"
+                >
+                  {t.nav.login}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    openAuthModal("register");
+                  }}
+                  className="py-2.5 text-sm font-bold text-white bg-blue-600 rounded-xl"
+                >
+                  {t.nav.register}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </header>
+  );
+}
+
+```
+
+---
+
+### File: `src/components/layout/SupervisoryHierarchyBar.tsx`
+
+```typescript
+"use client";
+
+/**
+ * SupervisoryHierarchyBar Component — Al-Musnad (المسند) v10.0
+ *
+ * Implements the 3-Tier Supervisory Navigation & Isolation System:
+ * 1. When the logged-in user is the Top Administrator (`viewerRole === "ADMIN"`):
+ *    - Displays an interactive 3-Tier Supervisory Switcher Bar at the top of all 3 dashboards
+ *      (`/admin/dashboard` ↔ `/moderator/dashboard` ↔ `/inspector/dashboard`).
+ *    - When the Admin is inside `/moderator/dashboard` or `/inspector/dashboard`, displays a prominent
+ *      one-click button: «العودة إلى لوحة المشرف العام» (`Return to Admin Dashboard`) alongside the switcher.
+ * 2. When the logged-in user is a Moderator (`viewerRole === "MODERATOR"`) or Inspector (`viewerRole === "INSPECTOR"`):
+ *    - Displays an Exclusive Scope Notice confirming that this dashboard is strictly dedicated and exclusive
+ *      to their role and permissions, with ZERO links or ability to switch to other supervisory levels.
+ */
+
+import React from "react";
+import Link from "next/link";
+import {
+  ShieldCheck,
+  ShieldAlert,
+  BadgeCheck,
+  ArrowRight,
+  Lock,
+  Layers,
+} from "lucide-react";
+
+interface SupervisoryHierarchyBarProps {
+  viewerRole: string;
+  currentDashboard: "ADMIN" | "MODERATOR" | "INSPECTOR";
+}
+
+export default function SupervisoryHierarchyBar({
+  viewerRole,
+  currentDashboard,
+}: SupervisoryHierarchyBarProps) {
+  // Case 1: Top Administrator (`ADMIN`) — Clean navigation across dashboards
+  if (viewerRole === "ADMIN") {
+    return (
+      <div
+        dir="rtl"
+        className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 shadow-sm"
+      >
+        <div className="flex items-center gap-2">
+          <Layers className="h-4 w-4 text-blue-600" />
+          <span className="text-xs font-black text-slate-800 dark:text-slate-200">
+            التنقل الإشرافي (المشرف العام)
+          </span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {currentDashboard !== "ADMIN" && (
+            <Link
+              href="/admin/dashboard"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 px-3.5 py-1.5 text-xs font-black shadow-sm transition"
+            >
+              <ArrowRight className="h-3.5 w-3.5" />
+              <span>الرجوع إلى لوحة المشرف العام</span>
+            </Link>
+          )}
+
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Link
+              href="/admin/dashboard"
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-extrabold transition ${
+                currentDashboard === "ADMIN"
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+              }`}
+            >
+              <ShieldCheck className="h-3.5 w-3.5" />
+              <span>لوحة المشرف العام</span>
+            </Link>
+
+            <Link
+              href="/moderator/dashboard"
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-extrabold transition ${
+                currentDashboard === "MODERATOR"
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+              }`}
+            >
+              <ShieldAlert className="h-3.5 w-3.5" />
+              <span>لوحة المسؤول</span>
+            </Link>
+
+            <Link
+              href="/inspector/dashboard"
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-extrabold transition ${
+                currentDashboard === "INSPECTOR"
+                  ? "bg-amber-500 text-slate-950 shadow-sm"
+                  : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+              }`}
+            >
+              <BadgeCheck className="h-3.5 w-3.5" />
+              <span>لوحة المتفقد</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Case 2: Moderator or Inspector — Strictly isolated without permission disclosure
+  return null;
+}
+
+```
+
+---
+
+### File: `src/components/ui/InspectorBadge.tsx`
+
+```typescript
+import React from "react";
+import { BadgeCheck, Building2, GraduationCap, Ban, ShieldAlert, ShieldCheck } from "lucide-react";
+import type { Role } from "@/types";
+
+interface InspectorBadgeProps {
+  role?: Role | string;
+  isVerified?: boolean;
+  isBanned?: boolean;
+  size?: "sm" | "md";
+}
+
+export default function InspectorBadge({
+  role,
+  isVerified,
+  isBanned,
+  size = "sm",
+}: InspectorBadgeProps) {
+  // 1. Publisher Ban Badge
+  if (isBanned) {
+    return (
+      <span
+        title="هذا الحساب محظور حالياً من النشر لمخالفة ضوابط المنصة"
+        className={`inline-flex items-center gap-1 rounded-full bg-red-600 text-white font-extrabold shadow-sm select-none ${
+          size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-xs"
+        }`}
+      >
+        <Ban className={size === "sm" ? "w-3 h-3" : "w-4 h-4"} />
+        <span>حساب محظور</span>
+      </span>
+    );
+  }
+
+  // 2. Admin Badge (قمة الهرم)
+  if (role === "ADMIN") {
+    return (
+      <span
+        title="المشرف العام لمنصة المسند"
+        className={`inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-blue-700 to-indigo-800 text-white font-bold shadow-sm select-none ${
+          size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-xs"
+        }`}
+      >
+        <ShieldCheck className={size === "sm" ? "w-3 h-3" : "w-4 h-4"} />
+        <span>مشرف عام</span>
+      </span>
+    );
+  }
+
+  // 3. Moderator Badge (المسؤول الإداري)
+  if (role === "MODERATOR") {
+    return (
+      <span
+        title="مسؤول إداري معتمد بالمنصة"
+        className={`inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold shadow-sm select-none ${
+          size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-xs"
+        }`}
+      >
+        <ShieldAlert className={size === "sm" ? "w-3 h-3" : "w-4 h-4"} />
+        <span>مسؤول إداري</span>
+      </span>
+    );
+  }
+
+  // 4. Certified Inspector Badge (المتفقد التربوي)
+  if (role === "INSPECTOR") {
+    return (
+      <span
+        title="متفقد تربوي معتمد للإشراف والمصادقة البيداغوجية"
+        className={`inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold shadow-sm select-none ${
+          size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-xs"
+        }`}
+      >
+        <BadgeCheck className={size === "sm" ? "w-3 h-3" : "w-4 h-4"} />
+        <span>متفقد معتمد</span>
+      </span>
+    );
+  }
+
+  // 5. Educational Institution Badge (Verified via Admin Code vs Standard)
+  if (role === "INSTITUTION") {
+    if (isVerified) {
+      return (
+        <span
+          title="مؤسسة تربوية موثقة رسمياً بكود معتمد في المسند"
+          className={`inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold shadow-sm select-none ${
+            size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-xs"
+          }`}
+        >
+          <BadgeCheck className={size === "sm" ? "w-3 h-3" : "w-4 h-4"} />
+          <span>مؤسسة معتمدة</span>
+        </span>
+      );
+    }
+    return (
+      <span
+        title="مؤسسة تربوية"
+        className={`inline-flex items-center gap-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold select-none ${
+          size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-xs"
+        }`}
+      >
+        <Building2 className={size === "sm" ? "w-3 h-3" : "w-4 h-4"} />
+        <span>مؤسسة تربوية</span>
+      </span>
+    );
+  }
+
+  // 6. Teacher Badge (Verified via Admin Code vs Standard)
+  if (role === "TEACHER") {
+    if (isVerified) {
+      return (
+        <span
+          title="معلم موثق رسمياً بكود معتمد في المسند"
+          className={`inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold shadow-sm select-none ${
+            size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-xs"
+          }`}
+        >
+          <BadgeCheck className={size === "sm" ? "w-3 h-3" : "w-4 h-4"} />
+          <span>معلم موثق</span>
+        </span>
+      );
+    }
+    return null;
+  }
+
+  // 7. Student Badge
+  if (role === "STUDENT") {
+    return (
+      <span
+        title="حساب تلميذ"
+        className={`inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 font-bold select-none ${
+          size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-xs"
+        }`}
+      >
+        <GraduationCap className={size === "sm" ? "w-3 h-3" : "w-4 h-4"} />
+        <span>تلميذ</span>
+      </span>
+    );
+  }
+
+  return null;
+}
+
+```
+
+---
+
+### File: `src/components/ui/MentionText.tsx`
+
+```typescript
+"use client";
+
+/**
+ * MentionText Component — Al-Musnad v8.0
+ *
+ * Automatically detects any `@username` in comments, reviews, or messages
+ * and renders it as an interactive clickable badge that navigates to `/u/[username]`
+ * which redirects straight to the Publisher's Profile Page (`/publisher/[id]`).
+ */
+
+import React from "react";
+import Link from "next/link";
+
+interface MentionTextProps {
+  text: string;
+  className?: string;
+}
+
+const MENTION_SPLIT_REGEX = /(@[a-zA-Z0-9_.]{2,32})/g;
+
+export default function MentionText({ text, className = "" }: MentionTextProps) {
+  if (!text) return null;
+
+  const parts = text.split(MENTION_SPLIT_REGEX);
+
+  return (
+    <span className={className}>
+      {parts.map((part, idx) => {
+        if (part.startsWith("@") && part.length >= 3) {
+          const cleanUsername = part.slice(1).toLowerCase();
+          return (
+            <Link
+              key={`${cleanUsername}-${idx}`}
+              href={`/u/${encodeURIComponent(cleanUsername)}`}
+              dir="ltr"
+              className="mx-0.5 inline-flex items-center rounded-md bg-blue-50 px-1.5 py-0.5 font-mono text-xs font-bold text-blue-700 underline-offset-2 transition hover:bg-blue-100 hover:underline dark:bg-blue-950/70 dark:text-blue-300 dark:hover:bg-blue-900/80"
+              title={`الانتقال إلى صفحة الناشر ${part}`}
+            >
+              {part}
+            </Link>
+          );
+        }
+        return <React.Fragment key={idx}>{part}</React.Fragment>;
+      })}
+    </span>
+  );
+}
+```
+
+---
+
+### File: `src/components/ui/UserPresenceIndicator.tsx`
+
+```typescript
+"use client";
+
+/**
+ * UserPresenceIndicator & UserAvatarWithPresence — Al-Musnad (المسند) v11.0
+ *
+ * Implements:
+ * 1. Small green indicator dot at the bottom of the user avatar when connected (`ONLINE`),
+ *    and a small gray indicator dot when disconnected (`OFFLINE` or `GHOST`).
+ * 2. Calculates and displays the elapsed time since the user went offline
+ *    (e.g., «غير متصل • منذ 10 دقائق» / «منذ ساعتين» / «منذ 3 أيام»).
+ * 3. Supports Ghost Mode (`GHOST` / وضع الشبح):
+ *    - When a user enables Ghost Mode, they can browse the entire platform freely
+ *      while appearing `OFFLINE` (gray dot + elapsed time) to all other users.
+ *    - Only the user themselves (when `isSelf === true`) sees the `👻 متصفح خفي (وضع الشبح)` badge.
+ */
+
+import React from "react";
+import { Ghost } from "lucide-react";
+
+export type PresenceMode = "ONLINE" | "OFFLINE" | "GHOST";
+
+const ACTIVE_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+export function formatOfflineDurationAr(lastSeenAt?: string | Date | null): string {
+  if (!lastSeenAt) return "منذ فترة";
+  const lastTime = new Date(lastSeenAt).getTime();
+  if (Number.isNaN(lastTime)) return "منذ فترة";
+
+  const diffMs = Math.max(0, Date.now() - lastTime);
+  const diffMinutes = Math.floor(diffMs / 60_000);
+
+  if (diffMinutes < 1) return "منذ لحظات";
+  if (diffMinutes === 1) return "منذ دقيقة واحدة";
+  if (diffMinutes === 2) return "منذ دقيقتين";
+  if (diffMinutes <= 10) return `منذ ${diffMinutes} دقائق`;
+  if (diffMinutes < 60) return `منذ ${diffMinutes} دقيقة`;
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours === 1) return "منذ ساعة واحدة";
+  if (diffHours === 2) return "منذ ساعتين";
+  if (diffHours <= 10) return `منذ ${diffHours} ساعات`;
+  if (diffHours < 24) return `منذ ${diffHours} ساعة`;
+
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays === 1) return "منذ يوم واحد";
+  if (diffDays === 2) return "منذ يومين";
+  if (diffDays <= 10) return `منذ ${diffDays} أيام`;
+  return `منذ ${diffDays} يوماً`;
+}
+
+export function getPublicPresenceState(
+  user?: {
+    presenceStatus?: string | null;
+    lastSeenAt?: string | Date | null;
+  } | null,
+  isSelf: boolean = false
+): {
+  isOnlinePublicly: boolean;
+  isGhostSelf: boolean;
+  statusLabelAr: string;
+  durationLabelAr: string | null;
+  dotColorClass: string;
+} {
+  const rawStatus = (user?.presenceStatus || "ONLINE").toUpperCase();
+  const lastSeenTime = user?.lastSeenAt
+    ? new Date(user.lastSeenAt).getTime()
+    : Date.now();
+  const isRecentlyActive =
+    !Number.isNaN(lastSeenTime) && Date.now() - lastSeenTime <= ACTIVE_WINDOW_MS;
+
+  if (rawStatus === "GHOST") {
+    const duration = formatOfflineDurationAr(user?.lastSeenAt);
+    if (isSelf) {
+      return {
+        isOnlinePublicly: false,
+        isGhostSelf: true,
+        statusLabelAr: "وضع الشبح (تصفح خفي)",
+        durationLabelAr: `تظهر للآخرين غير متصل (${duration})`,
+        dotColorClass: "bg-slate-400 dark:bg-slate-500",
+      };
+    }
+    return {
+      isOnlinePublicly: false,
+      isGhostSelf: false,
+      statusLabelAr: "غير متصل",
+      durationLabelAr: duration,
+      dotColorClass: "bg-slate-400 dark:bg-slate-500",
+    };
+  }
+
+  if (rawStatus === "OFFLINE" || !isRecentlyActive) {
+    const duration = formatOfflineDurationAr(user?.lastSeenAt);
+    return {
+      isOnlinePublicly: false,
+      isGhostSelf: false,
+      statusLabelAr: "غير متصل",
+      durationLabelAr: duration,
+      dotColorClass: "bg-slate-400 dark:bg-slate-500",
+    };
+  }
+
+  return {
+    isOnlinePublicly: true,
+    isGhostSelf: false,
+    statusLabelAr: "متصل الآن",
+    durationLabelAr: null,
+    dotColorClass: "bg-emerald-500 shadow-sm shadow-emerald-500/50",
+  };
+}
+
+interface UserAvatarWithPresenceProps {
+  name: string;
+  avatarUrl?: string | null;
+  presenceStatus?: string | null;
+  lastSeenAt?: string | Date | null;
+  isSelf?: boolean;
+  size?: "sm" | "md" | "lg";
+  avatarBgClass?: string;
+}
+
+export function UserAvatarWithPresence({
+  name,
+  avatarUrl,
+  presenceStatus,
+  lastSeenAt,
+  isSelf = false,
+  size = "md",
+  avatarBgClass = "bg-blue-600 text-white",
+}: UserAvatarWithPresenceProps) {
+  const presence = getPublicPresenceState(
+    { presenceStatus, lastSeenAt },
+    isSelf
+  );
+
+  const dims =
+    size === "sm"
+      ? "w-7 h-7 text-[11px] rounded-full"
+      : size === "lg"
+      ? "w-16 h-16 text-2xl rounded-2xl"
+      : "w-8 h-8 text-xs rounded-full";
+
+  const dotDims =
+    size === "sm"
+      ? "w-2.5 h-2.5 -bottom-0.5 right-1/2 translate-x-1/2 border"
+      : size === "lg"
+      ? "w-4 h-4 -bottom-1 right-1/2 translate-x-1/2 border-2"
+      : "w-3 h-3 -bottom-0.5 right-1/2 translate-x-1/2 border-2";
+
+  return (
+    <div
+      className="relative inline-flex items-center justify-center shrink-0"
+      title={
+        presence.durationLabelAr
+          ? `${presence.statusLabelAr} • ${presence.durationLabelAr}`
+          : presence.statusLabelAr
+      }
+    >
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt={name}
+          className={`${dims} object-cover border border-slate-200 dark:border-slate-700`}
+        />
+      ) : (
+        <div
+          className={`${dims} ${avatarBgClass} font-black flex items-center justify-center shadow-sm`}
+        >
+          {(name || "م").charAt(0)}
+        </div>
+      )}
+
+      {/* Small green/gray indicator dot centered right at the bottom of the user picture */}
+      <span
+        className={`absolute ${dotDims} rounded-full border-white dark:border-slate-900 ${presence.dotColorClass}`}
+      />
+    </div>
+  );
+}
+
+export function UserPresenceBadge({
+  presenceStatus,
+  lastSeenAt,
+  isSelf = false,
+  compact = false,
+}: {
+  presenceStatus?: string | null;
+  lastSeenAt?: string | Date | null;
+  isSelf?: boolean;
+  compact?: boolean;
+}) {
+  const presence = getPublicPresenceState(
+    { presenceStatus, lastSeenAt },
+    isSelf
+  );
+
+  if (presence.isGhostSelf) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-slate-800 px-2.5 py-0.5 text-[10px] font-extrabold text-slate-100 border border-slate-700">
+        <Ghost className="w-3 h-3 text-purple-400 shrink-0" />
+        <span>
+          {compact
+            ? "وضع الشبح"
+            : `وضع الشبح • ${presence.durationLabelAr}`}
+        </span>
+      </span>
+    );
+  }
+
+  if (presence.isOnlinePublicly) {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/70">
+        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+        <span>متصل الآن</span>
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+      <span className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
+      <span>
+        {compact
+          ? presence.durationLabelAr || "غير متصل"
+          : `غير متصل • ${presence.durationLabelAr}`}
+      </span>
+    </span>
+  );
+}
+
+```
+
+---
+
+### File: `src/components/ui/SubjectIcon.tsx`
+
+```typescript
+"use client";
+
+/**
+ * SubjectIcon — Expressive Visual Symbol for Each Academic Subject (Al-Musnad v12.0)
+ *
+ * Replaces raw numeric indices (1..9) inside Subject cards with a meaningful icon
+ * that visually represents the subject matter.
+ */
+
+import React from "react";
+import {
+  Calculator,
+  FlaskConical,
+  BookOpen,
+  Languages,
+  Globe,
+  Compass,
+  Palette,
+  MoonStar,
+  Dumbbell,
+  Briefcase,
+  Sparkles,
+} from "lucide-react";
+
+interface SubjectIconProps {
+  slug?: string | null;
+  iconName?: string | null;
+  className?: string;
+}
+
+export default function SubjectIcon({
+  slug,
+  iconName,
+  className = "h-6 w-6",
+}: SubjectIconProps) {
+  const key = (slug || iconName || "").toLowerCase();
+
+  switch (key) {
+    case "math":
+    case "calculator":
+      return <Calculator className={className} />;
+    case "science":
+    case "flask-conical":
+      return <FlaskConical className={className} />;
+    case "arabic":
+    case "book-open":
+      return <BookOpen className={className} />;
+    case "french":
+    case "languages":
+      return <Languages className={className} />;
+    case "english":
+    case "globe":
+      return <Globe className={className} />;
+    case "history-geography":
+    case "compass":
+      return <Compass className={className} />;
+    case "art":
+    case "palette":
+      return <Palette className={className} />;
+    case "islamic-studies":
+    case "moon-star":
+      return <MoonStar className={className} />;
+    case "pe":
+    case "dumbbell":
+      return <Dumbbell className={className} />;
+    case "administration":
+    case "briefcase":
+      return <Briefcase className={className} />;
+    default:
+      return <Sparkles className={className} />;
+  }
+}
+
+```
+
+---
+
+### File: `src/components/worksheets/RolePersonalizedHub.tsx`
+
+```typescript
+"use client";
+
+/**
+ * RolePersonalizedHub — Tailored Top Workspace & Exclusive Role Feeds (Al-Musnad v12.0)
+ *
+ * Implements the User Directives for Role-Based Interface Personalization:
+ * 1. `INSTITUTION` (المؤسسات التربوية):
+ *    - Dedicated top section («قسم نشرات المؤسسات التربوية») displaying publications
+ *      specifically for/by institutions (`INSTITUTIONS_ONLY`, `SAME_ROLE_ONLY` by institutions,
+ *      or institutional publications) so institutions can interact and share purposeful content.
+ * 2. `INSPECTOR` (المتفقدون التربويون):
+ *    - Dedicated top section («قسم منشورات المتفقدين فقط») displaying publications
+ *      exclusively for/by inspectors to facilitate pedagogical collaboration among inspectors.
+ * 3. `TEACHER` (المعلمون):
+ *    - Dedicated top section («قسم منشورات المعلمين») displaying all teacher-specific
+ *      publications (`TEACHERS_ONLY`, fiches/lesson plans, exam keys, and peer resources).
+ * 4. `STUDENT` (التلاميذ):
+ *    - Dedicated distraction-free Student Study Hub («فضاء التلميذ للمراجعة والتفوق»)
+ *      with zero administrative clutter, focused on lessons, exercises, exams, and activities.
+ * 5. `ADMIN` / `MODERATOR`:
+ *    - Can switch across all 4 role hubs to supervise and inspect each community space.
+ */
+
+import React, { useState, useMemo, useEffect } from "react";
+import Link from "next/link";
+import {
+  Building2,
+  Award,
+  BookOpenCheck,
+  GraduationCap,
+  Plus,
+  Sparkles,
+  Users,
+  FileText,
+  Briefcase,
+  ShieldCheck,
+  Layers,
+} from "lucide-react";
+import WorksheetCard from "@/components/worksheets/WorksheetCard";
+import { CURRICULUM_GRADES } from "@/config/constants";
+import type { WorksheetWithRelations } from "@/types/api";
+
+interface RolePersonalizedHubProps {
+  worksheets: WorksheetWithRelations[];
+  viewerRole: string | null;
+  viewerName?: string | null;
+  viewerStudentGrade?: string | null;
+}
+
+type HubRoleTab = "INSTITUTION" | "INSPECTOR" | "TEACHER" | "STUDENT";
+
+export default function RolePersonalizedHub({
+  worksheets,
+  viewerRole,
+  viewerName,
+  viewerStudentGrade,
+}: RolePersonalizedHubProps) {
+  const isStaff = viewerRole === "ADMIN" || viewerRole === "MODERATOR";
+
+  const initialHub: HubRoleTab =
+    viewerRole === "INSTITUTION"
+      ? "INSTITUTION"
+      : viewerRole === "INSPECTOR"
+      ? "INSPECTOR"
+      : viewerRole === "STUDENT"
+      ? "STUDENT"
+      : "TEACHER";
+
+  const [activeHub, setActiveHub] = useState<HubRoleTab>(initialHub);
+  const [subFilter, setSubFilter] = useState<string>("ALL");
+  const [selectedStudentGradeSlug, setSelectedStudentGradeSlug] =
+    useState<string>(() => {
+      if (viewerStudentGrade) {
+        const matched = CURRICULUM_GRADES.find(
+          (g) =>
+            g.nameAr === viewerStudentGrade || g.slug === viewerStudentGrade
+        );
+        if (matched) return matched.slug;
+      }
+      return "ALL";
+    });
+
+  useEffect(() => {
+    const handleHash = () => {
+      if (typeof window !== "undefined") {
+        const hash = window.location.hash;
+        if (hash === "#institutions-hub") setActiveHub("INSTITUTION");
+        else if (hash === "#inspectors-hub") setActiveHub("INSPECTOR");
+        else if (hash === "#teachers-hub") setActiveHub("TEACHER");
+        else if (hash === "#student-hub") setActiveHub("STUDENT");
+      }
+    };
+    handleHash();
+    window.addEventListener("hashchange", handleHash);
+    return () => window.removeEventListener("hashchange", handleHash);
+  }, []);
+
+  // 1. Institution-specific publications
+  const institutionWorksheets = useMemo(() => {
+    return worksheets.filter((ws) => {
+      const isInstOnly = ws.audience === "INSTITUTIONS_ONLY";
+      const isInstSameRole =
+        ws.audience === "SAME_ROLE_ONLY" && ws.uploader?.role === "INSTITUTION";
+      const isUploadedByInst = ws.uploader?.role === "INSTITUTION";
+
+      if (subFilter === "EXCLUSIVE") {
+        return isInstOnly || isInstSameRole;
+      }
+      return isInstOnly || isInstSameRole || isUploadedByInst;
+    });
+  }, [worksheets, subFilter]);
+
+  // 2. Inspector-specific publications
+  const inspectorWorksheets = useMemo(() => {
+    return worksheets.filter((ws) => {
+      const isInspSameRole =
+        ws.audience === "SAME_ROLE_ONLY" && ws.uploader?.role === "INSPECTOR";
+      const isUploadedByInsp = ws.uploader?.role === "INSPECTOR";
+      const isEndorsedDirective =
+        ws.isEndorsed && ws.audience === "TEACHERS_ONLY";
+
+      if (subFilter === "EXCLUSIVE") {
+        return isInspSameRole || isUploadedByInsp;
+      }
+      return isInspSameRole || isUploadedByInsp || isEndorsedDirective;
+    });
+  }, [worksheets, subFilter]);
+
+  // 3. Teacher-specific publications
+  const teacherWorksheets = useMemo(() => {
+    return worksheets.filter((ws) => {
+      const isTeachersOnly = ws.audience === "TEACHERS_ONLY";
+      const isTeacherSameRole =
+        ws.audience === "SAME_ROLE_ONLY" && ws.uploader?.role === "TEACHER";
+      const isFiche = ws.category?.slug === "lesson-plan";
+      const isTeacherUpload = ws.uploader?.role === "TEACHER";
+
+      if (subFilter === "TEACHERS_ONLY") return isTeachersOnly || isTeacherSameRole;
+      if (subFilter === "FICHES") return isFiche;
+      if (subFilter === "EXAMS") return ws.category?.slug === "exam";
+      return isTeachersOnly || isTeacherSameRole || isFiche || isTeacherUpload;
+    });
+  }, [worksheets, subFilter]);
+
+  // 4. Student-specific publications (Strictly excludes administrative & teacher/institution-only files)
+  const studentWorksheets = useMemo(() => {
+    return worksheets.filter((ws) => {
+      const isAdminDoc =
+        ws.category?.slug === "administrative" ||
+        ws.subject?.slug === "administration";
+      if (isAdminDoc) return false;
+      if (
+        ws.audience === "TEACHERS_ONLY" ||
+        ws.audience === "INSTITUTIONS_ONLY" ||
+        (ws.audience === "SAME_ROLE_ONLY" && ws.uploader?.role !== "STUDENT")
+      ) {
+        return false;
+      }
+      if (
+        selectedStudentGradeSlug !== "ALL" &&
+        ws.grade?.slug !== selectedStudentGradeSlug
+      ) {
+        return false;
+      }
+      if (subFilter !== "ALL" && ws.category?.slug !== subFilter) {
+        return false;
+      }
+      return true;
+    });
+  }, [worksheets, selectedStudentGradeSlug, subFilter]);
+
+  if (!viewerRole) return null;
+
+  return (
+    <section
+      id="role-personalized-hub"
+      dir="rtl"
+      className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 scroll-mt-24"
+    >
+      {/* Staff Switcher (Allows ADMIN / MODERATOR to inspect all 4 Role Hubs) */}
+      {isStaff && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-purple-200 bg-purple-50/70 px-4 py-3 dark:border-purple-900/60 dark:bg-purple-950/30">
+          <div className="flex items-center gap-2 text-xs font-extrabold text-purple-900 dark:text-purple-200">
+            <ShieldCheck className="h-4 w-4 text-purple-600" />
+            <span>معاينة الفضاءات المخصصة حسب فئة المستخدم (صلاحية المشرف/المسؤول):</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {(
+              [
+                { key: "INSTITUTION", label: "🏛️ فضاء المؤسسات" },
+                { key: "INSPECTOR", label: "🏅 فضاء المتفقدين" },
+                { key: "TEACHER", label: "👨‍🏫 فضاء المعلمين" },
+                { key: "STUDENT", label: "🎓 فضاء التلاميذ" },
+              ] as { key: HubRoleTab; label: string }[]
+            ).map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => {
+                  setActiveHub(tab.key);
+                  setSubFilter("ALL");
+                }}
+                className={`rounded-xl px-3 py-1.5 text-xs font-extrabold transition cursor-pointer ${
+                  activeHub === tab.key
+                    ? "bg-purple-700 text-white shadow-sm"
+                    : "bg-white text-slate-700 hover:bg-purple-100 dark:bg-slate-900 dark:text-slate-200"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* A. INSTITUTION HUB (قسم نشرات المؤسسات للمؤسسات للتفاعل المشترك)      */}
+      {/* =================================================================== */}
+      {activeHub === "INSTITUTION" && (
+        <div id="institutions-hub" className="overflow-hidden rounded-3xl border-2 border-indigo-200 bg-white shadow-md dark:border-indigo-900/60 dark:bg-slate-900 scroll-mt-24">
+          <div className="border-b border-indigo-100 bg-gradient-to-l from-indigo-50 via-blue-50/40 to-white px-6 py-6 dark:border-slate-800 dark:from-indigo-950/50 dark:via-slate-900 dark:to-slate-900">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/25">
+                  <Building2 className="h-7 w-7" />
+                </div>
+                <div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-100 px-3 py-0.5 text-[11px] font-extrabold text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300">
+                    <Sparkles className="h-3 w-3" />
+                    فضاء حصري للمؤسسات التربوية فقط
+                  </span>
+                  <h2 className="mt-1 text-xl font-black text-slate-900 sm:text-2xl dark:text-white">
+                    ملتقى ومستودع نشرات المؤسسات التربوية
+                  </h2>
+                  <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">
+                    قسم مخصص لمنشورات المؤسسات التربوية لتبادل النماذج الإدارية والبيداغوجية والتفاعل الهادف بين المدارس والمعاهد.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5">
+                <Link
+                  href="/upload?audience=INSTITUTIONS_ONLY"
+                  className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-extrabold text-white shadow-sm transition hover:bg-indigo-700"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>نشر محتوى خاص بالمؤسسات</span>
+                </Link>
+              </div>
+            </div>
+
+            <div className="mt-5 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setSubFilter("ALL")}
+                className={`rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
+                  subFilter === "ALL"
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "bg-white text-slate-700 hover:bg-indigo-50 dark:bg-slate-800 dark:text-slate-300"
+                }`}
+              >
+                جميع منشورات المؤسسات ({institutionWorksheets.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setSubFilter("EXCLUSIVE")}
+                className={`rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
+                  subFilter === "EXCLUSIVE"
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "bg-white text-slate-700 hover:bg-indigo-50 dark:bg-slate-800 dark:text-slate-300"
+                }`}
+              >
+                نشرات حصرية بين المؤسسات فقط
+              </button>
+            </div>
+          </div>
+
+          <div className="p-6">
+            {institutionWorksheets.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 py-10 text-center dark:border-slate-800 dark:bg-slate-950/40">
+                <Building2 className="mx-auto mb-2 h-9 w-9 text-indigo-400" />
+                <p className="text-sm font-extrabold text-slate-800 dark:text-slate-200">
+                  لا توجد نشرات مؤسساتية في هذا التبويب حالياً
+                </p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  بادر بنشر أول وثيقة أو مبادرة تربوية باسم مؤسستك للتفاعل مع المؤسسات الزميلة.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {institutionWorksheets.slice(0, 6).map((ws) => (
+                  <WorksheetCard key={ws.id} worksheet={ws} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* B. INSPECTOR HUB (قسم خاص بمنشورات المتفقدين في أعلى الصفحة)          */}
+      {/* =================================================================== */}
+      {activeHub === "INSPECTOR" && (
+        <div id="inspectors-hub" className="overflow-hidden rounded-3xl border-2 border-amber-300 bg-white shadow-md dark:border-amber-800/70 dark:bg-slate-900 scroll-mt-24">
+          <div className="border-b border-amber-100 bg-gradient-to-l from-amber-50 via-orange-50/30 to-white px-6 py-6 dark:border-slate-800 dark:from-amber-950/40 dark:via-slate-900 dark:to-slate-900">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-lg shadow-amber-500/25">
+                  <Award className="h-7 w-7" />
+                </div>
+                <div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-0.5 text-[11px] font-extrabold text-amber-900 dark:bg-amber-950 dark:text-amber-300">
+                    <Sparkles className="h-3 w-3" />
+                    الفضاء التشاركي الخاص بالمتفقدين التربويين
+                  </span>
+                  <h2 className="mt-1 text-xl font-black text-slate-900 sm:text-2xl dark:text-white">
+                    منشورات وتوجيهات هيئة التفقد التربوي
+                  </h2>
+                  <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">
+                    قسم علوي مخصص للمنشورات والوثائق التي تخص المتفقدين فقط لتسهيل التنسيق والتفاعل البيداغوجي بين المتفقدين.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5">
+                <Link
+                  href="/upload?audience=SAME_ROLE_ONLY"
+                  className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-extrabold text-white shadow-sm transition hover:bg-amber-600"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>نشر وثيقة خاصة بالمتفقدين</span>
+                </Link>
+                <Link
+                  href="/inspector/dashboard"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-white px-4 py-2.5 text-xs font-extrabold text-amber-900 hover:bg-amber-50 dark:border-amber-800 dark:bg-slate-800 dark:text-amber-300"
+                >
+                  <span>لوحة تحكم المتفقد ←</span>
+                </Link>
+              </div>
+            </div>
+
+            <div className="mt-5 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setSubFilter("ALL")}
+                className={`rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
+                  subFilter === "ALL"
+                    ? "bg-amber-600 text-white shadow-sm"
+                    : "bg-white text-slate-700 hover:bg-amber-50 dark:bg-slate-800 dark:text-slate-300"
+                }`}
+              >
+                جميع منشورات وتوجيهات المتفقدين ({inspectorWorksheets.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setSubFilter("EXCLUSIVE")}
+                className={`rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
+                  subFilter === "EXCLUSIVE"
+                    ? "bg-amber-600 text-white shadow-sm"
+                    : "bg-white text-slate-700 hover:bg-amber-50 dark:bg-slate-800 dark:text-slate-300"
+                }`}
+              >
+                منشورات حصرية بين المتفقدين فقط
+              </button>
+            </div>
+          </div>
+
+          <div className="p-6">
+            {inspectorWorksheets.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 py-10 text-center dark:border-slate-800 dark:bg-slate-950/40">
+                <Award className="mx-auto mb-2 h-9 w-9 text-amber-500" />
+                <p className="text-sm font-extrabold text-slate-800 dark:text-slate-200">
+                  لا توجد منشورات خاصة بالمتفقدين في هذا التبويب حالياً
+                </p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  يمكنك نشر شبكات التقييم، تقارير التفقد النموذجية، أو التوجيهات البيداغوجية لمشاركتها مع زملائك المتفقدين.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {inspectorWorksheets.slice(0, 6).map((ws) => (
+                  <WorksheetCard key={ws.id} worksheet={ws} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* C. TEACHER HUB (قسم في الأعلى للمعلم فيه جميع المنشورات الخاصة بالمعلمين) */}
+      {/* =================================================================== */}
+      {activeHub === "TEACHER" && (
+        <div id="teachers-hub" className="overflow-hidden rounded-3xl border-2 border-blue-200 bg-white shadow-md dark:border-blue-900/60 dark:bg-slate-900 scroll-mt-24">
+          <div className="border-b border-blue-100 bg-gradient-to-l from-blue-50 via-indigo-50/30 to-white px-6 py-6 dark:border-slate-800 dark:from-blue-950/40 dark:via-slate-900 dark:to-slate-900">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/25">
+                  <BookOpenCheck className="h-7 w-7" />
+                </div>
+                <div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-0.5 text-[11px] font-extrabold text-blue-800 dark:bg-blue-950 dark:text-blue-300">
+                    <Users className="h-3 w-3" />
+                    الفضاء المهني الخاص بالمعلمين
+                  </span>
+                  <h2 className="mt-1 text-xl font-black text-slate-900 sm:text-2xl dark:text-white">
+                    مستودع منشورات ومذكرات المعلمين
+                  </h2>
+                  <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">
+                    يجمع هذا القسم كافة المنشورات التي تخص المعلمين (الجذاذات البيداغوجية، إصلاح الفروض والامتحانات المحجوبة عن التلاميذ، والتوزيعات السنوية).
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5">
+                <Link
+                  href="/upload?audience=TEACHERS_ONLY"
+                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-extrabold text-white shadow-sm transition hover:bg-blue-700"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>نشر جذاذة أو إصلاح (خاص بالمعلمين)</span>
+                </Link>
+                <a
+                  href="#administration-section"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                >
+                  <Briefcase className="h-3.5 w-3.5 text-amber-600" />
+                  <span>الوثائق الإدارية للمعلم</span>
+                </a>
+              </div>
+            </div>
+
+            <div className="mt-5 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setSubFilter("ALL")}
+                className={`rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
+                  subFilter === "ALL"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "bg-white text-slate-700 hover:bg-blue-50 dark:bg-slate-800 dark:text-slate-300"
+                }`}
+              >
+                جميع منشورات المعلمين ({teacherWorksheets.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setSubFilter("TEACHERS_ONLY")}
+                className={`rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
+                  subFilter === "TEACHERS_ONLY"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "bg-white text-slate-700 hover:bg-blue-50 dark:bg-slate-800 dark:text-slate-300"
+                }`}
+              >
+                🔒 خاص بالمعلمين فقط (محجوب عن التلاميذ)
+              </button>
+              <button
+                type="button"
+                onClick={() => setSubFilter("FICHES")}
+                className={`rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
+                  subFilter === "FICHES"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "bg-white text-slate-700 hover:bg-blue-50 dark:bg-slate-800 dark:text-slate-300"
+                }`}
+              >
+                📋 الجذاذات والمخططات البيداغوجية
+              </button>
+              <button
+                type="button"
+                onClick={() => setSubFilter("EXAMS")}
+                className={`rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
+                  subFilter === "EXAMS"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "bg-white text-slate-700 hover:bg-blue-50 dark:bg-slate-800 dark:text-slate-300"
+                }`}
+              >
+                📝 الفروض والاختبارات التقييمية
+              </button>
+            </div>
+          </div>
+
+          <div className="p-6">
+            {teacherWorksheets.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 py-10 text-center dark:border-slate-800 dark:bg-slate-950/40">
+                <FileText className="mx-auto mb-2 h-9 w-9 text-blue-400" />
+                <p className="text-sm font-extrabold text-slate-800 dark:text-slate-200">
+                  لا توجد منشورات مطابقة لهذا الفلتر حالياً
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {teacherWorksheets.slice(0, 6).map((ws) => (
+                  <WorksheetCard key={ws.id} worksheet={ws} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* D. STUDENT HUB (واجهة التلميذ المخصصة بدون قسم الإدارة)                */}
+      {/* =================================================================== */}
+      {activeHub === "STUDENT" && (
+        <div
+          id="student-hub"
+          className="overflow-hidden rounded-3xl border-2 border-emerald-200 bg-white shadow-md dark:border-emerald-900/60 dark:bg-slate-900 scroll-mt-24"
+        >
+          <div className="border-b border-emerald-100 bg-gradient-to-l from-emerald-50 via-teal-50/30 to-white px-6 py-6 dark:border-slate-800 dark:from-emerald-950/40 dark:via-slate-900 dark:to-slate-900">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg shadow-emerald-600/25">
+                  <GraduationCap className="h-7 w-7" />
+                </div>
+                <div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-0.5 text-[11px] font-extrabold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                    <Sparkles className="h-3 w-3" />
+                    فضاء التلميذ الذكي للمراجعة والتفوق
+                  </span>
+                  <h2 className="mt-1 text-xl font-black text-slate-900 sm:text-2xl dark:text-white">
+                    مرحباً بك{viewerName ? ` يا ${viewerName}` : ""} في مكتبتك الدراسية
+                  </h2>
+                  <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">
+                    واجهة مبسطة مخصصة للتلاميذ تضم الدروس المبسطة، التمارين التطبيقية، الامتحانات، والأنشطة التفاعلية حسب مستواك الدراسي.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  value={selectedStudentGradeSlug}
+                  onChange={(e) => setSelectedStudentGradeSlug(e.target.value)}
+                  className="rounded-xl border border-emerald-300 bg-white px-3.5 py-2 text-xs font-extrabold text-emerald-900 outline-none dark:border-emerald-800 dark:bg-slate-800 dark:text-emerald-200"
+                >
+                  <option value="ALL">جميع المستويات الدراسية</option>
+                  {CURRICULUM_GRADES.map((g) => (
+                    <option key={g.slug} value={g.slug}>
+                      {g.nameAr}
+                    </option>
+                  ))}
+                </select>
+                {selectedStudentGradeSlug !== "ALL" && (
+                  <Link
+                    href={`/levels/${selectedStudentGradeSlug}`}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-extrabold text-white shadow-sm hover:bg-emerald-700"
+                  >
+                    <Layers className="h-3.5 w-3.5" />
+                    <span>فتح مواد هذا المستوى ←</span>
+                  </Link>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-5 flex flex-wrap gap-2">
+              {[
+                { key: "ALL", label: `كل ملفات المراجعة (${studentWorksheets.length})` },
+                { key: "lesson", label: "📖 الدروس والملخصات" },
+                { key: "worksheet", label: "✍️ التمارين التطبيقية" },
+                { key: "exam", label: "📝 فروض وامتحانات المراجعة" },
+                { key: "activity", label: "🎮 الأنشطة التفاعلية" },
+              ].map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => setSubFilter(t.key)}
+                  className={`rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
+                    subFilter === t.key
+                      ? "bg-emerald-600 text-white shadow-sm"
+                      : "bg-white text-slate-700 hover:bg-emerald-50 dark:bg-slate-800 dark:text-slate-300"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="p-6">
+            {studentWorksheets.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 py-10 text-center dark:border-slate-800 dark:bg-slate-950/40">
+                <GraduationCap className="mx-auto mb-2 h-9 w-9 text-emerald-500" />
+                <p className="text-sm font-extrabold text-slate-800 dark:text-slate-200">
+                  لا توجد ملفات في هذا القسم حالياً
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {studentWorksheets.slice(0, 6).map((ws) => (
+                  <WorksheetCard key={ws.id} worksheet={ws} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+```
+
+---
+
+### File: `src/components/home/PlatformIdentityAndFaqSection.tsx`
+
+```typescript
+"use client";
+
+/**
+ * PlatformIdentityAndFaqSection — About Us, Role Benefits Guide & Interactive FAQ (Al-Musnad v13.0)
+ *
+ * Implements the Unified "اعرف المزيد" (Learn More) Section (`#learn-more`):
+ * - Merges «من نحن» + «مزايا الفئات» + «الأسئلة الشائعة» under a single top-level section.
+ * - Interactive tab switcher: [الكل المدمج | من نحن | مزايا الفئات | الأسئلة الشائعة].
+ * - Preserves anchor scroll targets `#about-us`, `#roles-guide`, `#faq-section`.
+ * - Replaces any "مجاني" claim with "حماية الخصوصية وأمان متقدم" for strict policy compliance.
+ */
+
+import React, { useState } from "react";
+import Link from "next/link";
+import {
+  Building2,
+  Award,
+  BookOpenCheck,
+  GraduationCap,
+  ShieldCheck,
+  Sparkles,
+  CheckCircle2,
+  HelpCircle,
+  ChevronDown,
+  Target,
+  Layers,
+  Lock,
+  Users,
+  Compass,
+  FileText,
+} from "lucide-react";
+
+const SUBSCRIBER_ROLES_GUIDE = [
+  {
+    role: "INSTITUTION",
+    badge: "الركن المؤسساتي",
+    title: "1. حساب المؤسسات التربوية (المدارس والمعاهد)",
+    subtitle: "فضاء رسمي للتنسيق المؤسساتي وتبادل النماذج التربوية والإدارية",
+    icon: Building2,
+    accentBg: "bg-indigo-600",
+    borderClass: "border-indigo-200 dark:border-indigo-900/60",
+    badgeClass: "bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300",
+    features: [
+      "قسم حصري في أعلى الواجهة («ملتقى نشرات المؤسسات») للتفاعل المباشر بين المؤسسات التربوية ونشر المحتوى الهادف.",
+      "إمكانية نشر وثائق ومبادرات موجهة حصرياً للمؤسسات الزميلة أو عامة لمعلمي وتلاميذ المؤسسة.",
+      "الحصول على شارة «مؤسسة تربوية موثقة رسمياً» بعد التثبت من الهوية مع المشرف العام.",
+      "صفحة عامة رسمية للمؤسسة تعرض كافة إصداراتها، عدد المتابعين، وإحصائيات التحميل.",
+      "الوصول الكامل إلى قسم الإدارة والمعاملات الإدارية والنماذج الرسمية.",
+    ],
+  },
+  {
+    role: "INSPECTOR",
+    badge: "الركن الرقابي والبيداغوجي",
+    title: "2. حساب المتفقدين التربويين",
+    subtitle: "إشراف علمي وبيداغوجي مباشر واعتماد رسمي للنشرات التربوية",
+    icon: Award,
+    accentBg: "bg-amber-500",
+    borderClass: "border-amber-200 dark:border-amber-900/60",
+    badgeClass: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300",
+    features: [
+      "قسم علوي مخصص («منشورات المتفقدين فقط») لتبادل التوجيهات وشبكات التقييم والتفاعل البيداغوجي بين المتفقدين.",
+      "لوحة تحكم رقابية حصرية (/inspector/dashboard) لمراجعة المنشورات ومنح «شارة الاعتماد البيداغوجي ★».",
+      "إضافة توجيهات بيداغوجية رسمية تُثبّت في صدارة التعليقات، أو إرسال ملاحظات توجيهية خاصة للناشر وحده.",
+      "تحويل الملفات المرفوعة بصيغة Word أو صور إلى ملفات PDF معتمدة وجاهزة للتحميل.",
+      "قناة إبلاغ رقابي عاجل تصل مباشرة إلى المشرف العام في قمة الهرم.",
+    ],
+  },
+  {
+    role: "TEACHER",
+    badge: "الركن التعليمي والإبداعي",
+    title: "3. حساب المعلمين والأساتذة",
+    subtitle: "بيئة مهنية متكاملة للنشر التربوي، الجذاذات، والوثائق الإدارية",
+    icon: BookOpenCheck,
+    accentBg: "bg-blue-600",
+    borderClass: "border-blue-200 dark:border-blue-900/60",
+    badgeClass: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300",
+    features: [
+      "قسم علوي مخصص في واجهة المعلم («مستودع منشورات المعلمين») يجمع الجذاذات، التوزيعات، وإصلاحات الامتحانات.",
+      "ميزة حجب الملفات عن التلاميذ (للمعلمين فقط) عند نشر إصلاح الفروض أو المذكرات البيداغوجية الخاصة بالمعلم.",
+      "نشر الملفات في الأقسام الستة لكل مادة (درس، تمرين، امتحان، جذاذة، نشاط تفاعلي، أخرى) بصيغ PDF أو Word أو صور.",
+      "الوصول الكامل إلى «قسم الإدارة والمعاملات الإدارية» (جداول الأوقات، المذكرات، تقارير الترسيم، والمطالب).",
+      "بناء ملف ناشر عام موثق مع إحصائيات التحميل والتقييمات والتفاعل عبر الإشارة @username.",
+    ],
+  },
+  {
+    role: "STUDENT",
+    badge: "ركن التفوق والمراجعة",
+    title: "4. حساب التلاميذ",
+    subtitle: "واجهة دراسية ذكية ومبسطة خالية من التعقيدات الإدارية",
+    icon: GraduationCap,
+    accentBg: "bg-emerald-600",
+    borderClass: "border-emerald-200 dark:border-emerald-900/60",
+    badgeClass: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
+    features: [
+      "فضاء مراجعة ذكي مخصص لمستوى التلميذ الدراسي في أعلى الصفحة يعرض الدروس والتمارين والامتحانات والأنشطة التفاعلية.",
+      "واجهة نقية ومبسطة: يتم إخفاء «قسم الإدارة والمعاملات الإدارية» والملفات الخاصة بالمعلمين تلقائياً لتركيز التلميذ على دراسته.",
+      "معاينة وتحميل فوري للملفات المعتمدة بيداغوجياً من قِبل المتفقدين التربويين.",
+      "إمكانية حفظ الدروس والامتحانات في «قائمة المفضلة» للرجوع إليها سريعاً أيام المراجعة والامتحانات.",
+      "متابعة المعلمين والمؤسسات التربوية المفضلة والتفاعل في النقاشات التعليمية.",
+    ],
+  },
+];
+
+const FAQ_ITEMS = [
+  {
+    q: "كيف تضمن منصة «المسند» جودة وصحة الملفات التربوية المنشورة؟",
+    a: "تعتمد المنصة نظام إشراف ثلاثي المستويات (المتفقد التربوي، المسؤول الإداري، والمشرف العام). يقوم المتفقدون التربويون المعتمدون بمراجعة النشرات ومنحها «شارة الاعتماد البيداغوجي ★» مع كتابة توجيهات رسمية، كما يتم تحويل ملفات Word والصور إلى ملفات PDF منسقة بعد مراجعتها.",
+  },
+  {
+    q: "كيف يتم تنظيم الملفات داخل مستودع المستويات والمواد؟",
+    a: "عند الدخول إلى «مستودع المواد والمستويات» تختار أولاً المستوى الدراسي المعتمد (من السنة الأولى إلى السادسة ابتدائي)، وداخله تجد مستودع المواد الدراسية مميزاً برموز بصرية لكل مادة، وداخل كل مادة تتوزع الملفات بدقة في 6 أقسام: (درس، تمرين، امتحان، جذاذة، نشاط تفاعلي، وأخرى).",
+  },
+  {
+    q: "هل يستطيع التلميذ رؤية إصلاح الامتحانات أو قسم الإدارة الخاص بالمعلم؟",
+    a: "لا؛ عندما يختار المعلم جمهور النشر «للمعلمين فقط»، يقوم النظام بحجب الملف برمجياً عن جميع حسابات التلاميذ والزوار. كما أن «قسم الإدارة والمعاملات الإدارية» منزوع تماماً من واجهة التلميذ ومقتصر على المعلمين والمتفقدين والمؤسسات.",
+  },
+  {
+    q: "كيف أحصل على شارة التوثيق الرسمية على حسابي؟",
+    a: "يمكنك التسجيل في الموقع بشكل عادي، ثم الانتقال إلى تبويب «التوثيق» في ملفك الشخصي وإرسال طلب توثيق الهوية، أو التواصل مع المشرف العام عبر قسم الدعم الفني ليمنحك كود التوثيق السري (VERF-... أو INSP-...) الذي يفعّل الشارة الرسمية فوراً.",
+  },
+  {
+    q: "ما هي خاصية «وضع الشبح» وحالة الاتصال في المنصة؟",
+    a: "يتيح لك النظام من القائمة المنسدلة لاسمك أو من ملفك الشخصي تحديد حالتك: «متصل» (نقطة خضراء أسفل صورتك)، أو «غير متصل» (نقطة رمادية مع عرض مدة آخر ظهور)، أو «وضع الشبح 👻» الذي يمكّنك من تصفح الموقع بالكامل دون أن يظهر للآخرين أنك متصل.",
+  },
+  {
+    q: "ماذا يحدث إذا نسيت كلمة المرور أو أخطأت في كتابتها 6 مرات؟",
+    a: "لحماية حسابات الأعضاء من محاولات التخمين، ينبهك النظام عند كل محاولة خاطئة بعدد المحاولات المتبقية من أصل 6 محاولات. وفي حال استنفاد 6 محاولات خاطئة يُقفل الحساب مؤقتاً، ويمكنك مراسلة المشرف العام أو المسؤول الإداري عبر قسم الدعم الفني لفك غلق الحساب بضغطة زر.",
+  },
+];
+
+type LearnMoreTab = "ALL" | "ABOUT" | "ROLES" | "FAQ";
+
+export default function PlatformIdentityAndFaqSection() {
+  const [activeTab, setActiveTab] = useState<LearnMoreTab>("ALL");
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
+
+  return (
+    <div
+      id="learn-more"
+      dir="rtl"
+      className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-12 scroll-mt-24"
+    >
+      {/* ===================================================================== */}
+      {/* Top Banner & Unified Tab Switcher for "اعرف المزيد"                  */}
+      {/* ===================================================================== */}
+      <div className="rounded-3xl border border-blue-200 dark:border-blue-900/60 bg-gradient-to-br from-blue-50/80 via-white to-indigo-50/60 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950/40 p-6 sm:p-8 text-center shadow-sm space-y-4">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 dark:bg-blue-950/80 px-4 py-1 text-xs font-black text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800">
+          <Compass className="h-3.5 w-3.5" />
+          <span>الدليل الشامل لمنصة المسند • اعرف المزيد</span>
+        </span>
+
+        <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+          اعرف المزيد عن منصة «المسند» التربوية
+        </h2>
+
+        <p className="mx-auto max-w-2xl text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+          فضاء تعليمي موحد يجمع رسالة المنصة، دليل مزايا واختصاصات كل فئة مستخدم، وإجابات الأسئلة الشائعة في مكان واحد.
+        </p>
+
+        {/* Tab Buttons */}
+        <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab("ALL")}
+            className={`px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer ${
+              activeTab === "ALL"
+                ? "bg-blue-600 text-white shadow-md shadow-blue-600/25"
+                : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50"
+            }`}
+          >
+            الكل المدمج
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("ABOUT")}
+            className={`px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer ${
+              activeTab === "ABOUT"
+                ? "bg-blue-600 text-white shadow-md shadow-blue-600/25"
+                : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50"
+            }`}
+          >
+            من نحن والرسالة
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("ROLES")}
+            className={`px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer ${
+              activeTab === "ROLES"
+                ? "bg-blue-600 text-white shadow-md shadow-blue-600/25"
+                : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50"
+            }`}
+          >
+            مزايا الفئات
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("FAQ")}
+            className={`px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer ${
+              activeTab === "FAQ"
+                ? "bg-blue-600 text-white shadow-md shadow-blue-600/25"
+                : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50"
+            }`}
+          >
+            الأسئلة الشائعة
+          </button>
+        </div>
+      </div>
+
+      {/* ===================================================================== */}
+      {/* 1. قسم «من نحن» — التعريف بهوية منصة المسند وما تؤدي إليه               */}
+      {/* ===================================================================== */}
+      {(activeTab === "ALL" || activeTab === "ABOUT") && (
+        <section
+          id="about-us"
+          className="overflow-hidden rounded-3xl border border-slate-200 bg-white p-8 sm:p-10 shadow-sm dark:border-slate-800 dark:bg-slate-900 scroll-mt-24"
+        >
+          <div className="max-w-3xl space-y-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3.5 py-1 text-xs font-extrabold text-blue-700 dark:bg-blue-950/70 dark:text-blue-300 border border-blue-200/70 dark:border-blue-800">
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>من نحن • الهوية والرسالة التربوية</span>
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white leading-snug">
+              هوية منصة «المسند» وما تؤدي إليه في المنظومة التربوية
+            </h2>
+            <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed">
+              <strong>«المسند»</strong> هي منصة تربوية وبيداغوجية رقمية تشاركية صُممت لتكون الحاضنة المرجعية الموثوقة للعمل التربوي والإداري. تجمع المنصة بين <strong>المؤسسات التربوية، المتفقدين، المعلمين، والتلاميذ</strong> في بيئة منظمة تحفظ الملكية الفكرية للناشر وتضمن للتلميذ والمعلم الوصول السريع إلى المعلومة المعتمدة.
+            </p>
+          </div>
+
+          <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-2xl border border-slate-200/90 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-800/40 space-y-2.5">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
+                <Target className="h-5 w-5" />
+              </div>
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                توحيد وتوثيق المرجع التربوي
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                إنهاء تشتت الملفات التعليمية عبر تصنيف كل وثيقة بدقة حسب السنة الدراسية، المادة، ونوع القسم (درس، تمرين، امتحان، جذاذة، نشاط تفاعلي، أو أخرى).
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200/90 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-800/40 space-y-2.5">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500 text-white shadow-sm">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                الاعتماد البيداغوجي الرسمي
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                تمكين المتفقدين التربويين من المصادقة العلمية على النشرات ومنحها شارة الاعتماد البيداغوجي وتقديم التوجيهات المباشرة للناشرين.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200/90 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-800/40 space-y-2.5">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm">
+                <Users className="h-5 w-5" />
+              </div>
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                تكامل الأدوار وتخصيص الواجهة
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                تخصيص تجربة كل عضو بحسب صفته؛ فالمؤسسات تتفاعل في ملتقاها، والمتفقدون في فضائهم، والمعلمون في مستودعهم المهني، والتلاميذ في مكتبتهم الدراسية.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200/90 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-800/40 space-y-2.5">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
+                <Layers className="h-5 w-5" />
+              </div>
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                حماية الخصوصية وأمان متقدم
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                منظومة محمية بنظام أمان متقدم يحفظ خصوصية المذكرات والامتحانات الخاصة بالمعلمين ويحمي الحسابات من الاختراق.
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ===================================================================== */}
+      {/* 2. تفسير لكل فئة من المشتركين — الخصائص والميزات عند التسجيل            */}
+      {/* ===================================================================== */}
+      {(activeTab === "ALL" || activeTab === "ROLES") && (
+        <section id="roles-guide" className="space-y-8 scroll-mt-24">
+          <div className="text-center max-w-3xl mx-auto space-y-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3.5 py-1 text-xs font-extrabold text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+              <Lock className="h-3.5 w-3.5" />
+              <span>دليل فئات المشتركين ومزايا العضوية</span>
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+              ما هي الخصائص والميزات التي ستحصل عليها عند التسجيل؟
+            </h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              تعرّف بالتفصيل على الواجهة المخصصة والصلاحيات الحصرية الممنوحة لكل فئة من الفئات في منصة «المسند»:
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {SUBSCRIBER_ROLES_GUIDE.map((item) => {
+              const Icon = item.icon;
+              return (
+                <div
+                  key={item.role}
+                  className={`flex flex-col justify-between rounded-3xl border-2 bg-white p-6 sm:p-8 shadow-sm transition hover:shadow-md dark:bg-slate-900 ${item.borderClass}`}
+                >
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <span
+                        className={`rounded-full px-3 py-1 text-[11px] font-extrabold ${item.badgeClass}`}
+                      >
+                        {item.badge}
+                      </span>
+                      <div
+                        className={`flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-md ${item.accentBg}`}
+                      >
+                        <Icon className="h-6 w-6" />
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-xl font-black text-slate-900 dark:text-white">
+                        {item.title}
+                      </h3>
+                      <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                        {item.subtitle}
+                      </p>
+                    </div>
+
+                    <ul className="space-y-2.5 pt-2 text-xs text-slate-600 dark:text-slate-300">
+                      {item.features.map((feat, i) => (
+                        <li key={i} className="flex items-start gap-2.5">
+                          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5" />
+                          <span className="leading-relaxed">{feat}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <Link
+                      href={`/register?role=${item.role}`}
+                      className="inline-flex items-center gap-1.5 text-xs font-extrabold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition"
+                    >
+                      <span>الانضمام بهذا الحساب الآن</span>
+                      <span>←</span>
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* ===================================================================== */}
+      {/* 3. قسم الأسئلة الشائعة التفاعلي                                        */}
+      {/* ===================================================================== */}
+      {(activeTab === "ALL" || activeTab === "FAQ") && (
+        <section
+          id="faq-section"
+          className="rounded-3xl border border-slate-200 bg-white p-8 sm:p-10 shadow-sm dark:border-slate-800 dark:bg-slate-900 scroll-mt-24 space-y-6"
+        >
+          <div className="max-w-2xl space-y-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3.5 py-1 text-xs font-extrabold text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border border-amber-200/70 dark:border-amber-800">
+              <HelpCircle className="h-3.5 w-3.5" />
+              <span>إجابات واضحة • الأسئلة الشائعة</span>
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+              الأسئلة الأكثر تكراراً حول منصة «المسند»
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+              كل ما تحتاج لمعرفته حول طريقة تنظيم المواد، آليات التوثيق، وصلاحيات فئات الحسابات.
+            </p>
+          </div>
+
+          <div className="space-y-3 pt-2">
+            {FAQ_ITEMS.map((item, index) => {
+              const isOpen = openFaqIndex === index;
+              return (
+                <div
+                  key={index}
+                  className="overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-800/40 transition"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setOpenFaqIndex(isOpen ? null : index)}
+                    className="flex w-full items-center justify-between gap-4 p-4 sm:p-5 text-right transition hover:bg-slate-100/60 dark:hover:bg-slate-800 cursor-pointer"
+                  >
+                    <span className="text-sm font-black text-slate-900 dark:text-white">
+                      {item.q}
+                    </span>
+                    <ChevronDown
+                      className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${
+                        isOpen ? "rotate-180 text-blue-600" : ""
+                      }`}
+                    />
+                  </button>
+
+                  {isOpen && (
+                    <div className="border-t border-slate-200/60 px-4 sm:px-5 pb-5 pt-3 text-xs leading-relaxed text-slate-600 dark:border-slate-800 dark:text-slate-300">
+                      {item.a}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
+```
+
+---
+
+### File: `src/components/profile/ArchivedSubscriptionsPlans.tsx`
+
+```typescript
+"use client";
+
+/**
+ * Subscriptions Section & Preserved Plans Archive — Al-Musnad (المسند) v13.0
+ *
+ * Implements Project Manager Directive for v13.0:
+ * - Displays ONLY the clean "سيأتي قريباً" (Coming Soon) state without explaining
+ *   why the site is free or discussing founding period pricing.
+ * - Preserves the 100% complete `PRESERVED_SUBSCRIPTION_PLANS` array in code so it
+ *   can be reactivated immediately whenever paid tiers are introduced in the future.
+ */
+
+import React from "react";
+import { Clock } from "lucide-react";
+
+export const PRESERVED_SUBSCRIPTION_PLANS = [
+  {
+    code: "STANDARD",
+    title: "الباقة الأساسية",
+    price: "اشتراك أساسي",
+    features: [
+      "تصفح ومعاينة النشرات التربوية",
+      "متابعة الناشرين وإضافتهم للمفضلة",
+      "نشر الوثائق مع تحديد جمهور النشر",
+    ],
+  },
+  {
+    code: "PRO_EDUCATOR",
+    title: "باقة المعلم المتميز (Pro)",
+    price: "اشتراك سنوي للمعلمين",
+    features: [
+      "تحميل غير محدود لكافة المذكرات والإصلاحات",
+      "أولوية عرض النشرات في ملف ناشر موثق",
+      "إحصائيات تفصيلية لتحميلات وتفاعل الزملاء",
+    ],
+  },
+  {
+    code: "INSTITUTION_PLUS",
+    title: "باقة المؤسسات والمدارس",
+    price: "اشتراك مؤسساتي شامل",
+    features: [
+      "فضاء رسمي باسم المؤسسة التربوية",
+      "نشر موجه لمعلمي وتلاميذ المؤسسة",
+      "اعتماد وتوثيق مباشر مع المتفقدين التربويين",
+    ],
+  },
+] as const;
+
+interface ArchivedSubscriptionsPlansProps {
+  currentPlan?: string;
+  planLoading?: string | null;
+  onSelectPlan?: (planCode: string) => void;
+}
+
+export default function ArchivedSubscriptionsPlans(
+  _props: ArchivedSubscriptionsPlansProps
+) {
+  return (
+    <section className="space-y-6">
+      <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 sm:p-16 text-center shadow-sm">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/25">
+          <Clock className="h-8 w-8" />
+        </div>
+
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-950/80 px-4 py-1 text-xs font-black text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800 mb-4">
+          <Clock className="h-3.5 w-3.5" />
+          <span>سيأتي قريباً • Coming Soon</span>
+        </span>
+
+        <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+          قسم الاشتراكات والباقات
+        </h2>
+
+        <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+          هذا القسم قيد الإعداد والتطوير وسيكون متاحاً لجميع الأعضاء قريباً.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+```
+
+---
+
+### File: `src/components/worksheets/FilterBar.tsx`
+
+```typescript
+"use client";
+
+/**
+ * Filter & Search Bar Component — Al-Musnad (المسند) v7.0
+ *
+ * Provides responsive multi-dimensional faceted filtering:
+ * text search, grade level, subject, activity category, and sorting.
+ * Fully synchronized with Next.js URL SearchParams with Dark Mode support.
+ */
+
+import React from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import type { Grade, Subject, Category } from "@/types/api";
+
+interface FilterBarProps {
+  grades: (Grade | { id: string; name: string; nameAr?: string; slug?: string })[];
+  subjects: (Subject | { id: string; name: string; nameAr?: string; slug?: string })[];
+  categories: (Category | { id: string; name: string; nameAr?: string; slug?: string })[];
+}
+
+export default function FilterBar({ grades, subjects, categories }: FilterBarProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const currentSearch = searchParams.get("search") ?? "";
+  const currentSubject = searchParams.get("subject") ?? searchParams.get("subjectId") ?? "";
+  const currentGrade = searchParams.get("grade") ?? searchParams.get("gradeId") ?? "";
+  const currentCategory = searchParams.get("category") ?? searchParams.get("categoryId") ?? "";
+  const currentSort = searchParams.get("sort") ?? "newest";
+
+  function updateFilter(key: string, value: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    // Clean up alternate parameter keys
+    if (key === "subject") params.delete("subjectId");
+    if (key === "grade") params.delete("gradeId");
+    if (key === "category") params.delete("categoryId");
+
+    params.set("page", "1");
+    router.push(`/?${params.toString()}`);
+  }
+
+  function resetAllFilters() {
+    router.push("/");
+  }
+
+  return (
+    <div className="mb-8 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="lg:col-span-2">
+          <label className="mb-1.5 block text-xs font-bold text-slate-600 dark:text-slate-300">
+            البحث بالكلمات المفتاحية
+          </label>
+          <input
+            type="search"
+            defaultValue={currentSearch}
+            placeholder="ابحث عن عنوان الدرس أو التمرين أو الامتحان..."
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                updateFilter("search", (e.target as HTMLInputElement).value);
+              }
+            }}
+            onBlur={(e) => updateFilter("search", e.target.value)}
+            className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
+          />
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-bold text-slate-600 dark:text-slate-300">
+            المادة الدراسية
+          </label>
+          <select
+            value={currentSubject}
+            onChange={(e) => updateFilter("subject", e.target.value)}
+            className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:border-indigo-600 focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+          >
+            <option value="">جميع المواد</option>
+            {subjects.map((s) => (
+              <option key={s.id} value={s.slug || s.id}>
+                {s.nameAr || s.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-bold text-slate-600 dark:text-slate-300">
+            المستوى الدراسي
+          </label>
+          <select
+            value={currentGrade}
+            onChange={(e) => updateFilter("grade", e.target.value)}
+            className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:border-indigo-600 focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+          >
+            <option value="">جميع المستويات الدراسية</option>
+            {grades.map((g) => (
+              <option key={g.id} value={g.slug || g.id}>
+                {g.nameAr || g.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-bold text-slate-600 dark:text-slate-300">
+            التقسيم / الترتيب
+          </label>
+          <div className="flex gap-2">
+            <select
+              value={currentCategory}
+              onChange={(e) => updateFilter("category", e.target.value)}
+              className="w-1/2 rounded-xl border border-slate-300 bg-slate-50 px-2.5 py-2.5 text-xs text-slate-900 focus:border-indigo-600 focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            >
+              <option value="">النوع</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.slug || c.id}>
+                  {c.nameAr || c.name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={currentSort}
+              onChange={(e) => updateFilter("sort", e.target.value)}
+              className="w-1/2 rounded-xl border border-slate-300 bg-slate-50 px-2.5 py-2.5 text-xs text-slate-900 focus:border-indigo-600 focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            >
+              <option value="newest">الأحدث</option>
+              <option value="popular">الأكثر تحميلاً</option>
+              <option value="oldest">الأقدم</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {(currentSearch || currentSubject || currentGrade || currentCategory) && (
+        <div className="mt-4 flex items-center justify-end border-t border-slate-100 pt-3 dark:border-slate-800">
+          <button
+            type="button"
+            onClick={resetAllFilters}
+            className="text-xs font-bold text-rose-600 hover:text-rose-700 dark:text-rose-400"
+          >
+            إعادة تعيين جميع الفلاتر ✕
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export { FilterBar };
+
+```
+
+---
+
+### File: `src/components/worksheets/WorksheetCard.tsx`
+
+```typescript
+"use client";
+
+/**
+ * WorksheetCard — Al-Musnad (المسند) v11.0
+ *
+ * Implements:
+ * 1. Explicit File Metadata Badges on every card:
+ *    - اسم المادة (`worksheet.subject?.nameAr`)
+ *    - السنة الدراسية (`worksheet.grade?.nameAr`)
+ *    - القسم التربوي (`worksheet.category?.nameAr`: درس، تمرين، امتحان، جذاذة، نشاط تفاعلي، أخرى)
+ *    - نوع / صيغة الملف (`PDF` / `Word` / `صورة` via `getFileFormatInfo`)
+ * 2. Publisher Avatar with Live Presence Dot (`UserAvatarWithPresence`):
+ *    - Small green dot under the publisher avatar when connected (`ONLINE`),
+ *      gray dot when disconnected (`OFFLINE` / `GHOST`).
+ */
+
+import React, { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { BadgeCheck, Lock, Users, FileText, FolderOpen } from "lucide-react";
+import type { WorksheetWithRelations } from "@/types/api";
+import { getFileFormatInfo } from "@/config/constants";
+import InspectorBadge from "@/components/ui/InspectorBadge";
+import { UserAvatarWithPresence } from "@/components/ui/UserPresenceIndicator";
+
+interface WorksheetCardProps {
+  worksheet: WorksheetWithRelations;
+  guestTitleOnly?: boolean;
+}
+
+const AUDIENCE_LABELS: Record<string, { label: string; isRestricted: boolean }> = {
+  TEACHERS_ONLY: { label: "للمعلمين فقط (إصلاح / مذكرة)", isRestricted: true },
+  SAME_ROLE_ONLY: { label: "خاص بنفس فئة الناشر", isRestricted: true },
+  INSTITUTIONS_ONLY: { label: "خاص بالمؤسسات", isRestricted: true },
+  TEACHERS_AND_STUDENTS: { label: "للمعلمين والتلاميذ", isRestricted: false },
+  ALL: { label: "متاح للجميع", isRestricted: false },
+};
+
+export default function WorksheetCard({
+  worksheet,
+  guestTitleOnly = false,
+}: WorksheetCardProps) {
+  const router = useRouter();
+  const [favoriteCount, setFavoriteCount] = useState(
+    worksheet.favoriteCount ?? (worksheet as any).favoritesCount ?? 0
+  );
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
+
+  const title = worksheet.titleAr || worksheet.title;
+  const subjectColor = worksheet.subject?.color || "#2563EB";
+  const downloadCount =
+    worksheet.downloadCount ?? (worksheet as any).downloadsCount ?? 0;
+  const audienceInfo =
+    AUDIENCE_LABELS[worksheet.audience || "TEACHERS_AND_STUDENTS"] ||
+    AUDIENCE_LABELS.TEACHERS_AND_STUDENTS;
+  const formatInfo = getFileFormatInfo(worksheet.fileName);
+  const categoryNameAr = worksheet.category?.nameAr || "درس";
+
+  // Guest Title-Only View: Shows the file title & full classification badges (Subject + Grade + Section + File Type)
+  if (guestTitleOnly) {
+    return (
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm flex flex-col justify-between gap-4">
+        <div className="space-y-2.5">
+          <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+            <span
+              className="px-2.5 py-0.5 rounded-md font-bold text-white"
+              style={{ backgroundColor: subjectColor }}
+            >
+              {worksheet.subject?.nameAr || "مادة دراسية"}
+            </span>
+            <span className="px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold">
+              {worksheet.grade?.nameAr || "السنة الدراسية"}
+            </span>
+            <span className="px-2.5 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold border border-blue-200/70 dark:border-blue-800">
+              قسم: {categoryNameAr}
+            </span>
+            <span
+              className={`px-2 py-0.5 rounded-md font-bold border text-[10px] ${formatInfo.badgeClass}`}
+            >
+              {formatInfo.labelAr}
+            </span>
+          </div>
+
+          <div className="flex items-start gap-2 pt-1">
+            <FileText className="w-4 h-4 text-blue-600 shrink-0 mt-1" />
+            <h3 className="font-extrabold text-slate-900 dark:text-white text-sm leading-relaxed">
+              {title}
+            </h3>
+          </div>
+        </div>
+
+        <Link
+          href={`/login?redirectTo=${encodeURIComponent(`/worksheet/${worksheet.id}`)}`}
+          className="w-full py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 hover:text-blue-600 text-xs font-bold flex items-center justify-center gap-1.5 transition"
+        >
+          <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+          <span>سجّل الدخول لقراءة أو تحميل الملف</span>
+        </Link>
+      </div>
+    );
+  }
+
+  const handleQuickFavorite = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (isToggling) return;
+
+    try {
+      setIsToggling(true);
+      const res = await fetch(`/api/worksheets/${worksheet.id}/favorite`, {
+        method: "POST",
+      });
+
+      if (res.status === 401) {
+        router.push(`/login?redirectTo=/worksheet/${worksheet.id}`);
+        return;
+      }
+
+      const json = await res.json();
+      if (json.success) {
+        setIsFavorited(json.data.isFavorited);
+        setFavoriteCount(json.data.favoriteCount);
+      }
+    } catch (err) {
+      console.error("Quick favorite error:", err);
+    } finally {
+      setIsToggling(false);
+    }
+  };
+
+  return (
+    <div
+      className={`group bg-white dark:bg-slate-900 rounded-2xl border transition-all duration-200 flex flex-col justify-between overflow-hidden ${
+        worksheet.isEndorsed
+          ? "border-2 border-amber-400 shadow-md shadow-amber-500/10"
+          : "border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-slate-300"
+      }`}
+    >
+      <div>
+        {worksheet.isEndorsed && (
+          <div className="bg-gradient-to-r from-amber-500 via-amber-600 to-orange-500 text-white px-3.5 py-1.5 text-[11px] font-extrabold flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <BadgeCheck className="w-4 h-4 shrink-0" />
+              <span>توثيق واعتماد بيداغوجي من المتفقد</span>
+            </span>
+            <span className="bg-white/20 px-2 py-0.5 rounded-full text-[10px]">
+              معتمد ★
+            </span>
+          </div>
+        )}
+
+        <Link
+          href={`/worksheet/${worksheet.id}`}
+          className="block relative overflow-hidden"
+        >
+          {worksheet.thumbnailUrl ? (
+            <img
+              src={worksheet.thumbnailUrl}
+              alt={title}
+              className="w-full h-44 object-cover group-hover:scale-102 transition-transform duration-300"
+            />
+          ) : (
+            <div
+              className="w-full h-40 flex flex-col justify-between p-4 relative text-white"
+              style={{
+                background: `linear-gradient(135deg, ${subjectColor} 0%, #1e293b 100%)`,
+              }}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="px-2.5 py-1 bg-black/30 backdrop-blur-sm rounded-lg text-xs font-extrabold inline-flex items-center gap-1">
+                  <FolderOpen className="w-3.5 h-3.5" />
+                  <span>قسم: {categoryNameAr}</span>
+                </span>
+                <span className="px-2 py-0.5 bg-white/20 backdrop-blur-sm rounded-md text-[10px] font-black tracking-wider">
+                  {formatInfo.shortExt}
+                </span>
+              </div>
+
+              <div className="font-extrabold text-base line-clamp-2 leading-snug drop-shadow-sm">
+                {title}
+              </div>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={handleQuickFavorite}
+            disabled={isToggling}
+            className={`absolute top-3 left-3 w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-md transition shadow-sm ${
+              isFavorited
+                ? "bg-white text-rose-600 shadow-rose-500/20"
+                : "bg-white/80 hover:bg-white text-slate-600 hover:text-rose-600"
+            }`}
+            title={isFavorited ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
+          >
+            <span className="text-base leading-none">
+              {isFavorited ? "♥" : "♡"}
+            </span>
+          </button>
+        </Link>
+
+        <div className="p-4 space-y-3">
+          {/* Mandatory Classification Badges: المادة + السنة الدراسية + القسم التربوي + نوع الملف */}
+          <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+            <span
+              className="px-2 py-0.5 rounded-md font-bold text-white"
+              style={{ backgroundColor: subjectColor }}
+            >
+              {worksheet.subject?.nameAr || "المادة"}
+            </span>
+            <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold">
+              {worksheet.grade?.nameAr || "السنة الدراسية"}
+            </span>
+            <span className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold border border-blue-200/70 dark:border-blue-800">
+              {categoryNameAr}
+            </span>
+            <span
+              className={`px-2 py-0.5 rounded-md font-bold border text-[10px] ${formatInfo.badgeClass}`}
+            >
+              {formatInfo.labelAr}
+            </span>
+            <span
+              className={`px-2 py-0.5 rounded-md font-bold inline-flex items-center gap-1 text-[10px] ${
+                audienceInfo.isRestricted
+                  ? "bg-rose-50 text-rose-700 border border-rose-200"
+                  : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+              }`}
+            >
+              {audienceInfo.isRestricted ? (
+                <Lock className="w-2.5 h-2.5" />
+              ) : (
+                <Users className="w-2.5 h-2.5" />
+              )}
+              <span>{audienceInfo.label}</span>
+            </span>
+          </div>
+
+          <Link href={`/worksheet/${worksheet.id}`} className="block">
+            <h3 className="font-bold text-slate-900 dark:text-white text-sm hover:text-blue-600 transition line-clamp-2 leading-relaxed">
+              {title}
+            </h3>
+          </Link>
+
+          <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+            {worksheet.descriptionAr ||
+              worksheet.description ||
+              "نشرة تعليمية وبيداغوجية عبر منصة المسند."}
+          </p>
+        </div>
+      </div>
+
+      <div className="px-4 py-3 bg-slate-50/70 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
+        <Link
+          href={`/publisher/${worksheet.uploader?.id || worksheet.uploadedBy}`}
+          className="flex items-center gap-2 min-w-0 hover:text-blue-600 transition"
+        >
+          <UserAvatarWithPresence
+            name={worksheet.uploader?.name || "ناشر"}
+            avatarUrl={worksheet.uploader?.avatarUrl}
+            presenceStatus={(worksheet.uploader as any)?.presenceStatus}
+            lastSeenAt={(worksheet.uploader as any)?.lastSeenAt}
+            size="sm"
+          />
+          <span className="truncate max-w-[95px] font-bold text-slate-700 dark:text-slate-200 hover:underline">
+            {worksheet.uploader?.name || "ناشر"}
+          </span>
+          <InspectorBadge
+            role={worksheet.uploader?.role}
+            isVerified={worksheet.uploader?.isVerified}
+            isBanned={worksheet.uploader?.isBanned}
+            size="sm"
+          />
+        </Link>
+
+        <div className="flex items-center gap-2.5 font-semibold text-slate-400 shrink-0">
+          <span className="flex items-center gap-0.5" title="متوسط التقييم">
+            <span className="text-amber-400">★</span>
+            <span className="text-slate-600 dark:text-slate-300">
+              {worksheet.ratingAvg > 0 ? worksheet.ratingAvg.toFixed(1) : "جديد"}
+            </span>
+          </span>
+          <span className="flex items-center gap-0.5" title="عدد التحميلات">
+            <span>⬇</span>
+            <span className="text-slate-600 dark:text-slate-300">
+              {downloadCount}
+            </span>
+          </span>
+          <span className="flex items-center gap-0.5" title="عدد التفضيلات">
+            <span className="text-rose-500">♥</span>
+            <span className="text-slate-600 dark:text-slate-300">
+              {favoriteCount}
+            </span>
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+```
+
+---
+
+### File: `src/components/worksheets/WorksheetDetailClient.tsx`
+
+```typescript
+"use client";
+
+/**
+ * Worksheet Detail Client — Al-Musnad (المسند) v4.0
+ *
+ * Implements:
+ * 1. Edit Publication Modal (`تعديل المنشور`):
+ *    - If publisher edits only title, description, or audience, `isEndorsed` stays intact.
+ *    - If publisher selects a new PDF file (`newFile`), displays a prominent warning alert
+ *      before confirming: changing the file and its content will revoke the current endorsement badge!
+ * 2. Report Publication Modal (`🚩 إبلاغ عن المنشور`).
+ * 3. Inspector Endorsement toggle button.
+ */
+
+import React, { useEffect, useState, FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  Download,
+  Heart,
+  FileText,
+  User as UserIcon,
+  School,
+  Calendar,
+  ExternalLink,
+  ArrowRight,
+  Share2,
+  Check,
+  Loader2,
+  Tag,
+  Star,
+  BadgeCheck,
+  Lock,
+  Users,
+  UserPlus,
+  Edit3,
+  Flag,
+  AlertTriangle,
+  X,
+} from "lucide-react";
+import ReviewSection from "@/components/worksheets/ReviewSection";
+import InspectorBadge from "@/components/ui/InspectorBadge";
+import { toggleWorksheetEndorsementAction } from "@/actions/inspector.actions";
+import { submitReportAction } from "@/actions/report-support.actions";
+import { extractPdfThumbnailAndPages } from "@/lib/utils/pdf-thumbnail";
+import type { WorksheetWithRelations, ApiResponse, TargetAudience } from "@/types";
+import type { DownloadUrlResult } from "@/services/download.service";
+import type { ToggleFavoriteResult } from "@/services/favorite.service";
+
+interface WorksheetDetailClientProps {
+  initialWorksheet: WorksheetWithRelations;
+}
+
+const AUDIENCE_LABELS: Record<string, string> = {
+  TEACHERS_ONLY: "خاص بالمعلمين والمتفقدين فقط (إصلاح / مذكرة)",
+  SAME_ROLE_ONLY: "خاص بنفس فئة الناشر فقط",
+  INSTITUTIONS_ONLY: "خاص بالمؤسسات التربوية فقط",
+  TEACHERS_AND_STUDENTS: "متاح للمعلمين والتلاميذ",
+  ALL: "متاح لجميع منتسبي المسند",
+};
+
+export default function WorksheetDetailClient({
+  initialWorksheet,
+}: WorksheetDetailClientProps) {
+  const router = useRouter();
+
+  const [worksheet, setWorksheet] =
+    useState<WorksheetWithRelations>(initialWorksheet);
+  const [isFavorited, setIsFavorited] = useState<boolean>(false);
+  const [favoriteCount, setFavoriteCount] = useState<number>(
+    initialWorksheet.favoriteCount
+  );
+  const [favLoading, setFavLoading] = useState<boolean>(false);
+
+  const [isEndorsed, setIsEndorsed] = useState<boolean>(
+    Boolean(initialWorksheet.isEndorsed)
+  );
+  const [endorseLoading, setEndorseLoading] = useState<boolean>(false);
+  const [viewerRole, setViewerRole] = useState<string | null>(null);
+  const [viewerId, setViewerId] = useState<string | null>(null);
+
+  const [downloadCount, setDownloadCount] = useState<number>(
+    initialWorksheet.downloadCount
+  );
+  const [downloading, setDownloading] = useState<boolean>(false);
+  const [copied, setCopied] = useState<boolean>(false);
+
+  // Edit Worksheet Modal States
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState(
+    initialWorksheet.titleAr || initialWorksheet.title
+  );
+  const [editDesc, setEditDesc] = useState(
+    initialWorksheet.descriptionAr || initialWorksheet.description || ""
+  );
+  const [editAudience, setEditAudience] = useState<TargetAudience>(
+    initialWorksheet.audience || "TEACHERS_AND_STUDENTS"
+  );
+  const [replacementFile, setReplacementFile] = useState<File | null>(null);
+  const [confirmedFileLossWarning, setConfirmedFileLossWarning] =
+    useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  // Report Modal States
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("خطأ علمي أو بيداغوجي في المحتوى");
+  const [reportDetails, setReportDetails] = useState("");
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportSuccess, setReportSuccess] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function checkViewerState() {
+      try {
+        const [favRes, meRes] = await Promise.all([
+          fetch("/api/me/favorites").catch(() => null),
+          fetch("/api/auth/me").catch(() => null),
+        ]);
+
+        if (favRes && favRes.ok) {
+          const json = await favRes.json();
+          if (json.success && Array.isArray(json.data)) {
+            const favorited = json.data.some((f: any) => f.id === worksheet.id);
+            if (isMounted) setIsFavorited(favorited);
+          }
+        }
+
+        if (meRes && meRes.ok) {
+          const meJson = await meRes.json();
+          if (meJson.success && meJson.data && isMounted) {
+            setViewerRole(meJson.data.role || null);
+            setViewerId(meJson.data.id || null);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    checkViewerState();
+    return () => {
+      isMounted = false;
+    };
+  }, [worksheet.id]);
+
+  const handleToggleEndorsement = async () => {
+    if (endorseLoading) return;
+    try {
+      setEndorseLoading(true);
+      const res = await toggleWorksheetEndorsementAction(worksheet.id);
+      setIsEndorsed(res.isEndorsed);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "تعذر تحديث حالة الاعتماد");
+    } finally {
+      setEndorseLoading(false);
+    }
+  };
+
+  const handleSaveWorksheetEdit = async (e: FormEvent) => {
+    e.preventDefault();
+
+    // If replacing the PDF file while endorsed, require explicit warning confirmation
+    if (replacementFile && isEndorsed && !confirmedFileLossWarning) {
+      alert(
+        "تنبيه: يجب تأكيد علمك بأن استبدال ملف الـ PDF سيؤدي إلى إلغاء شارة التوثيق/الاعتماد الحالية حتى يعيد المتفقد مراجعة الملف الجديد."
+      );
+      return;
+    }
+
+    try {
+      setSavingEdit(true);
+
+      const metadata = {
+        title: editTitle.trim(),
+        titleAr: editTitle.trim(),
+        description: editDesc.trim() || undefined,
+        descriptionAr: editDesc.trim() || undefined,
+        audience: editAudience,
+      };
+
+      let res: Response;
+      if (replacementFile) {
+        const formData = new FormData();
+        formData.append("file", replacementFile);
+        try {
+          const extracted = await extractPdfThumbnailAndPages(replacementFile);
+          formData.append("thumbnail", extracted.thumbnailFile);
+          formData.append("pageCount", String(extracted.pageCount));
+        } catch {
+          // ignore thumbnail extraction error
+        }
+        formData.append("metadata", JSON.stringify(metadata));
+
+        res = await fetch(`/api/worksheets/${worksheet.id}`, {
+          method: "PATCH",
+          body: formData,
+        });
+      } else {
+        // Metadata-only update: preserves isEndorsed!
+        res = await fetch(`/api/worksheets/${worksheet.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(metadata),
+        });
+      }
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error?.message || "فشل تعديل النشرة");
+      }
+
+      setWorksheet((prev) => ({
+        ...prev,
+        ...json.data,
+        previewUrl: prev.previewUrl,
+      }));
+      setIsEndorsed(Boolean(json.data.isEndorsed));
+      setIsEditOpen(false);
+      setReplacementFile(null);
+      setConfirmedFileLossWarning(false);
+      router.refresh();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "حدث خطأ أثناء حفظ التعديلات");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleSubmitReport = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      setReportLoading(true);
+      await submitReportAction({
+        targetType: "WORKSHEET",
+        targetWorksheetId: worksheet.id,
+        reason: reportReason,
+        details: reportDetails,
+      });
+      setReportSuccess(true);
+      setTimeout(() => {
+        setIsReportOpen(false);
+        setReportSuccess(false);
+        setReportDetails("");
+      }, 1800);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "يرجى تسجيل الدخول لإرسال البلاغ");
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    try {
+      setDownloading(true);
+      const res = await fetch(`/api/worksheets/${worksheet.id}/download`);
+      if (res.status === 401) {
+        router.push(`/login?redirectTo=/worksheet/${worksheet.id}`);
+        return;
+      }
+
+      const json: ApiResponse<DownloadUrlResult> = await res.json();
+      if (!json.success) {
+        alert(json.error.message || "فشل في استخراج رابط التحميل");
+        return;
+      }
+
+      setDownloadCount((prev) => prev + 1);
+      window.open(json.data.downloadUrl, "_blank", "noopener,noreferrer");
+    } catch {
+      alert("حدث خطأ أثناء الاتصال بالخادم لتحميل الملف");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handleToggleFavorite = async () => {
+    if (favLoading) return;
+    try {
+      setFavLoading(true);
+      const res = await fetch(`/api/worksheets/${worksheet.id}/favorite`, {
+        method: "POST",
+      });
+
+      if (res.status === 401) {
+        router.push(`/login?redirectTo=/worksheet/${worksheet.id}`);
+        return;
+      }
+
+      const json: ApiResponse<ToggleFavoriteResult> = await res.json();
+      if (json.success) {
+        setIsFavorited(json.data.isFavorited);
+        setFavoriteCount(json.data.favoriteCount);
+      }
+    } catch {
+      alert("تعذر تحديث حالة المفضلة");
+    } finally {
+      setFavLoading(false);
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      alert("تم نسخ الرابط: " + window.location.href);
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} كيلوبايت`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} ميجابايت`;
+  };
+
+  const displayTitle = worksheet.titleAr || worksheet.title;
+  const displayDesc = worksheet.descriptionAr || worksheet.description;
+  const subjectColor = worksheet.subject?.color || "#2563EB";
+  const canEndorse = viewerRole === "INSPECTOR" || viewerRole === "ADMIN";
+  const isOwnerOrAdmin =
+    (viewerId && viewerId === worksheet.uploadedBy) || viewerRole === "ADMIN";
+
+  return (
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" dir="rtl">
+      {/* Breadcrumb */}
+      <nav className="flex items-center justify-between gap-2 text-sm text-slate-500 mb-6">
+        <div className="flex items-center gap-2">
+          <Link
+            href="/browse"
+            className="hover:text-blue-600 inline-flex items-center gap-1"
+          >
+            <ArrowRight className="w-4 h-4" />
+            النشرات
+          </Link>
+          <span>/</span>
+          <span>{worksheet.grade?.nameAr || worksheet.grade?.name}</span>
+          <span>/</span>
+          <span className="font-semibold text-slate-800 dark:text-slate-200 truncate max-w-xs">
+            {displayTitle}
+          </span>
+        </div>
+
+        {/* Report & Edit Quick Actions */}
+        <div className="flex items-center gap-2">
+          {isOwnerOrAdmin && (
+            <button
+              type="button"
+              onClick={() => setIsEditOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs font-bold hover:bg-blue-100 transition cursor-pointer"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>تعديل النشرة</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setIsReportOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-bold hover:bg-rose-100 transition cursor-pointer"
+            title="الإبلاغ عن هذه النشرة"
+          >
+            <Flag className="w-3.5 h-3.5" />
+            <span>إبلاغ</span>
+          </button>
+        </div>
+      </nav>
+
+      {/* Official Inspector Endorsement Banner */}
+      {isEndorsed && (
+        <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-transparent border-2 border-amber-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+              <BadgeCheck className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-sm font-black text-amber-900 dark:text-amber-300">
+                نشرة معتمدة علمياً وبيداغوجياً من المتفقد التربوي
+              </h2>
+              <p className="text-xs text-amber-800 dark:text-amber-200/80 mt-0.5">
+                تم التحقق من سلامة المحتوى العلمي والبيداغوجي لهذه النشرة في مادة ({worksheet.subject?.nameAr}).
+              </p>
+            </div>
+          </div>
+          <span className="px-3 py-1 rounded-full bg-amber-500 text-white text-xs font-extrabold shrink-0">
+            اعتماد رسمي ★
+          </span>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Right Column: Embedded PDF Viewer & Reviews */}
+        <section className="lg:col-span-8 flex flex-col gap-6">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+            <div className="bg-slate-50 dark:bg-slate-800 px-5 py-3.5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-semibold text-sm">
+                <FileText className="w-4 h-4 text-blue-600" />
+                <span>معاينة مباشرة لملف النشرة ({worksheet.fileName})</span>
+              </div>
+              {worksheet.previewUrl && (
+                <a
+                  href={worksheet.previewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-medium text-blue-600 hover:text-blue-800 inline-flex items-center gap-1"
+                >
+                  <span>فتح في نافذة مستقلة</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              )}
+            </div>
+
+            {worksheet.previewUrl ? (
+              <iframe
+                src={`${worksheet.previewUrl}#toolbar=0&navpanes=0`}
+                title={displayTitle}
+                className="w-full h-[680px] bg-slate-100"
+              />
+            ) : (
+              <div className="h-[450px] flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-800/40 p-8 text-center">
+                <FileText className="w-16 h-16 text-slate-400 mb-3" />
+                <p className="text-slate-700 dark:text-slate-200 font-semibold mb-1">
+                  المعاينة المباشرة جاهزة عند التحميل
+                </p>
+                <p className="text-sm text-slate-500 max-w-md mb-4">
+                  اضغط على زر &quot;تحميل مباشر (PDF)&quot; لتنزيل النسخة الكاملة عالية الدقة.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <ReviewSection
+            worksheetId={worksheet.id}
+            initialRatingAvg={worksheet.ratingAvg ?? 0}
+            initialReviewCount={worksheet.reviewCount ?? 0}
+          />
+        </section>
+
+        {/* Left Column */}
+        <aside className="lg:col-span-4 flex flex-col gap-6">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col gap-5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                className="px-3 py-1 rounded-full text-xs font-bold text-white"
+                style={{ backgroundColor: subjectColor }}
+              >
+                {worksheet.subject?.nameAr || worksheet.subject?.name}
+              </span>
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300">
+                {worksheet.grade?.nameAr || worksheet.grade?.name}
+              </span>
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300">
+                {worksheet.category?.nameAr || worksheet.category?.name}
+              </span>
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 inline-flex items-center gap-1">
+                {worksheet.audience === "TEACHERS_ONLY" ? (
+                  <Lock className="w-3 h-3 text-rose-600" />
+                ) : (
+                  <Users className="w-3 h-3 text-emerald-600" />
+                )}
+                <span>
+                  {AUDIENCE_LABELS[worksheet.audience] ||
+                    AUDIENCE_LABELS.TEACHERS_AND_STUDENTS}
+                </span>
+              </span>
+            </div>
+
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white leading-snug">
+              {displayTitle}
+            </h1>
+
+            {displayDesc && (
+              <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed whitespace-pre-line">
+                {displayDesc}
+              </p>
+            )}
+
+            {/* Inspector Endorsement Action Button */}
+            {canEndorse && (
+              <div className="p-4 rounded-2xl bg-amber-50/90 dark:bg-amber-950/40 border-2 border-amber-300 dark:border-amber-700 space-y-2.5">
+                <div className="flex items-center gap-2 text-xs font-extrabold text-amber-900 dark:text-amber-300">
+                  <BadgeCheck className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>صلاحية المتفقد التربوي: الاعتماد العلمي والبيداغوجي</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleToggleEndorsement}
+                  disabled={endorseLoading}
+                  className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow-sm ${
+                    isEndorsed
+                      ? "bg-white text-amber-800 border border-amber-400 hover:bg-amber-100"
+                      : "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
+                  }`}
+                >
+                  {endorseLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <BadgeCheck className="w-4 h-4" />
+                  )}
+                  <span>
+                    {isEndorsed
+                      ? "معتمد علمياً وبيداغوجياً ✓ (اضغط لإلغاء العلامة)"
+                      : "تأكيد الصحة العلمية والبيداغوجية للنشرة"}
+                  </span>
+                </button>
+              </div>
+            )}
+
+            {/* Download, Favorite, Share Buttons */}
+            <div className="flex flex-col gap-3 pt-2">
+              <button
+                onClick={handleDownload}
+                disabled={downloading}
+                className="w-full py-3.5 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold flex items-center justify-center gap-2.5 shadow-sm transition cursor-pointer"
+              >
+                {downloading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Download className="w-5 h-5" />
+                )}
+                <span>
+                  {downloading ? "جاري تجهيز الرابط..." : "تحميل مباشر (PDF)"}
+                </span>
+              </button>
+
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={handleToggleFavorite}
+                  disabled={favLoading}
+                  className={`py-2.5 px-4 rounded-xl border font-semibold text-sm flex items-center justify-center gap-2 transition cursor-pointer ${
+                    isFavorited
+                      ? "bg-rose-50 border-rose-200 text-rose-600"
+                      : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50"
+                  }`}
+                >
+                  <Heart
+                    className={`w-4 h-4 ${
+                      isFavorited ? "fill-rose-500 text-rose-500" : ""
+                    }`}
+                  />
+                  <span>{isFavorited ? "في المفضلة" : "حفظ بالمفضلة"}</span>
+                </button>
+
+                <button
+                  onClick={handleShare}
+                  className="py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 text-slate-700 dark:text-slate-200 font-semibold text-sm flex items-center justify-center gap-2 transition cursor-pointer"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="w-4 h-4 text-emerald-600" />
+                      <span className="text-emerald-600">تم النسخ!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Share2 className="w-4 h-4" />
+                      <span>مشاركة</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-4 grid grid-cols-4 gap-2 text-center">
+              <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-2.5">
+                <span className="block text-xs text-slate-500">التحميلات</span>
+                <span className="font-bold text-slate-800 dark:text-white">
+                  {downloadCount}
+                </span>
+              </div>
+              <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-2.5">
+                <span className="block text-xs text-slate-500">التفضيلات</span>
+                <span className="font-bold text-slate-800 dark:text-white">
+                  {favoriteCount}
+                </span>
+              </div>
+              <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-2.5">
+                <span className="block text-xs text-slate-500">التقييم</span>
+                <span className="font-bold text-amber-600 flex items-center justify-center gap-0.5 text-xs">
+                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  <span>
+                    {worksheet.ratingAvg > 0
+                      ? worksheet.ratingAvg.toFixed(1)
+                      : "جديد"}
+                  </span>
+                </span>
+              </div>
+              <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-2.5">
+                <span className="block text-xs text-slate-500">حجم الملف</span>
+                <span className="font-bold text-slate-800 dark:text-white text-[11px] truncate">
+                  {formatFileSize(worksheet.fileSize)}
+                </span>
+              </div>
+            </div>
+
+            {/* Publisher Card */}
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
+                  <UserIcon className="w-6 h-6" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <Link
+                      href={`/publisher/${worksheet.uploader?.id || worksheet.uploadedBy}`}
+                      className="text-sm font-extrabold text-slate-900 dark:text-white hover:text-blue-600 truncate"
+                    >
+                      {worksheet.uploader?.name || "ناشر"}
+                    </Link>
+                    {worksheet.uploader?.username && (
+                      <Link
+                        href={`/u/${worksheet.uploader.username}`}
+                        dir="ltr"
+                        className="font-mono text-xs font-bold text-blue-600 hover:underline dark:text-blue-400"
+                      >
+                        @{worksheet.uploader.username}
+                      </Link>
+                    )}
+                    <InspectorBadge
+                      role={worksheet.uploader?.role}
+                      isVerified={worksheet.uploader?.isVerified}
+                      isBanned={worksheet.uploader?.isBanned}
+                      size="sm"
+                    />
+                  </div>
+                  {worksheet.uploader?.school && (
+                    <p className="text-xs text-slate-500 flex items-center gap-1 truncate mt-0.5">
+                      <School className="w-3.5 h-3.5" />
+                      <span>{worksheet.uploader.school}</span>
+                    </p>
+                  )}
+                </div>
+                <div className="text-xs text-slate-400 flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>
+                    {new Date(worksheet.createdAt).toLocaleDateString("ar-EG")}
+                  </span>
+                </div>
+              </div>
+
+              <Link
+                href={`/publisher/${worksheet.uploader?.id || worksheet.uploadedBy}`}
+                className="w-full py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 hover:text-blue-600 text-xs font-bold flex items-center justify-center gap-2 transition"
+              >
+                <UserPlus className="w-4 h-4 text-blue-600" />
+                <span>عرض ملف الناشر الكامل، متابعته، وإضافته للمفضلة</span>
+              </Link>
+            </div>
+
+            {worksheet.tags && worksheet.tags.length > 0 && (
+              <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+                <div className="flex flex-wrap gap-1.5">
+                  {worksheet.tags.map((tag) => (
+                    <Link
+                      key={tag}
+                      href={`/browse?search=${encodeURIComponent(tag)}`}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-300 text-xs"
+                    >
+                      <Tag className="w-3 h-3" />
+                      <span>{tag}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </aside>
+      </div>
+
+      {/* Modal 1: Edit Worksheet (with Endorsement Loss Warning on File Change) */}
+      {isEditOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b pb-3 border-slate-100 dark:border-slate-800">
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                <Edit3 className="w-4 h-4 text-blue-600" />
+                <span>تعديل بيانات النشرة أو استبدال الملف</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsEditOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveWorksheetEdit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  عنوان النشرة (لا يؤثر تعديله على شارة التوثيق/الاعتماد) *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  وصف النشرة (لا يؤثر تعديله على شارة التوثيق/الاعتماد)
+                </label>
+                <textarea
+                  rows={3}
+                  value={editDesc}
+                  onChange={(e) => setEditDesc(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  جمهور النشر المستهدف
+                </label>
+                <select
+                  value={editAudience}
+                  onChange={(e) =>
+                    setEditAudience(e.target.value as TargetAudience)
+                  }
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm"
+                >
+                  <option value="TEACHERS_AND_STUDENTS">
+                    للمعلمين والتلاميذ معاً (تمارين وأنشطة)
+                  </option>
+                  <option value="TEACHERS_ONLY">
+                    للمعلمين والمتفقدين فقط (إصلاح ومذكرات)
+                  </option>
+                  <option value="SAME_ROLE_ONLY">نفس فئة الناشر فقط</option>
+                  <option value="ALL">عام لجميع الفئات</option>
+                </select>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                  استبدال ملف الـ PDF ومحتواه (اختياري)
+                </label>
+                <input
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0] || null;
+                    setReplacementFile(f);
+                    setConfirmedFileLossWarning(false);
+                  }}
+                  className="w-full text-xs text-slate-600 file:me-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
+                />
+              </div>
+
+              {/* Mandatory Warning Banner if replacing file on an Endorsed worksheet */}
+              {replacementFile && isEndorsed && (
+                <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border-2 border-amber-400 text-amber-900 dark:text-amber-200 space-y-2.5">
+                  <div className="flex items-start gap-2 text-xs font-extrabold">
+                    <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+                    <span>
+                      تحذير هام قبل تأكيد التعديل: تغيير ملف النشرة ومحتواه سيؤدي إلى فقدان شارة الاعتماد البيداغوجي الحالية حتى يعيد المتفقد مراجعة الملف الجديد!
+                    </span>
+                  </div>
+                  <label className="flex items-center gap-2 text-xs font-bold cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={confirmedFileLossWarning}
+                      onChange={(e) =>
+                        setConfirmedFileLossWarning(e.target.checked)
+                      }
+                      className="w-4 h-4 rounded text-amber-600"
+                    />
+                    <span>
+                      أعي ذلك وأوافق على استبدال الملف وإعادة تقديمه للمراجعة
+                    </span>
+                  </label>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setIsEditOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold cursor-pointer"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingEdit}
+                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                >
+                  {savingEdit ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Check className="w-4 h-4" />
+                  )}
+                  <span>تأكيد وحفظ التعديل</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal 2: Report Publication */}
+      {isReportOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b pb-3 border-slate-100 dark:border-slate-800">
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                <Flag className="w-4 h-4 text-rose-600" />
+                <span>إرسال بلاغ عن هذه النشرة</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsReportOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {reportSuccess ? (
+              <div className="p-6 text-center text-emerald-700 bg-emerald-50 rounded-2xl font-bold text-xs">
+                تم استلام بلاغك بنجاح وستقوم الإدارة بمراجعته فوراً.
+              </div>
+            ) : (
+              <form onSubmit={handleSubmitReport} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    سبب البلاغ *
+                  </label>
+                  <select
+                    value={reportReason}
+                    onChange={(e) => setReportReason(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold"
+                  >
+                    <option value="خطأ علمي أو بيداغوجي في المحتوى">
+                      خطأ علمي أو بيداغوجي في المحتوى
+                    </option>
+                    <option value="محتوى غير مطابق للمستوى أو المادة">
+                      محتوى غير مطابق للمستوى أو المادة
+                    </option>
+                    <option value="انتهاك حقوق الملكية الفكرية">
+                      انتهاك حقوق الملكية الفكرية
+                    </option>
+                    <option value="ملف تالف أو غير واضح">
+                      ملف تالف أو غير واضح
+                    </option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    تفاصيل إضافية (اختياري)
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={reportDetails}
+                    onChange={(e) => setReportDetails(e.target.value)}
+                    placeholder="وضّح الملاحظة للإدارة..."
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsReportOpen(false)}
+                    className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold cursor-pointer"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={reportLoading}
+                    className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold cursor-pointer"
+                  >
+                    {reportLoading ? "جاري الإرسال..." : "إرسال البلاغ"}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+    </main>
+  );
+}
+```
+
+---
+
+### File: `src/components/worksheets/ReviewSection.tsx`
+
+```typescript
+"use client";
+
+/**
+ * Upgraded Review & Discussion Section — Al-Musnad v8.0
+ *
+ * Implements:
+ * 1. `@username` Mention System:
+ *    - Typing `@` opens a live autocomplete list of publishers/members (`@username — الاسم`).
+ *    - Selecting a user inserts `@username` into the comment.
+ *    - Every rendered `@username` in any comment is a clickable link (`MentionText`) that
+ *      navigates directly to that user's Publisher Profile Page (`/publisher/[id]`)!
+ * 2. Inspector & Supervisory Comment Modes:
+ *    - `تعليق في الصدارة` (`isOfficialDirective: true`): Pinned at the very top of comments.
+ *    - `تعليق خاص مباشرة إلى الناشر` (`isPrivateToPublisher: true`): Visible ONLY to the
+ *      worksheet publisher and supervisory staff.
+ */
+
+import React, { useState, useEffect, FormEvent } from "react";
+import Link from "next/link";
+import {
+  Star,
+  MessageSquare,
+  Send,
+  Trash2,
+  Loader2,
+  School,
+  User as UserIcon,
+  BadgeCheck,
+  Pin,
+  Lock,
+  AtSign,
+} from "lucide-react";
+import InspectorBadge from "@/components/ui/InspectorBadge";
+import MentionText from "@/components/ui/MentionText";
+
+interface ReviewItem {
+  id: string;
+  rating: number;
+  comment: string;
+  isOfficialDirective?: boolean;
+  isPrivateToPublisher?: boolean;
+  userId: string;
+  createdAt: string;
+  user: {
+    id: string;
+    name: string;
+    username?: string | null;
+    avatarUrl: string | null;
+    school: string | null;
+    role?: string;
+    isVerified?: boolean;
+  };
+}
+
+interface MentionCandidate {
+  id: string;
+  name: string;
+  username: string;
+  role: string;
+  school: string | null;
+  isVerified: boolean;
+}
+
+interface ReviewSectionProps {
+  worksheetId: string;
+  initialRatingAvg: number;
+  initialReviewCount: number;
+}
+
+export default function ReviewSection({
+  worksheetId,
+  initialRatingAvg,
+  initialReviewCount,
+}: ReviewSectionProps) {
+  const [reviews, setReviews] = useState<ReviewItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
+
+  const [rating, setRating] = useState<number>(5);
+  const [hoverRating, setHoverRating] = useState<number>(0);
+  const [comment, setComment] = useState<string>("");
+  const [isPrivateToPublisher, setIsPrivateToPublisher] = useState<boolean>(false);
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [ratingAvg, setRatingAvg] = useState<number>(initialRatingAvg || 0);
+  const [reviewCount, setReviewCount] = useState<number>(
+    initialReviewCount || 0
+  );
+
+  // @username Autocomplete State
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionCandidates, setMentionCandidates] = useState<MentionCandidate[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadReviewsAndUser() {
+      try {
+        setLoading(true);
+        const [revRes, meRes] = await Promise.all([
+          fetch(`/api/worksheets/${worksheetId}/reviews`),
+          fetch("/api/auth/me").catch(() => null),
+        ]);
+
+        const revJson = await revRes.json();
+        let myId: string | null = null;
+
+        if (meRes && meRes.ok) {
+          const meJson = await meRes.json();
+          if (meJson.success && meJson.data?.id) {
+            myId = meJson.data.id;
+            if (isMounted) setCurrentUserRole(meJson.data.role || null);
+          }
+        }
+
+        if (isMounted) {
+          setCurrentUserId(myId);
+          if (revJson.success && Array.isArray(revJson.data)) {
+            setReviews(revJson.data);
+          }
+        }
+      } catch {
+        // Fallback
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+
+    loadReviewsAndUser();
+    return () => {
+      isMounted = false;
+    };
+  }, [worksheetId]);
+
+  // Detect `@` token at the end of comment for live `@username` autocomplete
+  useEffect(() => {
+    const match = comment.match(/@([a-zA-Z0-9_.]*)$/);
+    if (!match) {
+      setMentionQuery(null);
+      setMentionCandidates([]);
+      return;
+    }
+    const q = match[1];
+    setMentionQuery(q);
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/users/mentions?q=${encodeURIComponent(q)}`);
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          setMentionCandidates(json.data);
+        }
+      } catch {
+        // Ignore
+      }
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [comment]);
+
+  const handleInsertMention = (username: string) => {
+    const nextText = comment.replace(/@([a-zA-Z0-9_.]*)$/, `@${username} `);
+    setComment(nextText);
+    setMentionQuery(null);
+    setMentionCandidates([]);
+  };
+
+  const isInspectorOrStaff =
+    currentUserRole === "INSPECTOR" ||
+    currentUserRole === "MODERATOR" ||
+    currentUserRole === "ADMIN";
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!currentUserId) {
+      setError("يرجى تسجيل الدخول لإضافة تعليق");
+      return;
+    }
+
+    if (comment.trim().length < 2) {
+      setError("يرجى كتابة تعليق لا يقل عن حرفين");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      const res = await fetch(`/api/worksheets/${worksheetId}/reviews`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rating,
+          comment: comment.trim(),
+          isPrivateToPublisher: isInspectorOrStaff ? isPrivateToPublisher : false,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        setError(json.error?.message || "تعذر حفظ التعليق");
+        return;
+      }
+
+      const savedReview: ReviewItem = json.data;
+      setReviews((prev) => {
+        const combined = [savedReview, ...prev];
+        return combined.sort((a, b) => {
+          const aOff = a.isOfficialDirective ? 1 : 0;
+          const bOff = b.isOfficialDirective ? 1 : 0;
+          if (bOff !== aOff) return bOff - aOff;
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+      });
+
+      setComment("");
+      setIsPrivateToPublisher(false);
+    } catch {
+      setError("حدث خطأ في الاتصال بالخادم");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    try {
+      setSubmitting(true);
+      const res = await fetch(
+        `/api/worksheets/${worksheetId}/reviews?reviewId=${reviewId}`,
+        { method: "DELETE" }
+      );
+      if (res.ok) {
+        setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <section
+      dir="rtl"
+      className="mt-10 rounded-3xl border border-slate-200/90 bg-white p-6 shadow-sm sm:p-8 dark:border-slate-800 dark:bg-slate-900"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-6 dark:border-slate-800">
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 ring-1 ring-amber-200/60 dark:bg-amber-950/50 dark:text-amber-400">
+            <MessageSquare className="h-6 w-6" />
+          </div>
+          <div>
+            <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
+              التعليقات، التوجيهات البيداغوجية والمناقشات
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              يمكنك الإشارة لأي عضو أو ناشر باستخدام <code dir="ltr" className="font-bold text-blue-600">@username</code>، وبالضغط على الاسم تنتقل مباشرة إلى صفحة الناشر.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-2.5 dark:bg-slate-800">
+          <span className="text-xl font-black text-slate-900 dark:text-white">
+            {ratingAvg > 0 ? ratingAvg.toFixed(1) : "جديد"}
+          </span>
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            ({reviews.length} تعليق)
+          </span>
+        </div>
+      </div>
+
+      {/* Add Comment Form */}
+      {currentUserId ? (
+        <form
+          onSubmit={handleSubmit}
+          className="mt-6 rounded-2xl border border-slate-200/80 bg-slate-50/60 p-5 dark:border-slate-800 dark:bg-slate-800/40"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+              {currentUserRole === "INSPECTOR"
+                ? "إضافة تعليق متفقد (في الصدارة أو خاص للناشر)"
+                : "أضف تعليقك أو أشر لناشر بـ @username"}
+            </h3>
+
+            {/* Inspector / Staff Mode Selector */}
+            {isInspectorOrStaff && (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsPrivateToPublisher(false)}
+                  className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+                    !isPrivateToPublisher
+                      ? "bg-amber-600 text-white shadow-sm"
+                      : "bg-white text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                  }`}
+                >
+                  <Pin className="h-3.5 w-3.5" />
+                  تعليق يظهر في الصدارة
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsPrivateToPublisher(true)}
+                  className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+                    isPrivateToPublisher
+                      ? "bg-purple-600 text-white shadow-sm"
+                      : "bg-white text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                  }`}
+                >
+                  <Lock className="h-3.5 w-3.5" />
+                  تعليق خاص مباشرة إلى الناشر
+                </button>
+              </div>
+            )}
+          </div>
+
+          {error && (
+            <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs font-semibold text-red-700">
+              {error}
+            </div>
+          )}
+
+          {/* Star Rating */}
+          {!isPrivateToPublisher && (
+            <div className="mt-3 flex items-center gap-1.5">
+              {[1, 2, 3, 4, 5].map((star) => {
+                const active = (hoverRating || rating) >= star;
+                return (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setRating(star)}
+                    onMouseEnter={() => setHoverRating(star)}
+                    onMouseLeave={() => setHoverRating(0)}
+                    className="rounded-lg p-1 transition hover:scale-110"
+                  >
+                    <Star
+                      className={`h-5 w-5 ${
+                        active ? "fill-amber-400 text-amber-400" : "text-slate-300"
+                      }`}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Comment Textarea with @username Autocomplete */}
+          <div className="relative mt-3">
+            <textarea
+              rows={3}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder={
+                isPrivateToPublisher
+                  ? "اكتب تعليقك الخاص الموجه مباشرة إلى الناشر (لا يراه سوى الناشر والطاقم الرقابي)... يمكنك الإشارة بـ @username"
+                  : "اكتب تعليقك التربوي... اكتب @ للإشارة إلى أي مستخدم أو ناشر بالـ username"
+              }
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+            />
+
+            {mentionQuery !== null && mentionCandidates.length > 0 && (
+              <div className="absolute bottom-full right-0 z-30 mb-2 w-72 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                <div className="border-b border-slate-100 bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-500 dark:border-slate-800 dark:bg-slate-800">
+                  اختر مستخدماً للإشارة إليه بـ @username:
+                </div>
+                {mentionCandidates.map((cand) => (
+                  <button
+                    key={cand.id}
+                    type="button"
+                    onClick={() => handleInsertMention(cand.username)}
+                    className="flex w-full items-center justify-between px-3.5 py-2 text-right text-xs hover:bg-blue-50 dark:hover:bg-slate-800"
+                  >
+                    <span className="font-bold text-slate-900 dark:text-white">
+                      {cand.name}
+                    </span>
+                    <span dir="ltr" className="font-mono text-[11px] font-bold text-blue-600">
+                      @{cand.username}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-3 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setComment((prev) => `${prev}@`)}
+              className="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-100 dark:bg-blue-950/60 dark:text-blue-300"
+            >
+              <AtSign className="h-3.5 w-3.5" />
+              إشارة لمستخدم (@username)
+            </button>
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="inline-flex items-center gap-2 rounded-xl bg-blue-700 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-blue-800 disabled:opacity-60"
+            >
+              {submitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              {isPrivateToPublisher ? "إرسال التعليق الخاص للناشر" : "نشر التعليق"}
+            </button>
+          </div>
+        </form>
+      ) : null}
+
+      {/* Comments List */}
+      <div className="mt-6 space-y-4">
+        {loading ? (
+          <div className="flex items-center justify-center py-8 text-slate-400">
+            <Loader2 className="h-6 w-6 animate-spin" />
+          </div>
+        ) : reviews.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-200 py-10 text-center text-sm text-slate-500 dark:border-slate-800">
+            لا توجد تعليقات بعد. كن أول من يشارك رأيه أو يوجه إشارة بـ @username!
+          </div>
+        ) : (
+          reviews.map((rev) => {
+            const isPinned = rev.isOfficialDirective || rev.user.role === "INSPECTOR";
+            const isPrivate = Boolean(rev.isPrivateToPublisher);
+            const uname =
+              rev.user.username ||
+              `user_${rev.user.id.slice(0, 5)}`;
+
+            return (
+              <div
+                key={rev.id}
+                className={`rounded-2xl border p-5 transition ${
+                  isPrivate
+                    ? "border-purple-300 bg-purple-50/50 dark:border-purple-800 dark:bg-purple-950/20"
+                    : isPinned
+                    ? "border-amber-300 bg-gradient-to-l from-amber-50/70 via-white to-white shadow-sm dark:border-amber-800 dark:from-amber-950/30 dark:via-slate-900 dark:to-slate-900"
+                    : "border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-900"
+                }`}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="flex items-center gap-3">
+                    <Link
+                      href={`/publisher/${rev.user.id}`}
+                      className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-800 hover:ring-2 hover:ring-blue-500 dark:bg-blue-950 dark:text-blue-300"
+                    >
+                      {rev.user.name.charAt(0)}
+                    </Link>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Link
+                          href={`/publisher/${rev.user.id}`}
+                          className="text-sm font-extrabold text-slate-900 hover:text-blue-700 dark:text-white"
+                        >
+                          {rev.user.name}
+                        </Link>
+                        <Link
+                          href={`/u/${uname}`}
+                          dir="ltr"
+                          className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-bold text-blue-700 hover:bg-blue-100 dark:bg-slate-800 dark:text-blue-300"
+                          title="الانتقال إلى صفحة الناشر"
+                        >
+                          @{uname}
+                        </Link>
+                        {isPrivate && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-purple-600 px-2.5 py-0.5 text-[10px] font-extrabold text-white">
+                            <Lock className="h-3 w-3" />
+                            تعليق خاص موجه مباشرة للناشر
+                          </span>
+                        )}
+                        {!isPrivate && isPinned && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 px-2.5 py-0.5 text-[10px] font-extrabold text-white">
+                            <Pin className="h-3 w-3" />
+                            تعليق متفقد في الصدارة
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[11px] text-slate-400">
+                        {new Date(rev.createdAt).toLocaleDateString("ar-TN")}
+                      </span>
+                    </div>
+                  </div>
+
+                  {(currentUserId === rev.userId ||
+                    currentUserRole === "ADMIN" ||
+                    currentUserRole === "MODERATOR") && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteReview(rev.id)}
+                      className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                      title="حذف التعليق"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+
+                <p className="mt-3 text-sm leading-relaxed text-slate-700 dark:text-slate-200">
+                  <MentionText text={rev.comment} />
+                </p>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </section>
+  );
+}
+```
+
+---
+
+### File: `src/components/worksheets/CurriculumAndAdminExplorer.tsx`
+
+```typescript
+"use client";
+
+/**
+ * Curriculum & Administration Explorer on the Main Landing Page — Al-Musnad v10.0
+ *
+ * Updates in v10.0:
+ * 1. Fixed administrative category slug check (`administrative` and `administrative-docs` and `administration`)
+ *    so administrative documents always appear properly in «قسم الإدارة والمعاملات الإدارية».
+ * 2. Added a prominent button to open the dedicated Materials & Levels Repository page (`/levels`)
+ *    so clicking to browse Materials/Levels navigates directly to `/levels`.
+ */
+
+import React, { useState, useMemo } from "react";
+import Link from "next/link";
+import {
+  GraduationCap,
+  Lock,
+  Briefcase,
+  FolderOpen,
+  Plus,
+  BadgeCheck,
+  ChevronLeft,
+  ChevronDown,
+  Library,
+} from "lucide-react";
+import { CURRICULUM_GRADES } from "@/config/constants";
+import type { WorksheetWithRelations } from "@/types/api";
+
+interface CurriculumAndAdminExplorerProps {
+  worksheets: WorksheetWithRelations[];
+  isAuthenticated: boolean;
+  viewerRole: string | null;
+}
+
+const ADMIN_DOC_TYPES = [
+  { key: "ALL", label: "جميع الوثائق الإدارية" },
+  { key: "مذكرات ومراسلات", label: "مذكرات ومراسلات إدارية" },
+  { key: "جداول الأوقات", label: "جداول الأوقات والتوزيع السنوي" },
+  { key: "تقارير ومحاضر", label: "تقارير ومحاضر التفقد والترسيم" },
+  { key: "مطالب واستمارات", label: "مطالب واستمارات إدارية للمعلم" },
+];
+
+export default function CurriculumAndAdminExplorer({
+  worksheets,
+  isAuthenticated,
+  viewerRole,
+}: CurriculumAndAdminExplorerProps) {
+  const [levelsExpanded, setLevelsExpanded] = useState<boolean>(true);
+  const [selectedAdminType, setSelectedAdminType] = useState<string>("ALL");
+
+  const isAdministrative = (ws: WorksheetWithRelations) =>
+    ws.category?.slug === "administrative" ||
+    ws.category?.slug === "administrative-docs" ||
+    ws.subject?.slug === "administration" ||
+    ws.category?.nameAr?.includes("إدارية") ||
+    ws.tags?.includes("وثائق إدارية") ||
+    ws.tags?.includes("إدارة");
+
+  // Count curriculum worksheets per grade slug
+  const gradeCounts = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const g of CURRICULUM_GRADES) map[g.slug] = 0;
+    for (const ws of worksheets) {
+      if (isAdministrative(ws)) continue;
+      const slug = ws.grade?.slug;
+      if (slug && map[slug] !== undefined) {
+        map[slug] += 1;
+      }
+    }
+    return map;
+  }, [worksheets]);
+
+  const administrativeFiles = useMemo(() => {
+    return worksheets.filter((ws) => {
+      if (!isAdministrative(ws)) return false;
+      if (selectedAdminType === "ALL") return true;
+      const title = `${ws.titleAr || ""} ${ws.title || ""} ${ws.descriptionAr || ""}`;
+      return title.includes(selectedAdminType) || ws.tags?.includes(selectedAdminType);
+    });
+  }, [worksheets, selectedAdminType]);
+
+  const canUpload = isAuthenticated && viewerRole !== "STUDENT";
+
+  return (
+    <div id="levels-and-subjects" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mb-12 space-y-10 scroll-mt-24">
+      {/* ===================================================================== */}
+      {/* 1. قسم المستويات الدراسية والمواد (ينقل إلى صفحة المستودع والمواد)      */}
+      {/* ===================================================================== */}
+      <section
+        id="curriculum-levels-section"
+        className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
+      >
+        <div
+          onClick={() => setLevelsExpanded((prev) => !prev)}
+          className="cursor-pointer border-b border-slate-100 bg-gradient-to-l from-blue-50/80 via-indigo-50/40 to-transparent px-6 py-5 transition hover:from-blue-100/60 dark:border-slate-800 dark:from-blue-950/40 dark:via-slate-900"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-700 text-white shadow-md shadow-blue-700/20">
+                <GraduationCap className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-extrabold text-slate-900 sm:text-xl dark:text-white">
+                    مستودع المستويات الدراسية والمواد
+                  </h2>
+                  <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-[11px] font-bold text-blue-800 dark:bg-blue-950/80 dark:text-blue-300">
+                    المستويات الدراسية المعتمدة
+                  </span>
+                </div>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                  اختر المستوى الدراسي المعتمد للدخول مباشرة إلى مستودع المواد الدراسية والأقسام التربوية الخاصة به.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              {!isAuthenticated && (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50/90 px-3.5 py-2 text-xs font-bold text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200"
+                >
+                  <Lock className="h-3.5 w-3.5 shrink-0 text-amber-600" />
+                  <span>
+                    وضع الزائر: يمكنك الوصول إلى المحتوى بعد{" "}
+                    <Link href="/login" className="underline hover:text-blue-700">
+                      تسجيل الدخول
+                    </Link>{" "}
+                    أو{" "}
+                    <Link href="/register" className="underline hover:text-blue-700">
+                      إنشاء الحساب
+                    </Link>
+                    .
+                  </span>
+                </div>
+              )}
+
+              <Link
+                href="/levels"
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 px-4 py-2 text-xs font-extrabold text-white shadow-sm transition"
+              >
+                <Library className="h-4 w-4" />
+                <span>فتح صفحة مستودع المواد والمستويات ←</span>
+              </Link>
+
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+              >
+                <span>{levelsExpanded ? "طي المستويات" : "عرض المستويات"}</span>
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${
+                    levelsExpanded ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {levelsExpanded && (
+          <div className="p-6">
+            <div className="mb-4">
+              <p className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                اضغط على المستوى الدراسي المعتمد للدخول إلى مستودع المواد الدراسية الخاص به:
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {CURRICULUM_GRADES.map((grade) => {
+                const count = gradeCounts[grade.slug] || 0;
+                return (
+                  <Link
+                    key={grade.slug}
+                    href={`/levels/${grade.slug}`}
+                    className="group flex items-center justify-between rounded-2xl border border-slate-200/90 bg-slate-50/70 p-5 transition-all hover:-translate-y-0.5 hover:border-blue-500 hover:bg-white hover:shadow-md dark:border-slate-800 dark:bg-slate-800/40 dark:hover:border-blue-500 dark:hover:bg-slate-800"
+                  >
+                    <div className="flex items-center gap-4">
+                      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-700 text-lg font-black text-white shadow-sm transition group-hover:scale-105">
+                        {grade.sortOrder}
+                      </span>
+                      <div>
+                        <h3 className="text-base font-extrabold text-slate-900 group-hover:text-blue-700 dark:text-white dark:group-hover:text-blue-400">
+                          {grade.nameAr}
+                        </h3>
+                        <p className="mt-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+                          مستودع المواد الدراسية • {count} ملف متوفر
+                        </p>
+                      </div>
+                    </div>
+
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white text-slate-400 shadow-sm transition group-hover:bg-blue-600 group-hover:text-white dark:bg-slate-900">
+                      <ChevronLeft className="h-4 w-4" />
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* ===================================================================== */}
+      {/* 2. قسم الإدارة والمعاملات والوثائق الإدارية للمعلم                     */}
+      {/* ===================================================================== */}
+      <section
+        id="administration-section"
+        className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 scroll-mt-24"
+      >
+        <div className="border-b border-slate-100 bg-gradient-to-l from-amber-50/80 via-orange-50/40 to-transparent px-6 py-5 dark:border-slate-800 dark:from-amber-950/30 dark:via-slate-900">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-600 text-white shadow-md shadow-amber-600/20">
+                <Briefcase className="h-6 w-6" />
+              </div>
+              <div>
+                <h2 className="text-lg font-extrabold text-slate-900 sm:text-xl dark:text-white">
+                  قسم الإدارة والمعاملات الإدارية
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  فضاء مخصص للمعاملات والوثائق الإدارية لدى المعلم والمؤسسة (بعيداً عن التمارين والدروس)
+                </p>
+              </div>
+            </div>
+
+            {canUpload && (
+              <Link
+                href="/upload?section=administrative"
+                className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-amber-700"
+              >
+                <Plus className="h-4 w-4" />
+                نشر وثيقة إدارية
+              </Link>
+            )}
+          </div>
+        </div>
+
+        <div className="p-6">
+          <div className="mb-5 flex flex-wrap gap-2">
+            {ADMIN_DOC_TYPES.map((docType) => {
+              const isActive = selectedAdminType === docType.key;
+              return (
+                <button
+                  key={docType.key}
+                  type="button"
+                  onClick={() => setSelectedAdminType(docType.key)}
+                  className={`rounded-xl px-3.5 py-2 text-xs font-bold transition ${
+                    isActive
+                      ? "bg-amber-600 text-white shadow-sm"
+                      : "border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                  }`}
+                >
+                  {docType.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {administrativeFiles.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 py-8 text-center dark:border-slate-800 dark:bg-slate-950/30">
+              <FolderOpen className="mx-auto mb-2 h-8 w-8 text-slate-400" />
+              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                لا توجد وثائق إدارية منشورة في هذا التصنيف حالياً
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {administrativeFiles.map((ws) => {
+                const title = ws.titleAr || ws.title;
+                return (
+                  <div
+                    key={ws.id}
+                    className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200/90 bg-slate-50/60 px-4 py-3.5 transition hover:border-amber-300 hover:bg-white dark:border-slate-800 dark:bg-slate-800/40"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                          وثيقة إدارية
+                        </span>
+                        {ws.isEndorsed && (
+                          <span className="inline-flex items-center gap-0.5 rounded-md bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800">
+                            <BadgeCheck className="h-3 w-3" />
+                            معتمد
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-1 truncate text-sm font-bold text-slate-900 dark:text-white">
+                        {title}
+                      </p>
+                    </div>
+
+                    {isAuthenticated ? (
+                      <Link
+                        href={`/worksheet/${ws.id}`}
+                        className="shrink-0 rounded-xl bg-amber-600 px-3 py-2 text-xs font-bold text-white hover:bg-amber-700"
+                      >
+                        فتح الوثيقة
+                      </Link>
+                    ) : (
+                      <Link
+                        href={`/login?redirectTo=/worksheet/${ws.id}`}
+                        className="shrink-0 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-900"
+                      >
+                        تسجيل الدخول
+                      </Link>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+```
+
+---
+
+### File: `src/app/page.tsx`
+
+```typescript
+/**
+ * Al-Musnad (المسند) — Main Landing, Role-Personalized Workspace & Discovery Page (v12.0)
+ *
+ * Implements all v12.0 User Directives:
+ * 1. Complete Main Navigation Bar for Visitors & Members:
+ *    - القائمة الرئيسية (`/`)
+ *    - مستودع المواد والمستويات (`/levels`)
+ *    - قائمة النشرات (`/#catalog`)
+ *    - قسم الإدارة (`/#administration-section` — hidden for `STUDENT`, shown for Teachers, Inspectors & Institutions)
+ *    - قسم من نحن وتعريف الهوية (`/#about-us`)
+ *    - تفسير مزايا كل فئة من المشتركين (`/#roles-guide`)
+ *    - قسم الأسئلة الشائعة (`/#faq-section`)
+ * 2. Role-Personalized Top Workspace (`RolePersonalizedHub`):
+ *    - Institutions see the exclusive Institution Publications Hub at the top.
+ *    - Inspectors see the exclusive Inspector Publications Hub at the top.
+ *    - Teachers see the exclusive Teacher Publications Hub at the top.
+ *    - Students see their distraction-free Student Study Hub (with Administration removed).
+ */
+
+import React, { Suspense } from "react";
+import Link from "next/link";
+import {
+  AlertCircle,
+  Sparkles,
+  BookCheck,
+  Award,
+  Library,
+  Layers,
+  Lock,
+  ShieldCheck,
+  Compass,
+  HelpCircle,
+  Users,
+  FileText,
+  Briefcase,
+} from "lucide-react";
+import { db } from "@/lib/db";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  listWorksheets,
+  canUserAccessWorksheet,
+} from "@/services/worksheet.service";
+import {
+  CURRICULUM_GRADES,
+  CURRICULUM_SUBJECTS,
+  SUBJECT_SUBDIVISIONS,
+  ADMINISTRATIVE_CATEGORY,
+} from "@/config/constants";
+import FilterBar from "@/components/worksheets/FilterBar";
+import WorksheetCard from "@/components/worksheets/WorksheetCard";
+import CurriculumAndAdminExplorer from "@/components/worksheets/CurriculumAndAdminExplorer";
+import RolePersonalizedHub from "@/components/worksheets/RolePersonalizedHub";
+import PlatformIdentityAndFaqSection from "@/components/home/PlatformIdentityAndFaqSection";
+import type { WorksheetSortOption } from "@/types/api";
+
+interface HomePageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+const ROLE_LABELS_AR: Record<string, string> = {
+  INSTITUTION: "حساب مؤسسة تربوية",
+  INSPECTOR: "حساب متفقد تربوي",
+  TEACHER: "حساب معلم",
+  STUDENT: "حساب تلميذ",
+  MODERATOR: "حساب مسؤول إداري",
+  ADMIN: "حساب مشرف عام",
+};
+
+const DEMO_WORKSHEETS = [
+  {
+    id: "demo-fr-1",
+    title: "Leçon de lecture et vocabulaire — Français",
+    titleAr: "درس القراءة والمفردات الأساسية في اللغة الفرنسية",
+    description: "French lesson",
+    descriptionAr: "درس متكامل في اللغة الفرنسية للسنة الأولى ابتدائي.",
+    fileUrl: "/sample.pdf",
+    fileName: "francais-lecon1.pdf",
+    thumbnailUrl: null,
+    fileSize: 1024 * 640,
+    pageCount: 3,
+    status: "PUBLISHED" as const,
+    audience: "ALL" as const,
+    isEndorsed: true,
+    downloadCount: 210,
+    favoriteCount: 75,
+    ratingAvg: 4.9,
+    reviewCount: 14,
+    tags: ["فرنسية", "درس"],
+    createdAt: new Date("2026-10-28"),
+    updatedAt: new Date("2026-10-28"),
+    gradeId: "g1",
+    subjectId: "s4",
+    categoryId: "c1",
+    uploadedBy: "u1",
+    grade: CURRICULUM_GRADES[0],
+    subject: CURRICULUM_SUBJECTS[3],
+    category: SUBJECT_SUBDIVISIONS[0],
+    uploader: {
+      id: "u1",
+      name: "معلم ناشر",
+      school: "مدرسة ابتدائية",
+      role: "TEACHER",
+      isVerified: true,
+      isBanned: false,
+      avatarUrl: null,
+    },
+  },
+  {
+    id: "demo-inst-1",
+    title: "Institutional Annual Project & Charter",
+    titleAr: "مشروع المؤسسة التربوية السنوي وميثاق العمل المشترك بين المدارس",
+    description: "Institution publication",
+    descriptionAr: "مبادرة تربوية ونموذج تنسيقي مخصص للتفاعل بين المؤسسات التربوية.",
+    fileUrl: "/sample.pdf",
+    fileName: "institution-project.pdf",
+    thumbnailUrl: null,
+    fileSize: 1024 * 820,
+    pageCount: 5,
+    status: "PUBLISHED" as const,
+    audience: "INSTITUTIONS_ONLY" as const,
+    isEndorsed: true,
+    downloadCount: 165,
+    favoriteCount: 52,
+    ratingAvg: 4.9,
+    reviewCount: 11,
+    tags: ["مؤسسات", "مشروع مؤسسة"],
+    createdAt: new Date("2026-10-27"),
+    updatedAt: new Date("2026-10-27"),
+    gradeId: "g1",
+    subjectId: "s3",
+    categoryId: "c6",
+    uploadedBy: "u2",
+    grade: CURRICULUM_GRADES[0],
+    subject: CURRICULUM_SUBJECTS[2],
+    category: SUBJECT_SUBDIVISIONS[5],
+    uploader: {
+      id: "u2",
+      name: "مؤسسة تربوية نموذجية",
+      school: "مدرسة ابتدائية",
+      role: "INSTITUTION",
+      isVerified: true,
+      isBanned: false,
+      avatarUrl: null,
+    },
+  },
+  {
+    id: "demo-fr-3",
+    title: "Fiche pédagogique — Français (للمعلمين فقط)",
+    titleAr: "جذاذة بيداغوجية وإصلاح تقييم اللغة الفرنسية",
+    description: "Teacher fiche",
+    descriptionAr: "جذاذة بيداغوجية مخصصة للمعلمين والمتفقدين فقط.",
+    fileUrl: "/sample.pdf",
+    fileName: "francais-fiche.pdf",
+    thumbnailUrl: null,
+    fileSize: 1024 * 750,
+    pageCount: 4,
+    status: "PUBLISHED" as const,
+    audience: "TEACHERS_ONLY" as const,
+    isEndorsed: true,
+    downloadCount: 185,
+    favoriteCount: 64,
+    ratingAvg: 5.0,
+    reviewCount: 15,
+    tags: ["فرنسية", "جذاذات", "إصلاح"],
+    createdAt: new Date("2026-10-27"),
+    updatedAt: new Date("2026-10-27"),
+    gradeId: "g1",
+    subjectId: "s4",
+    categoryId: "c4",
+    uploadedBy: "u1",
+    grade: CURRICULUM_GRADES[0],
+    subject: CURRICULUM_SUBJECTS[3],
+    category: SUBJECT_SUBDIVISIONS[3],
+    uploader: {
+      id: "u1",
+      name: "متفقد تربوي",
+      school: "دائرة التفقد التربوي",
+      role: "INSPECTOR",
+      isVerified: true,
+      isBanned: false,
+      avatarUrl: null,
+    },
+  },
+  {
+    id: "demo-admin-1",
+    title: "Teacher Administrative Schedule & Annual Plan",
+    titleAr: "نموذج جدول الأوقات والتوزيع السنوي ومحضر الجلسة البيداغوجية",
+    description: "Administrative document for teachers",
+    descriptionAr: "وثيقة إدارية تنظيمية خاصة بالمعلم والمؤسسة التربوية.",
+    fileUrl: "/sample.pdf",
+    fileName: "admin-schedule-doc.pdf",
+    thumbnailUrl: null,
+    fileSize: 1024 * 540,
+    pageCount: 2,
+    status: "PUBLISHED" as const,
+    audience: "ALL" as const,
+    isEndorsed: true,
+    downloadCount: 310,
+    favoriteCount: 95,
+    ratingAvg: 4.9,
+    reviewCount: 22,
+    tags: ["وثائق إدارية", "جداول الأوقات", "مذكرات ومراسلات"],
+    createdAt: new Date("2026-10-26"),
+    updatedAt: new Date("2026-10-26"),
+    gradeId: "g1",
+    subjectId: "s10",
+    categoryId: "c7",
+    uploadedBy: "u1",
+    grade: CURRICULUM_GRADES[0],
+    subject: {
+      id: "s10",
+      name: "Administration",
+      nameAr: "المعاملات والوثائق الإدارية",
+      slug: "administration",
+      color: "#334155",
+      icon: "briefcase",
+      sortOrder: 10,
+    },
+    category: ADMINISTRATIVE_CATEGORY,
+    uploader: {
+      id: "u1",
+      name: "إدارة المسند",
+      school: "الدائرة التربوية",
+      role: "INSPECTOR",
+      isVerified: true,
+      isBanned: false,
+      avatarUrl: null,
+    },
+  },
+];
+
+export default async function HomePage(props: HomePageProps) {
+  const resolvedParams = await props.searchParams;
+
+  const page = Number(resolvedParams.page) || 1;
+  const search =
+    typeof resolvedParams.search === "string" ? resolvedParams.search : undefined;
+  const grade =
+    typeof resolvedParams.grade === "string" ? resolvedParams.grade : undefined;
+  const subject =
+    typeof resolvedParams.subject === "string"
+      ? resolvedParams.subject
+      : undefined;
+  const category =
+    typeof resolvedParams.category === "string"
+      ? resolvedParams.category
+      : undefined;
+  const sort = (
+    typeof resolvedParams.sort === "string" ? resolvedParams.sort : "newest"
+  ) as WorksheetSortOption;
+
+  let grades: any[] = [...CURRICULUM_GRADES];
+  let subjects: any[] = [...CURRICULUM_SUBJECTS];
+  let categories: any[] = [...SUBJECT_SUBDIVISIONS, ADMINISTRATIVE_CATEGORY];
+  let worksheets: any[] = [];
+  let explorerWorksheets: any[] = [];
+  let meta = { total: 0, page, limit: 12, totalPages: 1 };
+  let isDbConnected = true;
+
+  let viewerUserId: string | null = null;
+  let viewerRole: string | null = null;
+  let viewerName: string | null = null;
+  let viewerStudentGrade: string | null = null;
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      viewerUserId = user.id;
+      try {
+        const dbUser = await db.user.findUnique({
+          where: { id: user.id },
+          select: { role: true, name: true, studentGrade: true },
+        });
+        viewerRole =
+          dbUser?.role ||
+          (user.user_metadata?.role as string | undefined) ||
+          "TEACHER";
+        viewerName =
+          dbUser?.name ||
+          (user.user_metadata?.name as string | undefined) ||
+          null;
+        viewerStudentGrade =
+          dbUser?.studentGrade ||
+          (user.user_metadata?.student_grade as string | undefined) ||
+          null;
+      } catch {
+        viewerRole =
+          (user.user_metadata?.role as string | undefined) || "TEACHER";
+      }
+    }
+  } catch {
+    // Guest visitor
+  }
+
+  const isAuthenticated = Boolean(viewerUserId && viewerRole);
+
+  try {
+    const [
+      fetchedGrades,
+      fetchedSubjects,
+      fetchedCategories,
+      fetchedCatalog,
+      fetchedExplorer,
+    ] = await Promise.all([
+      db.grade.findMany({ orderBy: { sortOrder: "asc" } }),
+      db.subject.findMany({ orderBy: { sortOrder: "asc" } }),
+      db.category.findMany({ orderBy: { sortOrder: "asc" } }),
+      listWorksheets(
+        {
+          page,
+          limit: 12,
+          search,
+          grade,
+          subject,
+          category,
+          sort,
+        },
+        viewerRole,
+        viewerUserId
+      ),
+      listWorksheets(
+        {
+          page: 1,
+          limit: 50,
+          sort: "newest",
+        },
+        viewerRole,
+        viewerUserId
+      ),
+    ]);
+
+    if (fetchedGrades.length > 0) grades = fetchedGrades;
+    if (fetchedSubjects.length > 0) subjects = fetchedSubjects;
+    if (fetchedCategories.length > 0) categories = fetchedCategories;
+    worksheets = fetchedCatalog.data;
+    explorerWorksheets = fetchedExplorer.data;
+    meta = fetchedCatalog.meta;
+  } catch {
+    isDbConnected = false;
+    const visibleDemo = isAuthenticated
+      ? DEMO_WORKSHEETS.filter((w) =>
+          canUserAccessWorksheet(w, viewerRole, viewerUserId)
+        )
+      : DEMO_WORKSHEETS.filter((w) => w.audience === "ALL");
+
+    worksheets = visibleDemo;
+    explorerWorksheets = visibleDemo;
+    meta = {
+      total: visibleDemo.length,
+      page: 1,
+      limit: 12,
+      totalPages: 1,
+    };
+  }
+
+  // For Students, also filter out administrative documents from the general catalog
+  const displayedCatalogWorksheets =
+    viewerRole === "STUDENT"
+      ? worksheets.filter(
+          (w) =>
+            w.category?.slug !== "administrative" &&
+            w.subject?.slug !== "administration"
+        )
+      : worksheets;
+
+  const buildPageUrl = (targetPage: number) => {
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    if (grade) params.set("grade", grade);
+    if (subject) params.set("subject", subject);
+    if (category) params.set("category", category);
+    if (sort && sort !== "newest") params.set("sort", sort);
+    params.set("page", String(targetPage));
+    return `/?${params.toString()}`;
+  };
+
+  return (
+    <div className="space-y-12 pb-16">
+      {!isDbConnected && (
+        <div
+          className="bg-amber-50 dark:bg-amber-950/60 border-b border-amber-200 dark:border-amber-800 px-4 py-2.5 text-xs text-amber-900 dark:text-amber-200 flex flex-wrap items-center justify-center gap-2"
+          dir="rtl"
+        >
+          <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+          <span>
+            <strong>الوضع التجريبي لمنصة المسند:</strong> يتم حالياً عرض البيانات التجريبية للمستويات والمواد والنشرات.
+          </span>
+        </div>
+      )}
+
+      {/* Hero Section: المسند */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-blue-700 via-indigo-800 to-slate-900 text-white pt-14 pb-16 px-4 sm:px-6 lg:px-8">
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative max-w-5xl mx-auto text-center space-y-6">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs font-bold text-amber-200 shadow-sm">
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span>منصة المسند التربوية والبيداغوجية المعتمدة</span>
+          </div>
+
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-tight">
+            المرجع التربوي الموثوق للمؤسسات، <br className="hidden sm:inline" />
+            <span className="text-amber-300">المتفقدين، المعلمين، والتلاميذ</span>
+          </h1>
+
+          <p className="max-w-2xl mx-auto text-blue-100 text-base sm:text-lg leading-relaxed font-normal">
+            {viewerRole === "STUDENT"
+              ? "تصفح مستواك الدراسي، المواد التعليمية، الدروس المبسطة، التمارين التطبيقية، والامتحانات المعتمدة."
+              : "تصفح المستويات الدراسية المعتمدة، المواد التعليمية، الجذاذات، التمارين، الامتحانات، وقسم المعاملات الإدارية."}
+          </p>
+
+          {/* Main Quick Navigation Menu Bar inside Hero */}
+          <div
+            dir="rtl"
+            className="pt-2 flex flex-wrap justify-center items-center gap-2.5"
+          >
+            <Link
+              href="/levels"
+              className="px-5 py-3 bg-amber-400 hover:bg-amber-300 text-slate-900 font-extrabold text-xs sm:text-sm rounded-xl shadow-lg shadow-amber-400/20 transition transform hover:-translate-y-0.5 inline-flex items-center gap-2"
+            >
+              <Library className="w-4 h-4" />
+              <span>مستودع المواد والمستويات ←</span>
+            </Link>
+
+            <a
+              href="#catalog"
+              className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm rounded-xl border border-white/30 backdrop-blur-sm transition inline-flex items-center gap-1.5"
+            >
+              <FileText className="w-4 h-4 text-amber-300" />
+              <span>النشرات</span>
+            </a>
+
+            {viewerRole === "INSTITUTION" && (
+              <a
+                href="#institutions-hub"
+                className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm rounded-xl border border-white/30 backdrop-blur-sm transition inline-flex items-center gap-1.5"
+              >
+                <Briefcase className="w-4 h-4 text-amber-300" />
+                <span>للمؤسسات</span>
+              </a>
+            )}
+
+            {viewerRole === "INSPECTOR" && (
+              <a
+                href="#inspectors-hub"
+                className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm rounded-xl border border-white/30 backdrop-blur-sm transition inline-flex items-center gap-1.5"
+              >
+                <Award className="w-4 h-4 text-amber-300" />
+                <span>للمتفقدين</span>
+              </a>
+            )}
+
+            {viewerRole === "TEACHER" && (
+              <a
+                href="#teachers-hub"
+                className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm rounded-xl border border-white/30 backdrop-blur-sm transition inline-flex items-center gap-1.5"
+              >
+                <Users className="w-4 h-4 text-amber-300" />
+                <span>للمعلمين</span>
+              </a>
+            )}
+
+            <a
+              href="#learn-more"
+              className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm rounded-xl border border-white/30 backdrop-blur-sm transition inline-flex items-center gap-1.5"
+            >
+              <Compass className="w-4 h-4 text-amber-300" />
+              <span>اعرف المزيد</span>
+            </a>
+
+            {isAuthenticated && viewerRole !== "STUDENT" && (
+              <Link
+                href="/upload"
+                className="px-5 py-3 bg-blue-500/40 hover:bg-blue-500/60 text-white font-extrabold text-xs sm:text-sm rounded-xl border border-blue-300/40 backdrop-blur-sm transition"
+              >
+                + نشر ملف جديد
+              </Link>
+            )}
+          </div>
+
+          {/* Approved 4 Value Pillars */}
+          <div className="pt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto border-t border-white/10 text-xs text-blue-100">
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 flex flex-col items-center gap-2">
+              <BookCheck className="w-6 h-6 text-amber-300" />
+              <div className="text-sm font-extrabold text-white">
+                مراجع متوافقة مع النظام التربوي
+              </div>
+            </div>
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 flex flex-col items-center gap-2">
+              <Award className="w-6 h-6 text-amber-300" />
+              <div className="text-sm font-extrabold text-white">
+                اعتماد من عند أفضل المتفقدين
+              </div>
+            </div>
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 flex flex-col items-center gap-2">
+              <Library className="w-6 h-6 text-amber-300" />
+              <div className="text-sm font-extrabold text-white">
+                مكتبة متنوعة
+              </div>
+            </div>
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 flex flex-col items-center gap-2">
+              <Layers className="w-6 h-6 text-amber-300" />
+              <div className="text-sm font-extrabold text-white">
+                توافق مع جميع المستويات
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =================================================================== */}
+      {/* 1. الفضاء المخصص حسب فئة المستخدم في أعلى الصفحة (للمؤسسات / المتفقدين / المعلمين / التلاميذ) */}
+      {/* =================================================================== */}
+      {isAuthenticated && (
+        <RolePersonalizedHub
+          worksheets={explorerWorksheets as any}
+          viewerRole={viewerRole}
+          viewerName={viewerName}
+          viewerStudentGrade={viewerStudentGrade}
+        />
+      )}
+
+      {/* =================================================================== */}
+      {/* 2. مستودع المستويات المعتمدة + قسم الإدارة (مخفي عن التلاميذ)           */}
+      {/* =================================================================== */}
+      <CurriculumAndAdminExplorer
+        worksheets={explorerWorksheets as any}
+        isAuthenticated={isAuthenticated}
+        viewerRole={viewerRole}
+      />
+
+      {/* =================================================================== */}
+      {/* 3. قائمة النشرات العامة (#catalog)                                   */}
+      {/* =================================================================== */}
+      <section
+        id="catalog"
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 scroll-mt-24"
+      >
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+                  قائمة النشرات التربوية
+                </h2>
+                {isAuthenticated ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs font-bold">
+                    <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                    <span>
+                      النشرات المتاحة لـ: {ROLE_LABELS_AR[viewerRole || ""] || viewerRole}
+                    </span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800 text-xs font-bold">
+                    <Lock className="w-3.5 h-3.5 text-amber-600" />
+                    <span>
+                      وضع الزائر: يمكنك الوصول إلى المحتوى بعد{" "}
+                      <Link href="/login" className="underline hover:text-blue-700">
+                        تسجيل الدخول
+                      </Link>{" "}
+                      أو{" "}
+                      <Link href="/register" className="underline hover:text-blue-700">
+                        إنشاء الحساب
+                      </Link>
+                      .
+                    </span>
+                  </span>
+                )}
+              </div>
+              <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+                إجمالي الملفات المعروضة:{" "}
+                <span className="font-bold text-blue-600 dark:text-blue-400">
+                  {displayedCatalogWorksheets.length}
+                </span>{" "}
+                ملف تربوي
+              </p>
+            </div>
+          </div>
+
+          <Suspense
+            fallback={
+              <div className="h-20 bg-slate-100 dark:bg-slate-800 rounded-2xl animate-pulse" />
+            }
+          >
+            <FilterBar
+              grades={grades}
+              subjects={
+                viewerRole === "STUDENT"
+                  ? subjects.filter((s) => s.slug !== "administration")
+                  : subjects
+              }
+              categories={
+                viewerRole === "STUDENT"
+                  ? categories.filter((c) => c.slug !== "administrative")
+                  : categories
+              }
+            />
+          </Suspense>
+        </div>
+
+        {displayedCatalogWorksheets.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {displayedCatalogWorksheets.map((worksheet) => (
+              <WorksheetCard
+                key={worksheet.id}
+                worksheet={worksheet}
+                guestTitleOnly={!isAuthenticated}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-16 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-800">
+            <p className="text-slate-500 dark:text-slate-400 font-semibold text-base">
+              لا توجد نشرات مطابقة لخيارات البحث المحددة
+            </p>
+            <Link
+              href="/"
+              className="inline-block mt-4 px-4 py-2 text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-950/60 dark:text-blue-300 rounded-lg transition"
+            >
+              إعادة ضبط الفلاتر
+            </Link>
+          </div>
+        )}
+
+        {meta.totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 pt-8 border-t border-slate-200 dark:border-slate-800">
+            {page > 1 && (
+              <Link
+                href={buildPageUrl(page - 1)}
+                className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              >
+                الصفحة السابقة
+              </Link>
+            )}
+            {page < meta.totalPages && (
+              <Link
+                href={buildPageUrl(page + 1)}
+                className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              >
+                الصفحة التالية
+              </Link>
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* =================================================================== */}
+      {/* 4. قسم من نحن + دليل فئات المشتركين والميزات + الأسئلة الشائعة        */}
+      {/* =================================================================== */}
+      <PlatformIdentityAndFaqSection />
+    </div>
+  );
+}
+
+```
+
+---
+
+### File: `src/app/(main)/browse/page.tsx`
+
+```typescript
+import { redirect } from "next/navigation";
+
+interface BrowseProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function BrowsePage(props: BrowseProps) {
+  const searchParams = await props.searchParams;
+  const params = new URLSearchParams();
+
+  Object.entries(searchParams).forEach(([key, value]) => {
+    if (typeof value === "string") {
+      params.set(key, value);
+    }
+  });
+
+  const query = params.toString();
+  redirect(`/${query ? `?${query}#catalog` : "#catalog"}`);
+}
+
+```
+
+---
+
+### File: `src/app/(main)/levels/page.tsx`
+
+```typescript
+/**
+ * Step 1 of Curriculum Flow: Approved Grade Levels (`/levels`) — Al-Musnad v11.0
+ *
+ * Simplified & Streamlined Interface per User Directives:
+ * - Displays ONLY the Approved Grade Levels (`المستويات الدراسية المعتمدة`).
+ * - Removed the duplicate quick-access subjects matrix and removed the phrase "9 مواد أساسية".
+ * - Clicking any Grade Level navigates directly to `/levels/[gradeSlug]`, where the user
+ *   finds the full Materials Repository (`مستودع المواد الدراسية`) for that Grade Level.
+ */
+
+import React from "react";
+import Link from "next/link";
+import {
+  GraduationCap,
+  ChevronLeft,
+  Lock,
+  ArrowRight,
+  FolderOpen,
+} from "lucide-react";
+import { CURRICULUM_GRADES } from "@/config/constants";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { db } from "@/lib/db";
+import { ensureOfficialTaxonomySeeded } from "@/services/worksheet.service";
+
+export default async function GradeLevelsPage() {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isAuthenticated = Boolean(user);
+
+  const countMap: Record<string, number> = {};
+
+  try {
+    await ensureOfficialTaxonomySeeded();
+    const gradesInDb = await db.grade.findMany({
+      include: {
+        _count: { select: { worksheets: { where: { status: "PUBLISHED" } } } },
+      },
+    });
+
+    for (const g of gradesInDb) {
+      countMap[g.slug] = g._count.worksheets;
+    }
+  } catch {
+    // Fallback counts if database is offline
+  }
+
+  return (
+    <div dir="rtl" className="min-h-screen bg-slate-50/60 py-10 dark:bg-slate-950">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 space-y-8">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-blue-700 dark:text-slate-400"
+          >
+            <ArrowRight className="h-4 w-4" />
+            العودة إلى الصفحة الرئيسية
+          </Link>
+
+          {!isAuthenticated && (
+            <div className="inline-flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3.5 py-2 text-xs font-bold text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
+              <Lock className="h-3.5 w-3.5 text-amber-600" />
+              <span>
+                وضع الزائر: يمكنك الوصول إلى المحتوى بعد{" "}
+                <Link href="/login" className="underline">
+                  تسجيل الدخول
+                </Link>{" "}
+                أو{" "}
+                <Link href="/register" className="underline">
+                  إنشاء الحساب
+                </Link>
+                .
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Approved Grade Levels Only */}
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex items-center gap-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-700 text-white shadow-lg shadow-blue-700/20 shrink-0">
+              <GraduationCap className="h-7 w-7" />
+            </div>
+            <div>
+              <span className="text-xs font-extrabold text-blue-700 dark:text-blue-400">
+                البوابة المنهجية للمستويات والمواد الدراسية
+              </span>
+              <h1 className="mt-1 text-2xl font-extrabold text-slate-900 sm:text-3xl dark:text-white">
+                المستويات الدراسية المعتمدة
+              </h1>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                اختر المستوى الدراسي للدخول مباشرة إلى مستودع المواد الدراسية والأقسام البيداغوجية الخاصة به.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {CURRICULUM_GRADES.map((grade) => {
+              const count = countMap[grade.slug] ?? 0;
+              return (
+                <Link
+                  key={grade.slug}
+                  href={`/levels/${grade.slug}`}
+                  className="group flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50/70 p-6 transition-all hover:-translate-y-1 hover:border-blue-600 hover:bg-white hover:shadow-lg dark:border-slate-800 dark:bg-slate-800/50 dark:hover:border-blue-500"
+                >
+                  <div className="flex items-center gap-4">
+                    <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-700 text-xl font-black text-white shadow-md">
+                      {grade.sortOrder}
+                    </span>
+                    <div>
+                      <h2 className="text-base font-extrabold text-slate-900 group-hover:text-blue-700 dark:text-white dark:group-hover:text-blue-400">
+                        {grade.nameAr}
+                      </h2>
+                      <p className="mt-1 inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                        <FolderOpen className="h-3.5 w-3.5 text-blue-600" />
+                        <span>مستودع المواد الدراسية • {count} ملف</span>
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronLeft className="h-5 w-5 text-slate-400 group-hover:text-blue-600" />
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+```
+
+---
+
+### File: `src/app/(main)/levels/[gradeSlug]/page.tsx`
+
+```typescript
+/**
+ * Step 2 of Curriculum Flow: Materials Repository Inside Selected Grade (`/levels/[gradeSlug]`) — Al-Musnad v12.0
+ *
+ * Updates in v12.0:
+ * - Removed numeric numbering (1..9) inside Subject cards and replaced it with a descriptive
+ *   visual icon (`<SubjectIcon />`) representing each Subject.
+ * - Clicking any Subject opens its dedicated publications page organized into the 6 sections:
+ *   (درس • تمرين • امتحان • جذاذة • نشاط تفاعلي • أخرى).
+ */
+
+import React from "react";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import {
+  ChevronLeft,
+  ArrowRight,
+  Lock,
+  Library,
+} from "lucide-react";
+import { CURRICULUM_GRADES, CURRICULUM_SUBJECTS } from "@/config/constants";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { db } from "@/lib/db";
+import { ensureOfficialTaxonomySeeded } from "@/services/worksheet.service";
+import SubjectIcon from "@/components/ui/SubjectIcon";
+
+interface GradeSubjectsPageProps {
+  params: Promise<{ gradeSlug: string }>;
+}
+
+export default async function GradeSubjectsPage(props: GradeSubjectsPageProps) {
+  const { gradeSlug } = await props.params;
+
+  const gradeInfo = CURRICULUM_GRADES.find((g) => g.slug === gradeSlug);
+  if (!gradeInfo) {
+    notFound();
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isAuthenticated = Boolean(user);
+
+  const subjectCounts: Record<string, number> = {};
+  for (const s of CURRICULUM_SUBJECTS) subjectCounts[s.slug] = 0;
+
+  try {
+    await ensureOfficialTaxonomySeeded();
+    const worksheetsInGrade = await db.worksheet.findMany({
+      where: {
+        status: "PUBLISHED",
+        grade: { slug: gradeSlug },
+      },
+      select: {
+        subject: { select: { slug: true } },
+      },
+    });
+
+    for (const w of worksheetsInGrade) {
+      const sSlug = w.subject?.slug;
+      if (sSlug && subjectCounts[sSlug] !== undefined) {
+        subjectCounts[sSlug] += 1;
+      }
+    }
+  } catch {
+    // Fallback counts if database is offline
+  }
+
+  return (
+    <div dir="rtl" className="min-h-screen bg-slate-50/60 py-10 dark:bg-slate-950">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <nav className="flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400">
+            <Link href="/" className="hover:text-blue-700 dark:hover:text-blue-400">
+              الرئيسية
+            </Link>
+            <span>/</span>
+            <Link href="/levels" className="hover:text-blue-700 dark:hover:text-blue-400">
+              المستويات الدراسية المعتمدة
+            </Link>
+            <span>/</span>
+            <span className="text-slate-900 dark:text-white">{gradeInfo.nameAr}</span>
+          </nav>
+
+          {!isAuthenticated && (
+            <div className="inline-flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3.5 py-2 text-xs font-bold text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
+              <Lock className="h-3.5 w-3.5 text-amber-600" />
+              <span>
+                وضع الزائر: يمكنك الوصول إلى المحتوى بعد{" "}
+                <Link href="/login" className="underline">
+                  تسجيل الدخول
+                </Link>{" "}
+                أو{" "}
+                <Link href="/register" className="underline">
+                  إنشاء الحساب
+                </Link>
+                .
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Grade Header & Materials Repository Grid */}
+        <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-6 dark:border-slate-800">
+            <div className="flex items-center gap-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 text-xl font-black text-white shadow-lg shadow-indigo-600/20">
+                <Library className="h-7 w-7" />
+              </div>
+              <div>
+                <span className="text-xs font-extrabold text-indigo-600 dark:text-indigo-400">
+                  {gradeInfo.nameAr}
+                </span>
+                <h1 className="mt-1 text-2xl font-extrabold text-slate-900 sm:text-3xl dark:text-white">
+                  مستودع المواد الدراسية — {gradeInfo.nameAr}
+                </h1>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  اختر المادة الدراسية لتصفح الملفات مصنفة حسب القسم المناسب (درس، تمرين، امتحان، جذاذة، نشاط تفاعلي، أو أخرى).
+                </p>
+              </div>
+            </div>
+
+            <Link
+              href="/levels"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+            >
+              <ArrowRight className="h-4 w-4" />
+              العودة للمستويات الدراسية المعتمدة
+            </Link>
+          </div>
+
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {CURRICULUM_SUBJECTS.map((subj) => {
+              const count = subjectCounts[subj.slug] ?? 0;
+              return (
+                <Link
+                  key={subj.slug}
+                  href={`/levels/${gradeInfo.slug}/subjects/${subj.slug}`}
+                  className="group flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50/70 p-5 transition-all hover:-translate-y-1 hover:border-indigo-600 hover:bg-white hover:shadow-lg dark:border-slate-800 dark:bg-slate-800/40 dark:hover:border-indigo-500 dark:hover:bg-slate-800"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <span
+                      style={{ backgroundColor: subj.color || "#4f46e5" }}
+                      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-sm transition-transform group-hover:scale-105"
+                      title={subj.nameAr}
+                    >
+                      <SubjectIcon slug={subj.slug} className="h-6 w-6" />
+                    </span>
+                    <div>
+                      <h2 className="text-base font-extrabold text-slate-900 group-hover:text-indigo-600 dark:text-white dark:group-hover:text-indigo-400">
+                        {subj.nameAr}
+                      </h2>
+                      <p className="mt-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                        درس • تمرين • امتحان • جذاذة • نشاط تفاعلي • أخرى ({count} ملف)
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronLeft className="h-5 w-5 text-slate-400 group-hover:text-indigo-600" />
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+```
+
+---
+
+### File: `src/app/(main)/levels/[gradeSlug]/subjects/[subjectSlug]/page.tsx`
+
+```typescript
+/**
+ * Step 3 of Curriculum Flow: Subject Publications Page (`/levels/[gradeSlug]/subjects/[subjectSlug]`) — Al-Musnad v11.0
+ *
+ * Implements:
+ * 1. Full 6-Section Pedagogical Organization inside every Subject:
+ *    - درس (`lesson`)
+ *    - تمرين (`worksheet`)
+ *    - امتحان (`exam`)
+ *    - جذاذة (`lesson-plan`)
+ *    - نشاط تفاعلي (`activity`)
+ *    - أخرى (`other`)
+ * 2. Ensures every file is placed in its appropriate section and carries badges for:
+ *    Subject Name + Grade Level + File Category (Section) + File Format (PDF / Word / Image).
+ */
+
+import React from "react";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import {
+  ArrowRight,
+  Lock,
+  Plus,
+  FileText,
+  FolderOpen,
+} from "lucide-react";
+import {
+  CURRICULUM_GRADES,
+  CURRICULUM_SUBJECTS,
+  SUBJECT_SUBDIVISIONS,
+} from "@/config/constants";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { db } from "@/lib/db";
+import { listWorksheets } from "@/services/worksheet.service";
+import WorksheetCard from "@/components/worksheets/WorksheetCard";
+import SubjectIcon from "@/components/ui/SubjectIcon";
+
+interface SubjectPublicationsPageProps {
+  params: Promise<{ gradeSlug: string; subjectSlug: string }>;
+  searchParams: Promise<{ category?: string; search?: string }>;
+}
+
+export default async function SubjectPublicationsPage(
+  props: SubjectPublicationsPageProps
+) {
+  const { gradeSlug, subjectSlug } = await props.params;
+  const sp = await props.searchParams;
+  const activeCategorySlug = sp.category || "ALL";
+  const searchQuery = sp.search || "";
+
+  const gradeInfo = CURRICULUM_GRADES.find((g) => g.slug === gradeSlug);
+  const subjectInfo = CURRICULUM_SUBJECTS.find((s) => s.slug === subjectSlug);
+
+  if (!gradeInfo || !subjectInfo) {
+    notFound();
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let viewerRole: string | null = null;
+  if (user) {
+    try {
+      const dbUser = await db.user.findUnique({
+        where: { id: user.id },
+        select: { role: true },
+      });
+      viewerRole = dbUser?.role || "TEACHER";
+    } catch {
+      viewerRole = "TEACHER";
+    }
+  }
+
+  const isAuthenticated = Boolean(user && viewerRole);
+
+  let allSubjectWorksheets: any[] = [];
+  try {
+    const result = await listWorksheets(
+      {
+        page: 1,
+        limit: 50,
+        grade: gradeSlug,
+        subject: subjectSlug,
+        search: searchQuery || undefined,
+        sort: "newest",
+      },
+      viewerRole,
+      user?.id
+    );
+    allSubjectWorksheets = result.data;
+  } catch {
+    allSubjectWorksheets = [];
+  }
+
+  // Group files into their exact pedagogical section (درس، تمرين، امتحان، جذاذة، نشاط تفاعلي، أخرى)
+  const validSlugs = new Set(SUBJECT_SUBDIVISIONS.map((s) => s.slug));
+  const groupedBySection: Record<string, any[]> = {};
+  for (const sub of SUBJECT_SUBDIVISIONS) {
+    groupedBySection[sub.slug] = [];
+  }
+
+  for (const ws of allSubjectWorksheets) {
+    const cSlug = ws.category?.slug;
+    if (cSlug && validSlugs.has(cSlug as any)) {
+      groupedBySection[cSlug].push(ws);
+    } else {
+      groupedBySection["other"].push(ws);
+    }
+  }
+
+  const displayedWorksheets =
+    activeCategorySlug === "ALL"
+      ? allSubjectWorksheets
+      : groupedBySection[activeCategorySlug] || [];
+
+  return (
+    <div dir="rtl" className="min-h-screen bg-slate-50/60 py-10 dark:bg-slate-950">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <nav className="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400">
+            <Link href="/" className="hover:text-blue-700">
+              الرئيسية
+            </Link>
+            <span>/</span>
+            <Link href="/levels" className="hover:text-blue-700">
+              المستويات الدراسية المعتمدة
+            </Link>
+            <span>/</span>
+            <Link
+              href={`/levels/${gradeInfo.slug}`}
+              className="hover:text-blue-700"
+            >
+              {gradeInfo.nameAr}
+            </Link>
+            <span>/</span>
+            <span className="text-slate-900 dark:text-white">
+              {subjectInfo.nameAr}
+            </span>
+          </nav>
+
+          {!isAuthenticated && (
+            <div className="inline-flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3.5 py-2 text-xs font-bold text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
+              <Lock className="h-3.5 w-3.5 text-amber-600" />
+              <span>
+                وضع الزائر: يمكنك الوصول إلى المحتوى بعد{" "}
+                <Link href="/login" className="underline">
+                  تسجيل الدخول
+                </Link>{" "}
+                أو{" "}
+                <Link href="/register" className="underline">
+                  إنشاء الحساب
+                </Link>
+                .
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Subject Header */}
+        <div className="mb-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-6 dark:border-slate-800">
+            <div className="flex items-start gap-4">
+              <div
+                style={{ backgroundColor: subjectInfo.color || "#2563EB" }}
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-white shadow-md"
+              >
+                <SubjectIcon slug={subjectInfo.slug} className="h-7 w-7" />
+              </div>
+              <div>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-extrabold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                  {gradeInfo.nameAr} • {subjectInfo.nameAr}
+                </span>
+                <h1 className="mt-1.5 text-2xl font-extrabold text-slate-900 sm:text-3xl dark:text-white">
+                  ملفات وأقسام مادة «{subjectInfo.nameAr}»
+                </h1>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  كل ملف يحمل اسم المادة والسنة الدراسية ونوع الملف، ومرتب في القسم المناسب له (درس، تمرين، امتحان، جذاذة، نشاط تفاعلي، أو أخرى).
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              <Link
+                href={`/levels/${gradeInfo.slug}`}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+              >
+                <ArrowRight className="h-4 w-4" />
+                العودة لمستودع المواد
+              </Link>
+              {isAuthenticated && viewerRole !== "STUDENT" && (
+                <Link
+                  href="/upload"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-blue-700 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-blue-800"
+                >
+                  <Plus className="h-4 w-4" />
+                  إضافة ملف في هذه المادة
+                </Link>
+              )}
+            </div>
+          </div>
+
+          {/* 6 Pedagogical Sub-divisions Filter Tabs (including أخرى) */}
+          <div className="mt-5 flex flex-wrap items-center gap-2">
+            <Link
+              href={`/levels/${gradeInfo.slug}/subjects/${subjectInfo.slug}`}
+              className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
+                activeCategorySlug === "ALL"
+                  ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+              }`}
+            >
+              جميع الأقسام ({allSubjectWorksheets.length})
+            </Link>
+            {SUBJECT_SUBDIVISIONS.map((sub) => {
+              const active = activeCategorySlug === sub.slug;
+              const secCount = groupedBySection[sub.slug]?.length ?? 0;
+              return (
+                <Link
+                  key={sub.slug}
+                  href={`/levels/${gradeInfo.slug}/subjects/${subjectInfo.slug}?category=${sub.slug}`}
+                  className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
+                    active
+                      ? "bg-blue-700 text-white shadow-sm"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                  }`}
+                >
+                  قسم: {sub.nameAr} ({secCount})
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Publications Organized by Section */}
+        {displayedWorksheets.length === 0 ? (
+          <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-14 text-center dark:border-slate-800 dark:bg-slate-900">
+            <FileText className="mx-auto mb-3 h-10 w-10 text-slate-300" />
+            <h3 className="text-base font-extrabold text-slate-800 dark:text-white">
+              لا توجد ملفات مرفوعة في هذا القسم حالياً
+            </h3>
+            <p className="mt-1 text-xs text-slate-500">
+              كن أول من يثري مادة «{subjectInfo.nameAr}» ({gradeInfo.nameAr}) بنشر ملف تربوي جديد.
+            </p>
+          </div>
+        ) : activeCategorySlug === "ALL" ? (
+          <div className="space-y-8">
+            {SUBJECT_SUBDIVISIONS.map((sub) => {
+              const sectionFiles = groupedBySection[sub.slug] || [];
+              if (sectionFiles.length === 0) return null;
+              return (
+                <section
+                  key={sub.slug}
+                  className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                >
+                  <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
+                    <div className="flex items-center gap-2.5">
+                      <FolderOpen className="h-5 w-5 text-blue-600" />
+                      <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
+                        قسم: {sub.nameAr}
+                      </h2>
+                      <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-extrabold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
+                        {sectionFiles.length} ملف
+                      </span>
+                    </div>
+                    <Link
+                      href={`/levels/${gradeInfo.slug}/subjects/${subjectInfo.slug}?category=${sub.slug}`}
+                      className="text-xs font-bold text-blue-600 hover:underline"
+                    >
+                      عرض هذا القسم فقط ←
+                    </Link>
+                  </div>
+                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {sectionFiles.map((ws) => (
+                      <WorksheetCard
+                        key={ws.id}
+                        worksheet={ws}
+                        guestTitleOnly={!isAuthenticated}
+                      />
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {displayedWorksheets.map((ws) => (
+              <WorksheetCard
+                key={ws.id}
+                worksheet={ws}
+                guestTitleOnly={!isAuthenticated}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+```
+
+---
+
+### File: `src/app/(main)/worksheet/[id]/page.tsx`
+
+```typescript
+/**
+ * Worksheet Detail View Route (Server Component) — Al-Musnad v5.0
+ *
+ * Route: /worksheet/[id]
+ *
+ * Enforces:
+ * 1. Mandatory Authentication: Unauthenticated visitors are immediately redirected
+ *    to `/login?redirectTo=/worksheet/[id]`.
+ * 2. Strict Publisher Audience Permission: Calls `getWorksheetById(id, dbUser.role, user.id)`.
+ *    If the publisher restricted the worksheet to another account category (`ForbiddenError`),
+ *    renders a clear Arabic Audience Restriction Notice instead of exposing the content.
+ */
+
+import React from "react";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
+import { Lock, ShieldAlert, ArrowRight } from "lucide-react";
+import { db } from "@/lib/db";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getWorksheetById } from "@/services/worksheet.service";
+import { ForbiddenError, UnauthorizedError } from "@/lib/utils/errors";
+import WorksheetDetailClient from "@/components/worksheets/WorksheetDetailClient";
+import type { WorksheetWithRelations } from "@/types";
+
+interface WorksheetPageProps {
+  params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata(
+  props: WorksheetPageProps
+): Promise<Metadata> {
+  const { id } = await props.params;
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return {
+        title: "محتوى محمي للأعضاء | منصة المسند",
+        description: "يرجى تسجيل الدخول للوصول إلى النشرات التربوية في منصة المسند.",
+      };
+    }
+
+    const dbUser = await db.user.findUnique({
+      where: { id: user.id },
+      select: { role: true },
+    });
+
+    const worksheet = await getWorksheetById(id, dbUser?.role, user.id);
+    const title = worksheet.titleAr || worksheet.title;
+    return {
+      title: `${title} | منصة المسند`,
+      description:
+        worksheet.descriptionAr ||
+        worksheet.description ||
+        `نشرة تربوية عبر منصة المسند`,
+    };
+  } catch {
+    return {
+      title: "نشرة تربوية | منصة المسند",
+      description: "منصة المسند التربوية والبيداغوجية المعتمدة.",
+    };
+  }
+}
+
+export default async function WorksheetDetailPage(props: WorksheetPageProps) {
+  const { id } = await props.params;
+
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect(`/login?redirectTo=${encodeURIComponent(`/worksheet/${id}`)}`);
+  }
+
+  const dbUser = await db.user.findUnique({
+    where: { id: user.id },
+    select: { id: true, role: true },
+  });
+
+  if (!dbUser) {
+    redirect(`/login?redirectTo=${encodeURIComponent(`/worksheet/${id}`)}`);
+  }
+
+  let worksheet: (WorksheetWithRelations & { previewUrl?: string }) | null =
+    null;
+  let forbiddenMessage: string | null = null;
+
+  try {
+    worksheet = (await getWorksheetById(
+      id,
+      dbUser.role,
+      dbUser.id
+    )) as unknown as (WorksheetWithRelations & { previewUrl?: string });
+  } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      redirect(`/login?redirectTo=${encodeURIComponent(`/worksheet/${id}`)}`);
+    } else if (error instanceof ForbiddenError) {
+      forbiddenMessage = error.message;
+    } else {
+      notFound();
+    }
+  }
+
+  if (forbiddenMessage) {
+    return (
+      <main className="max-w-xl mx-auto px-4 py-20 text-center" dir="rtl">
+        <div className="bg-white dark:bg-slate-900 border-2 border-amber-200 dark:border-amber-800 rounded-3xl p-8 shadow-sm space-y-5">
+          <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
+            <ShieldAlert className="w-8 h-8" />
+          </div>
+          <h1 className="text-xl font-extrabold text-slate-900 dark:text-white">
+            هذه النشرة غير متاحة لفئة حسابك
+          </h1>
+          <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+            {forbiddenMessage}
+          </p>
+          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-xs text-slate-500 flex items-center justify-center gap-2">
+            <Lock className="w-4 h-4 text-amber-600 shrink-0" />
+            <span>
+              يعرض حسابك فقط النشرات التي أتاحها الناشرون لفئة حسابك.
+            </span>
+          </div>
+          <div className="pt-2">
+            <Link
+              href="/#catalog"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition shadow-sm"
+            >
+              <ArrowRight className="w-4 h-4" />
+              <span>العودة إلى النشرات المتاحة لحسابي</span>
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (!worksheet) {
+    notFound();
+  }
+
+  return <WorksheetDetailClient initialWorksheet={worksheet} />;
+}
+```
+
+---
+
+### File: `src/app/(main)/upload/page.tsx`
+
+```typescript
+"use client";
+
+/**
+ * Upload New Publication Page — Al-Musnad (المسند) v6.0
+ *
+ * Updates per Project Manager v6.0 Directives:
+ * 1. Accepts PDF (`.pdf`), Microsoft Word (`.doc`, `.docx`), and Images (`.png`, `.jpg`, `.jpeg`, `.webp`).
+ * 2. When the user uploads a file that is NOT a PDF (Word or Image), the system accepts the file,
+ *    saves it for review, and displays a warm Thank You screen informing the user:
+ *    "شكراً لك على مساهمتك! هذا المحتوى الذي أرسلته سيتم مراجعته من عند المشرف والمتفقد
+ *     وإعادة صياغته لملف PDF ليكون الوصول إليه أفضل من عند المستخدمين."
+ * 3. Supports publishing either to a Curriculum Subject Sub-division (درس، تمارين، امتحانات،
+ *    جذاذات، أنشطة تفاعلية) OR directly to «قسم الإدارة (وثائق ومعاملات إدارية للمعلم)».
+ */
+
+import React, { useState, useEffect, DragEvent, ChangeEvent, FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  UploadCloud,
+  FileText,
+  X,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  Plus,
+  Image as ImageIcon,
+  Users,
+  Lock,
+  Ban,
+  Briefcase,
+  BookOpen,
+  Sparkles,
+} from "lucide-react";
+import {
+  MAX_FILE_SIZE_BYTES,
+  MAX_FILE_SIZE_MB,
+  isSupportedUploadFile,
+  isPdfUploadFile,
+  CURRICULUM_GRADES,
+  CURRICULUM_SUBJECTS,
+  SUBJECT_SUBDIVISIONS,
+  ADMINISTRATIVE_CATEGORY,
+} from "@/config/constants";
+import { extractPdfThumbnailAndPages } from "@/lib/utils/pdf-thumbnail";
+import type {
+  Grade,
+  Subject,
+  Category,
+  ApiResponse,
+  WorksheetWithRelations,
+  TargetAudience,
+} from "@/types";
+
+export default function UploadWorksheetPage() {
+  const router = useRouter();
+
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [isBanned, setIsBanned] = useState(false);
+  const [banReason, setBanReason] = useState<string | null>(null);
+
+  const [grades, setGrades] = useState<Grade[]>(
+    CURRICULUM_GRADES as unknown as Grade[]
+  );
+  const [subjects, setSubjects] = useState<Subject[]>(
+    CURRICULUM_SUBJECTS as unknown as Subject[]
+  );
+  const [categories, setCategories] = useState<Category[]>([
+    ...(SUBJECT_SUBDIVISIONS as unknown as Category[]),
+    ADMINISTRATIVE_CATEGORY as unknown as Category,
+  ]);
+
+  const [sectionType, setSectionType] = useState<"curriculum" | "administrative">(
+    "curriculum"
+  );
+
+  const [file, setFile] = useState<File | null>(null);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  const [pageCount, setPageCount] = useState<number | null>(null);
+  const [extractingThumb, setExtractingThumb] = useState<boolean>(false);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+
+  const [titleAr, setTitleAr] = useState<string>("");
+  const [descriptionAr, setDescriptionAr] = useState<string>("");
+  const [gradeId, setGradeId] = useState<string>("");
+  const [subjectId, setSubjectId] = useState<string>("");
+  const [categoryId, setCategoryId] = useState<string>("");
+  const [audience, setAudience] = useState<TargetAudience>("ALL");
+  const [tagInput, setTagInput] = useState<string>("");
+  const [tags, setTags] = useState<string[]>([]);
+
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [nonPdfThankYouMessage, setNonPdfThankYouMessage] = useState<
+    string | null
+  >(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      const audParam = sp.get("audience")?.toUpperCase();
+      if (
+        audParam &&
+        ["ALL", "TEACHERS_AND_STUDENTS", "TEACHERS_ONLY", "SAME_ROLE_ONLY", "INSTITUTIONS_ONLY"].includes(audParam)
+      ) {
+        setAudience(audParam as TargetAudience);
+      }
+      if (sp.get("section") === "administrative") {
+        setSectionType("administrative");
+      }
+    }
+    async function initPage() {
+      try {
+        setCheckingAuth(true);
+        const meRes = await fetch("/api/auth/me", { cache: "no-store" });
+        if (meRes.status === 401) {
+          router.replace("/login?redirectTo=/upload");
+          return;
+        }
+        const meJson = await meRes.json();
+        if (!meJson.success || !meJson.data) {
+          router.replace("/login?redirectTo=/upload");
+          return;
+        }
+
+        setUserRole(meJson.data.role);
+        setIsBanned(Boolean(meJson.data.isBanned));
+        setBanReason(meJson.data.banReason || null);
+
+        const [gRes, sRes, cRes] = await Promise.all([
+          fetch("/api/grades"),
+          fetch("/api/subjects"),
+          fetch("/api/categories"),
+        ]);
+        const [gJson, sJson, cJson] = await Promise.all([
+          gRes.json() as Promise<ApiResponse<Grade[]>>,
+          sRes.json() as Promise<ApiResponse<Subject[]>>,
+          cRes.json() as Promise<ApiResponse<Category[]>>,
+        ]);
+
+        if (gJson.success && gJson.data.length > 0) setGrades(gJson.data);
+        if (sJson.success && sJson.data.length > 0) setSubjects(sJson.data);
+        if (cJson.success && cJson.data.length > 0) setCategories(cJson.data);
+      } catch {
+        // Fallback to constants if offline
+      } finally {
+        setCheckingAuth(false);
+      }
+    }
+    initPage();
+  }, [router]);
+
+  const validateAndSetFile = async (selected: File) => {
+    setError(null);
+    if (!isSupportedUploadFile(selected)) {
+      setError(
+        "يُسمح برفع ملفات PDF، أو ملفات وورد (.doc, .docx)، أو الصور (.png, .jpg, .webp)."
+      );
+      return;
+    }
+    if (selected.size > MAX_FILE_SIZE_BYTES) {
+      setError(
+        `حجم الملف يتجاوز الحد الأقصى المسموح به (${MAX_FILE_SIZE_MB} ميجابايت).`
+      );
+      return;
+    }
+
+    setFile(selected);
+    if (!titleAr) {
+      setTitleAr(
+        selected.name
+          .replace(/\.(pdf|docx?|png|jpe?g|webp)$/i, "")
+          .replace(/[-_]/g, " ")
+      );
+    }
+
+    if (isPdfUploadFile(selected)) {
+      try {
+        setExtractingThumb(true);
+        const extracted = await extractPdfThumbnailAndPages(selected);
+        setThumbnailFile(extracted.thumbnailFile);
+        setThumbnailPreview(extracted.thumbnailPreviewUrl);
+        setPageCount(extracted.pageCount);
+      } catch {
+        setThumbnailFile(null);
+        setThumbnailPreview(null);
+        setPageCount(null);
+      } finally {
+        setExtractingThumb(false);
+      }
+    } else if (selected.type.startsWith("image/")) {
+      setThumbnailFile(selected);
+      setThumbnailPreview(URL.createObjectURL(selected));
+      setPageCount(1);
+    } else {
+      setThumbnailFile(null);
+      setThumbnailPreview(null);
+      setPageCount(null);
+    }
+  };
+
+  const handleClearFile = () => {
+    if (thumbnailPreview) URL.revokeObjectURL(thumbnailPreview);
+    setFile(null);
+    setThumbnailFile(null);
+    setThumbnailPreview(null);
+    setPageCount(null);
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const droppedFile = e.dataTransfer.files?.[0];
+    if (droppedFile) validateAndSetFile(droppedFile);
+  };
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const selected = e.target.files?.[0];
+    if (selected) validateAndSetFile(selected);
+  };
+
+  const handleAddTag = () => {
+    const clean = tagInput.trim();
+    if (clean && !tags.includes(clean) && tags.length < 10) {
+      setTags([...tags, clean]);
+      setTagInput("");
+    }
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!file) {
+      setError("يرجى اختيار الملف أولاً (PDF أو وورد أو صورة)");
+      return;
+    }
+
+    const effectiveGradeId =
+      sectionType === "administrative"
+        ? gradeId || grades[0]?.id || ""
+        : gradeId;
+    const effectiveSubjectId =
+      sectionType === "administrative"
+        ? subjects.find((s) => s.slug === "administration")?.id ||
+          subjectId ||
+          subjects[0]?.id ||
+          ""
+        : subjectId;
+    const effectiveCategoryId =
+      sectionType === "administrative"
+        ? categories.find((c) => c.slug === "administrative")?.id ||
+          categoryId ||
+          categories[0]?.id ||
+          ""
+        : categoryId;
+
+    if (
+      !titleAr.trim() ||
+      !effectiveGradeId ||
+      !effectiveSubjectId ||
+      !effectiveCategoryId
+    ) {
+      setError("يرجى ملء جميع الحقول الأساسية (العنوان، المستوى، المادة، والتقسيم)");
+      return;
+    }
+
+    const isPdf = isPdfUploadFile(file);
+
+    try {
+      setSubmitting(true);
+      const formData = new FormData();
+      formData.append("file", file);
+      if (thumbnailFile) {
+        formData.append("thumbnail", thumbnailFile);
+      }
+      if (pageCount) {
+        formData.append("pageCount", String(pageCount));
+      }
+
+      const finalTags =
+        sectionType === "administrative" && !tags.includes("وثائق إدارية")
+          ? ["وثائق إدارية", ...tags]
+          : tags;
+
+      const metadata = {
+        title: titleAr.trim(),
+        titleAr: titleAr.trim(),
+        description: descriptionAr.trim() || undefined,
+        descriptionAr: descriptionAr.trim() || undefined,
+        gradeId: effectiveGradeId,
+        subjectId: effectiveSubjectId,
+        categoryId: effectiveCategoryId,
+        audience,
+        tags: finalTags,
+      };
+      formData.append("metadata", JSON.stringify(metadata));
+
+      const res = await fetch("/api/worksheets", {
+        method: "POST",
+        body: formData,
+      });
+
+      const json: ApiResponse<
+        WorksheetWithRelations & {
+          requiresPdfConversionReview?: boolean;
+          reviewNoticeMessage?: string;
+        }
+      > = await res.json();
+
+      if (!res.ok || !json.success) {
+        throw new Error(!json.success ? json.error.message : "فشل رفع الملف");
+      }
+
+      // If uploaded file is NOT a PDF (Word or Image), show the Thank You & Admin/Inspector Review screen!
+      if (!isPdf || json.data.requiresPdfConversionReview) {
+        setNonPdfThankYouMessage(
+          json.data.reviewNoticeMessage ||
+            "شكراً لك على مساهمتك القيمة في منصة المسند! تم قبول واستلام ملفك بنجاح. هذا المحتوى الذي أرسلته سيتم مراجعته من عند المشرف والمتفقد التربوي وإعادة صياغته لملف PDF ليكون الوصول إليه أفضل من عند المستخدمين."
+        );
+        return;
+      }
+
+      router.push(`/worksheet/${json.data.id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "حدث خطأ أثناء رفع الملف");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (checkingAuth) {
+    return (
+      <div className="min-h-[65vh] flex items-center justify-center" dir="rtl">
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+      </div>
+    );
+  }
+
+  if (nonPdfThankYouMessage) {
+    return (
+      <main className="max-w-xl mx-auto px-4 py-16 text-center" dir="rtl">
+        <div className="bg-white dark:bg-slate-900 border-2 border-emerald-300 dark:border-emerald-700 rounded-3xl p-8 shadow-xl space-y-6">
+          <div className="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm">
+            <CheckCircle2 className="w-10 h-10" />
+          </div>
+
+          <div className="space-y-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-extrabold border border-emerald-200">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>تم استلام ملفك بنجاح — شكراً لك!</span>
+            </span>
+            <h1 className="text-2xl font-black text-slate-900 dark:text-white">
+              شكراً جزيلاً على مساهمتك التربوية!
+            </h1>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-sm leading-relaxed font-semibold">
+            {nonPdfThankYouMessage}
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <Link
+              href="/profile"
+              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition"
+            >
+              الانتقال إلى ملفي الشخصي
+            </Link>
+            <Link
+              href="/"
+              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold transition"
+            >
+              العودة إلى الصفحة الرئيسية
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (isBanned) {
+    return (
+      <main className="max-w-xl mx-auto px-4 py-16 text-center" dir="rtl">
+        <div className="bg-red-50 border-2 border-red-200 rounded-3xl p-8 space-y-4">
+          <Ban className="w-12 h-12 text-red-600 mx-auto" />
+          <h1 className="text-xl font-extrabold text-red-900">
+            حسابك محظور من نشر المحتوى
+          </h1>
+          <p className="text-sm text-red-700">
+            {banReason || "تم إيقاف صلاحية النشر لهذا الحساب لمخالفة شروط المنصة."}
+          </p>
+          <Link
+            href="/support"
+            className="inline-block px-5 py-2.5 rounded-xl bg-red-600 text-white text-xs font-bold"
+          >
+            التواصل مع الدعم الفني
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  if (userRole === "STUDENT") {
+    return (
+      <main className="max-w-xl mx-auto px-4 py-16 text-center" dir="rtl">
+        <div className="bg-amber-50 border-2 border-amber-200 rounded-3xl p-8 space-y-4">
+          <Lock className="w-12 h-12 text-amber-600 mx-auto" />
+          <h1 className="text-xl font-extrabold text-slate-900">
+            النشر مخصص للمؤسسات والمتفقدين والمعلمين
+          </h1>
+          <p className="text-sm text-slate-600">
+            حساب التلميذ مخصص لتصفح وتحميل الدروس والتمارين والامتحانات المتاحة للتلاميذ.
+          </p>
+          <Link
+            href="/#levels-and-subjects"
+            className="inline-block px-5 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold"
+          >
+            تصفح المستويات والمواد
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  const isSelectedFileNonPdf = Boolean(file && !isPdfUploadFile(file));
+
+  return (
+    <main className="max-w-3xl mx-auto px-4 py-10" dir="rtl">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+            نشر ملف جديد (PDF، ملف وورد، أو صورة)
+          </h1>
+          <p className="text-sm text-slate-500">
+            اختر القسم (المستويات والمواد أو قسم الإدارة)، وارفع ملفك بصيغة PDF أو Word أو صورة.
+          </p>
+        </div>
+
+        {/* اختيار القسم: دروس ومواد تعليمية أم وثيقة في قسم الإدارة */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => setSectionType("curriculum")}
+            className={`p-4 rounded-2xl border-2 text-start transition cursor-pointer flex items-center gap-3 ${
+              sectionType === "curriculum"
+                ? "bg-blue-50/80 dark:bg-blue-950/40 border-blue-600 text-blue-950 dark:text-white"
+                : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300"
+            }`}
+          >
+            <BookOpen className="w-6 h-6 text-blue-600 shrink-0" />
+            <div>
+              <div className="font-extrabold text-sm">
+                قسم المستوى الدراسي والمواد
+              </div>
+              <div className="text-[11px] text-slate-500">
+                درس، تمرين، امتحان، جذاذة، نشاط تفاعلي، أو أخرى
+              </div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSectionType("administrative")}
+            className={`p-4 rounded-2xl border-2 text-start transition cursor-pointer flex items-center gap-3 ${
+              sectionType === "administrative"
+                ? "bg-amber-50 dark:bg-amber-950/40 border-amber-500 text-slate-900 dark:text-white"
+                : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300"
+            }`}
+          >
+            <Briefcase className="w-6 h-6 text-amber-600 shrink-0" />
+            <div>
+              <div className="font-extrabold text-sm">
+                قسم الإدارة والمعاملات الإدارية
+              </div>
+              <div className="text-[11px] text-slate-500">
+                وثائق ومعاملات إدارية للمعلم بعيدة عن التمارين والدروس
+              </div>
+            </div>
+          </button>
+        </div>
+
+        {error && (
+          <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-2.5">
+            <AlertCircle className="w-5 h-5 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">
+              ملف النشرة (يُقبل PDF، ملف وورد Word، أو صورة — بحد أقصى {MAX_FILE_SIZE_MB} ميجابايت) *
+            </label>
+
+            {!file ? (
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={handleDrop}
+                className={`border-2 border-dashed rounded-2xl p-8 text-center transition cursor-pointer ${
+                  isDragging
+                    ? "border-blue-600 bg-blue-50"
+                    : "border-slate-300 hover:border-blue-500 bg-slate-50 dark:bg-slate-800/50"
+                }`}
+              >
+                <input
+                  type="file"
+                  id="file-upload"
+                  accept="application/pdf,.pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="file-upload"
+                  className="cursor-pointer flex flex-col items-center"
+                >
+                  <UploadCloud className="w-12 h-12 text-blue-600 mb-3" />
+                  <span className="font-bold text-slate-800 dark:text-slate-100 mb-1">
+                    اسحب وأفلت ملف PDF أو وورد (Word) أو صورة هنا، أو اضغط للاختيار
+                  </span>
+                  <span className="text-xs text-slate-500">
+                    إذا رفعت صورة أو ملف وورد، سيتم قبوله ومراجعته من المشرف والمتفقد وإعادة صياغته لملف PDF.
+                  </span>
+                </label>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-4 min-w-0 w-full">
+                    <div className="w-20 h-24 rounded-xl bg-white border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center shadow-sm">
+                      {extractingThumb ? (
+                        <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+                      ) : thumbnailPreview ? (
+                        <img
+                          src={thumbnailPreview}
+                          alt="معاينة"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <ImageIcon className="w-6 h-6 text-slate-400" />
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 text-emerald-700 text-xs font-bold mb-1">
+                        <CheckCircle2 className="w-4 h-4 shrink-0" />
+                        <span>تم إرفاق الملف بنجاح</span>
+                      </div>
+                      <p className="font-bold text-slate-900 text-sm truncate">
+                        {file.name}
+                      </p>
+                      <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
+                        <span>
+                          الحجم: {(file.size / (1024 * 1024)).toFixed(2)} ميجابايت
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleClearFile}
+                    className="p-2 rounded-xl text-slate-500 hover:text-red-600 hover:bg-white transition self-end sm:self-center"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {isSelectedFileNonPdf && (
+                  <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold leading-relaxed">
+                    ملاحظة: الملف الذي اخترته هو (ملف وورد / صورة) وليس PDF. سنقبل منك الملف بكل سرور، وسيتم مراجعته من عند المشرف والمتفقد وإعادة صياغته لملف PDF ليكون الوصول إليه أفضل من عند المستخدمين.
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">
+              {sectionType === "administrative"
+                ? "عنوان الوثيقة / المعاملة الإدارية *"
+                : "عنوان الدرس / الملف *"}
+            </label>
+            <input
+              type="text"
+              required
+              minLength={3}
+              maxLength={255}
+              value={titleAr}
+              onChange={(e) => setTitleAr(e.target.value)}
+              placeholder={
+                sectionType === "administrative"
+                  ? "أدخل عنوان الوثيقة الإدارية"
+                  : "أدخل عنوان الدرس أو التمرين أو الجذاذة"
+              }
+              className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 focus:border-blue-600 outline-none text-sm"
+            />
+          </div>
+
+          {sectionType === "curriculum" && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">
+                  المستوى الدراسي *
+                </label>
+                <select
+                  required
+                  value={gradeId}
+                  onChange={(e) => setGradeId(e.target.value)}
+                  className="w-full px-3.5 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:border-blue-600"
+                >
+                  <option value="">اختر المستوى...</option>
+                  {grades.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.nameAr}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">
+                  المادة الدراسية *
+                </label>
+                <select
+                  required
+                  value={subjectId}
+                  onChange={(e) => setSubjectId(e.target.value)}
+                  className="w-full px-3.5 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:border-blue-600"
+                >
+                  <option value="">اختر المادة...</option>
+                  {subjects
+                    .filter((s) => s.slug !== "administration")
+                    .map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.nameAr}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">
+                  نوع الملف / القسم التربوي داخل المادة (درس، تمرين، امتحان، جذاذة، نشاط تفاعلي، أخرى) *
+                </label>
+                <select
+                  required
+                  value={categoryId}
+                  onChange={(e) => setCategoryId(e.target.value)}
+                  className="w-full px-3.5 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:border-blue-600"
+                >
+                  <option value="">اختر التقسيم...</option>
+                  {categories
+                    .filter((c) => c.slug !== "administrative")
+                    .map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.nameAr}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            </div>
+          )}
+
+          {/* Target Audience Control */}
+          <div className="p-4 rounded-2xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 space-y-2">
+            <label className="flex items-center gap-2 text-sm font-bold text-blue-950 dark:text-blue-200">
+              <Users className="w-4 h-4 text-blue-600" />
+              <span>تحديد جمهور النشر *</span>
+            </label>
+            <select
+              value={audience}
+              onChange={(e) => setAudience(e.target.value as TargetAudience)}
+              className="w-full px-4 py-3 rounded-xl border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-900 text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-blue-600"
+            >
+              <option value="ALL">
+                نشر للجميع (يظهر اسم الملف للزوار، ويُقرأ ويُحمّل من جميع الحسابات)
+              </option>
+              <option value="TEACHERS_AND_STUDENTS">
+                للمعلمين والتلاميذ (تمارين ودروس)
+              </option>
+              <option value="TEACHERS_ONLY">
+                للمعلمين والمتفقدين فقط — مخفي عن التلاميذ (مثل الإصلاح والجذاذات)
+              </option>
+              <option value="SAME_ROLE_ONLY">
+                حصر النشرة داخل نفس فئة حسابي فقط
+              </option>
+              <option value="INSTITUTIONS_ONLY">
+                للمؤسسات التربوية فقط
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">
+              وصف مختصر (اختياري)
+            </label>
+            <textarea
+              rows={3}
+              maxLength={2000}
+              value={descriptionAr}
+              onChange={(e) => setDescriptionAr(e.target.value)}
+              placeholder="أضف وصفاً مختصراً لمحتوى الملف..."
+              className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 focus:border-blue-600 outline-none text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">
+              الكلمات المفتاحية (اختياري)
+            </label>
+            <div className="flex gap-2 mb-2">
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddTag();
+                  }
+                }}
+                placeholder="أضف وسم..."
+                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 text-sm outline-none focus:border-blue-600"
+              />
+              <button
+                type="button"
+                onClick={handleAddTag}
+                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm inline-flex items-center gap-1"
+              >
+                <Plus className="w-4 h-4" />
+                إضافة
+              </button>
+            </div>
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {tags.map((t) => (
+                  <span
+                    key={t}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold"
+                  >
+                    {t}
+                    <button
+                      type="button"
+                      onClick={() => setTags(tags.filter((item) => item !== t))}
+                      className="hover:text-red-600"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            disabled={submitting || extractingThumb}
+            className="w-full py-3.5 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold flex items-center justify-center gap-2 shadow-sm transition cursor-pointer"
+          >
+            {submitting ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>جاري رفع الملف...</span>
+              </>
+            ) : (
+              <>
+                <FileText className="w-5 h-5" />
+                <span>
+                  {isSelectedFileNonPdf
+                    ? "إرسال الملف للمراجعة وإعادة الصياغة لـ PDF"
+                    : "نشر الملف الآن"}
+                </span>
+              </>
+            )}
+          </button>
+        </form>
+      </div>
+    </main>
+  );
+}
+```
+
+---
+
+### File: `src/app/(main)/publisher/[id]/page.tsx`
+
+```typescript
+"use client";
+
+/**
+ * Public Publisher Profile Page — Al-Musnad (المسند) v4.0
+ *
+ * Includes:
+ * - Follow Publisher (`+ متابعة الناشر`)
+ * - Favorite Publisher (`♥ إضافة الناشر للمفضلة`)
+ * - Report Publisher (`🚩 إبلاغ عن الناشر`)
+ * - Publisher Ban Badge (`🚫 ناشر محظور`) & Official Verified Badge (`InspectorBadge`)
+ */
+
+import React, { useEffect, useState, FormEvent } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  School,
+  Heart,
+  FileText,
+  BadgeCheck,
+  UserPlus,
+  UserCheck,
+  Loader2,
+  Calendar,
+  ArrowRight,
+  Flag,
+  Ban,
+  X,
+} from "lucide-react";
+import InspectorBadge from "@/components/ui/InspectorBadge";
+import { UserAvatarWithPresence, UserPresenceBadge } from "@/components/ui/UserPresenceIndicator";
+import WorksheetCard from "@/components/worksheets/WorksheetCard";
+import {
+  getPublicPublisherProfileData,
+  toggleFollowPublisherAction,
+  toggleFavoritePublisherAction,
+} from "@/actions/publisher.actions";
+import { submitReportAction } from "@/actions/report-support.actions";
+
+type PublisherData = Awaited<ReturnType<typeof getPublicPublisherProfileData>>;
+
+export default function PublicPublisherProfilePage() {
+  const params = useParams<{ id: string }>();
+  const router = useRouter();
+  const publisherId = params?.id;
+
+  const [data, setData] = useState<PublisherData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followLoading, setFollowLoading] = useState(false);
+
+  const [isFavPublisher, setIsFavPublisher] = useState(false);
+  const [favoritedByCount, setFavoritedByCount] = useState(0);
+  const [favLoading, setFavLoading] = useState(false);
+
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("انتحال صفة تربوية أو مؤسسة");
+  const [reportDetails, setReportDetails] = useState("");
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportSuccess, setReportSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!publisherId) return;
+    let isMounted = true;
+
+    async function load() {
+      try {
+        setLoading(true);
+        const res = await getPublicPublisherProfileData(publisherId);
+        if (isMounted) {
+          setData(res);
+          setIsFollowing(res.viewerState.isFollowing);
+          setFollowersCount(res.stats.followersCount);
+          setIsFavPublisher(res.viewerState.isFavoritedPublisher);
+          setFavoritedByCount(res.stats.favoritedByCount);
+        }
+      } catch (err) {
+        if (isMounted) {
+          const msg = err instanceof Error ? err.message : "تعذر تحميل ملف الناشر";
+          if (msg.includes("تسجيل الدخول")) {
+            router.replace(`/login?redirectTo=${encodeURIComponent(`/publisher/${publisherId}`)}`);
+            return;
+          }
+          setError(msg);
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      isMounted = false;
+    };
+  }, [publisherId]);
+
+  const handleToggleFollow = async () => {
+    if (!publisherId || followLoading) return;
+    try {
+      setFollowLoading(true);
+      const res = await toggleFollowPublisherAction(publisherId);
+      setIsFollowing(res.isFollowing);
+      setFollowersCount(res.followersCount);
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("تسجيل الدخول")) {
+        router.push(`/login?redirectTo=/publisher/${publisherId}`);
+      } else {
+        alert(err instanceof Error ? err.message : "تعذر تنفيذ العملية");
+      }
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
+  const handleToggleFavPublisher = async () => {
+    if (!publisherId || favLoading) return;
+    try {
+      setFavLoading(true);
+      const res = await toggleFavoritePublisherAction(publisherId);
+      setIsFavPublisher(res.isFavoritedPublisher);
+      setFavoritedByCount(res.favoritedByCount);
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("تسجيل الدخول")) {
+        router.push(`/login?redirectTo=/publisher/${publisherId}`);
+      } else {
+        alert(err instanceof Error ? err.message : "تعذر تنفيذ العملية");
+      }
+    } finally {
+      setFavLoading(false);
+    }
+  };
+
+  const handleReportPublisher = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!publisherId) return;
+    try {
+      setReportLoading(true);
+      await submitReportAction({
+        targetType: "USER",
+        targetUserId: publisherId,
+        reason: reportReason,
+        details: reportDetails,
+      });
+      setReportSuccess(true);
+      setTimeout(() => {
+        setIsReportOpen(false);
+        setReportSuccess(false);
+        setReportDetails("");
+      }, 1800);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "يرجى تسجيل الدخول لإرسال البلاغ");
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-[65vh] flex items-center justify-center" dir="rtl">
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-4" dir="rtl">
+        <p className="text-slate-800 dark:text-white font-bold text-lg">
+          {error || "الملف الشخصي للناشر غير متاح"}
+        </p>
+        <Link
+          href="/browse"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold"
+        >
+          <ArrowRight className="w-4 h-4" />
+          <span>العودة للنشرات</span>
+        </Link>
+      </div>
+    );
+  }
+
+  const { publisher, worksheets, stats, viewerState } = data;
+
+  return (
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8" dir="rtl">
+      {publisher.isBanned && (
+        <div className="p-4 rounded-2xl bg-red-50 border-2 border-red-300 text-red-900 flex items-center gap-3">
+          <Ban className="w-6 h-6 text-red-600 shrink-0" />
+          <div className="text-xs">
+            <p className="font-black text-sm">هذا الناشر محظور حالياً من قِبل إدارة المنصة</p>
+            {publisher.banReason && <p className="mt-0.5">السبب: {publisher.banReason}</p>}
+          </div>
+        </div>
+      )}
+
+      <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+          <div className="flex items-start sm:items-center gap-5">
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center font-black text-2xl shadow-md">
+              {publisher.name.charAt(0)}
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+                  {publisher.role === "INSTITUTION"
+                    ? publisher.name
+                    : `أ. ${publisher.name}`}
+                </h1>
+                <InspectorBadge
+                  role={publisher.role}
+                  isVerified={publisher.isVerified}
+                  isBanned={publisher.isBanned}
+                  size="md"
+                />
+                <UserPresenceBadge
+                  presenceStatus={(publisher as any).presenceStatus}
+                  lastSeenAt={(publisher as any).lastSeenAt}
+                />
+                {publisher.username && (
+                  <span
+                    dir="ltr"
+                    className="rounded-lg bg-blue-50 px-2.5 py-1 font-mono text-xs font-bold text-blue-700 dark:bg-blue-950/70 dark:text-blue-300"
+                  >
+                    @{publisher.username}
+                  </span>
+                )}
+              </div>
+
+              {publisher.school && (
+                <p className="text-sm text-slate-600 dark:text-slate-300 flex items-center gap-1.5 font-medium">
+                  <School className="w-4 h-4 text-blue-600" />
+                  <span>{publisher.school}</span>
+                </p>
+              )}
+
+              {publisher.bio && (
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-2xl leading-relaxed">
+                  {publisher.bio}
+                </p>
+              )}
+
+              <div className="flex items-center gap-4 text-xs text-slate-400 pt-1">
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>
+                    عضو في المسند منذ{" "}
+                    {new Date(publisher.createdAt).toLocaleDateString("ar-EG")}
+                  </span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+            {viewerState.isOwnProfile ? (
+              <Link
+                href="/profile?tab=edit"
+                className="px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-white text-xs font-bold transition"
+              >
+                تعديل ملفي الشخصي
+              </Link>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={handleToggleFollow}
+                  disabled={followLoading}
+                  className={`px-5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow-sm ${
+                    isFollowing
+                      ? "bg-slate-900 dark:bg-slate-700 text-white"
+                      : "bg-blue-600 hover:bg-blue-700 text-white"
+                  }`}
+                >
+                  {followLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : isFollowing ? (
+                    <UserCheck className="w-4 h-4" />
+                  ) : (
+                    <UserPlus className="w-4 h-4" />
+                  )}
+                  <span>{isFollowing ? "متابَع ✓" : "+ متابعة الناشر"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleToggleFavPublisher}
+                  disabled={favLoading}
+                  className={`px-4 py-2.5 rounded-xl font-bold text-xs border flex items-center justify-center gap-2 transition cursor-pointer ${
+                    isFavPublisher
+                      ? "bg-rose-50 border-rose-200 text-rose-600"
+                      : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50"
+                  }`}
+                >
+                  <Heart
+                    className={`w-4 h-4 ${
+                      isFavPublisher ? "fill-rose-500 text-rose-500" : ""
+                    }`}
+                  />
+                  <span>
+                    {isFavPublisher ? "الناشر في مفضلتي" : "إضافة للمفضلة"}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsReportOpen(true)}
+                  className="p-2.5 rounded-xl border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 transition cursor-pointer"
+                  title="الإبلاغ عن هذا الناشر"
+                >
+                  <Flag className="w-4 h-4" />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* KPI Bar */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 text-center">
+          <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-3.5">
+            <span className="text-xs text-slate-500 block">النشرات</span>
+            <span className="text-xl font-black text-slate-900 dark:text-white">
+              {stats.worksheetsCount}
+            </span>
+          </div>
+          <div className="bg-amber-50/70 dark:bg-amber-950/30 rounded-2xl p-3.5 border border-amber-200/60">
+            <span className="text-xs text-amber-800 dark:text-amber-300 block">
+              معتمد من المتفقد
+            </span>
+            <span className="text-xl font-black text-amber-600 flex items-center justify-center gap-1">
+              <BadgeCheck className="w-5 h-5" />
+              {stats.endorsedCount}
+            </span>
+          </div>
+          <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-3.5">
+            <span className="text-xs text-slate-500 block">المتابعون</span>
+            <span className="text-xl font-black text-blue-600">
+              {followersCount}
+            </span>
+          </div>
+          <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-3.5">
+            <span className="text-xs text-slate-500 block">في مفضلة الأعضاء</span>
+            <span className="text-xl font-black text-rose-600">
+              {favoritedByCount}
+            </span>
+          </div>
+          <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-3.5 col-span-2 sm:col-span-1">
+            <span className="text-xs text-slate-500 block">إجمالي التحميلات</span>
+            <span className="text-xl font-black text-emerald-600">
+              {stats.totalDownloads}
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <section className="space-y-5">
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <FileText className="w-5 h-5 text-blue-600" />
+          <span>نشرات وأعمال الناشر ({worksheets.length})</span>
+        </h2>
+
+        {worksheets.length === 0 ? (
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-12 text-center text-slate-500">
+            لا توجد نشرات متاحة للعرض في هذا الملف حالياً.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {worksheets.map((ws) => (
+              <WorksheetCard key={ws.id} worksheet={ws as any} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {isReportOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b pb-3 border-slate-100 dark:border-slate-800">
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                <Flag className="w-4 h-4 text-rose-600" />
+                <span>إرسال بلاغ عن هذا الناشر</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsReportOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {reportSuccess ? (
+              <div className="p-6 text-center text-emerald-700 bg-emerald-50 rounded-2xl font-bold text-xs">
+                تم استلام بلاغك بنجاح وستقوم الإدارة بمراجعته فوراً.
+              </div>
+            ) : (
+              <form onSubmit={handleReportPublisher} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    سبب البلاغ *
+                  </label>
+                  <select
+                    value={reportReason}
+                    onChange={(e) => setReportReason(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold"
+                  >
+                    <option value="انتحال صفة تربوية أو مؤسسة">
+                      انتحال صفة تربوية أو مؤسسة
+                    </option>
+                    <option value="نشر محتوى مخالف للضوابط التربوية">
+                      نشر محتوى مخالف للضوابط التربوية
+                    </option>
+                    <option value="معلومات مضللة في الملف الشخصي">
+                      معلومات مضللة في الملف الشخصي
+                    </option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    تفاصيل إضافية
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={reportDetails}
+                    onChange={(e) => setReportDetails(e.target.value)}
+                    placeholder="أضف تفاصيل البلاغ للإدارة..."
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsReportOpen(false)}
+                    className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold cursor-pointer"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={reportLoading}
+                    className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold cursor-pointer"
+                  >
+                    {reportLoading ? "جاري الإرسال..." : "إرسال البلاغ"}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+    </main>
+  );
+}
+```
+
+---
+
+### File: `src/app/(main)/u/[username]/page.tsx`
+
+```typescript
+/**
+ * Username Mention Resolver Route (`/u/[username]`) — Al-Musnad v8.0
+ *
+ * When a user clicks on `@username` in any comment or conversation,
+ * this route looks up the user by their `username` (or fallback email prefix / ID)
+ * and immediately navigates to their Publisher Profile Page (`/publisher/[id]`).
+ */
+
+import { redirect, notFound } from "next/navigation";
+import { db } from "@/lib/db";
+
+interface UsernamePageProps {
+  params: Promise<{ username: string }>;
+}
+
+export default async function UsernameRedirectPage(props: UsernamePageProps) {
+  const { username } = await props.params;
+  const decoded = decodeURIComponent(username).replace(/^@/, "").trim().toLowerCase();
+
+  if (!decoded) {
+    notFound();
+  }
+
+  // 1. Exact or case-insensitive match on `username`
+  let targetUser = await db.user.findFirst({
+    where: {
+      OR: [
+        { username: { equals: decoded, mode: "insensitive" } },
+        { email: { startsWith: `${decoded}@`, mode: "insensitive" } },
+      ],
+    },
+    select: { id: true },
+  });
+
+  // 2. Fallback: match prefix of username if auto-generated suffix exists
+  if (!targetUser) {
+    targetUser = await db.user.findFirst({
+      where: {
+        OR: [
+          { username: { startsWith: decoded, mode: "insensitive" } },
+          { name: { contains: decoded, mode: "insensitive" } },
+        ],
+      },
+      select: { id: true },
+    });
+  }
+
+  if (!targetUser) {
+    notFound();
+  }
+
+  redirect(`/publisher/${targetUser.id}`);
+}
+```
+
+---
+
+### File: `src/app/(main)/profile/page.tsx`
+
+```typescript
+"use client";
+
+/**
+ * Member Workspace & Profile Page — Al-Musnad (المسند) v4.0
+ *
+ * Includes:
+ * 1. نشراتي (uploads)
+ * 2. المفضلة (favorites)
+ * 3. الناشرون المفضلون (favorite_publishers)
+ * 4. التحميلات (downloads)
+ * 5. تعديل الملف الشخصي — بموافقة المشرف (edit)
+ * 6. الاشتراكات (subscriptions)
+ * 7. التوثيق (verification) <-- Directly right after Subscriptions!
+ *    Allows Teachers, Institutions, and Inspectors to request verification & enter their Admin code.
+ * 8. الإعدادات وحذف الحساب (settings) <-- Includes Publisher Account Deletion (`deleteMyAccountAction`).
+ */
+
+import React, { useEffect, useState, Suspense } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  School,
+  Upload,
+  Heart,
+  Download,
+  Trash2,
+  Loader2,
+  ExternalLink,
+  UserCog,
+  ShieldCheck,
+  Key,
+  Check,
+  CreditCard,
+  Settings,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  Users,
+  BadgeCheck,
+  AlertTriangle,
+} from "lucide-react";
+import {
+  updateProfileAction,
+  updateSubscriptionPlanAction,
+  deleteMyAccountAction,
+} from "@/actions/profile.actions";
+import {
+  activateInspectorCodeAction,
+  requestIdentityVerificationAction,
+} from "@/actions/inspector.actions";
+import { getMyFavoritePublishersAction } from "@/actions/publisher.actions";
+import InspectorBadge from "@/components/ui/InspectorBadge";
+import ArchivedSubscriptionsPlans from "@/components/profile/ArchivedSubscriptionsPlans";
+import {
+  UserAvatarWithPresence,
+  UserPresenceBadge,
+  type PresenceMode,
+} from "@/components/ui/UserPresenceIndicator";
+import { useAppPreferences, type Locale } from "@/context/AppPreferencesContext";
+import type { User, WorksheetWithRelations, ApiResponse } from "@/types";
+
+interface ProfileWithCounts extends User {
+  _count: {
+    worksheets: number;
+    favorites: number;
+    downloads: number;
+  };
+}
+
+type TabType =
+  | "uploads"
+  | "favorites"
+  | "favorite_publishers"
+  | "downloads"
+  | "edit"
+  | "subscriptions"
+  | "verification"
+  | "settings";
+
+const VALID_TABS: TabType[] = [
+  "uploads",
+  "favorites",
+  "favorite_publishers",
+  "downloads",
+  "edit",
+  "subscriptions",
+  "verification",
+  "settings",
+];
+
+function ProfileWorkspaceContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialTabParam = searchParams?.get("tab") as TabType | null;
+
+  const { locale, setLocale, theme, toggleTheme } = useAppPreferences();
+
+  const [profile, setProfile] = useState<ProfileWithCounts | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>(
+    initialTabParam && VALID_TABS.includes(initialTabParam)
+      ? initialTabParam
+      : "uploads"
+  );
+
+  useEffect(() => {
+    if (initialTabParam && VALID_TABS.includes(initialTabParam)) {
+      setActiveTab(initialTabParam);
+    }
+  }, [initialTabParam]);
+
+  const [items, setItems] = useState<WorksheetWithRelations[]>([]);
+  const [favPublishers, setFavPublishers] = useState<any[]>([]);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [loadingItems, setLoadingItems] = useState(false);
+
+  // Edit Profile States
+  const [editName, setEditName] = useState("");
+  const [editUsername, setEditUsername] = useState("");
+  const [editSchool, setEditSchool] = useState("");
+  const [editBio, setEditBio] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
+  const [editMessage, setEditMessage] = useState<string | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  // Verification Tab States
+  const [verifCode, setVerifCode] = useState("");
+  const [verifLoading, setVerifLoading] = useState(false);
+  const [verifMsg, setVerifMsg] = useState<string | null>(null);
+  const [verifErr, setVerifErr] = useState<string | null>(null);
+
+  // Delete Account States
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [planLoading, setPlanLoading] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadProfile() {
+      try {
+        const res = await fetch("/api/auth/me", { cache: "no-store" });
+        const json: ApiResponse<ProfileWithCounts> = await res.json();
+        if (json.success) {
+          setProfile(json.data);
+          const pending = json.data.pendingProfileData;
+          setEditName(pending?.name || json.data.name || "");
+          setEditUsername(pending?.username || json.data.username || "");
+          setEditSchool(
+            pending?.school !== undefined
+              ? pending.school || ""
+              : json.data.school || ""
+          );
+          setEditBio(
+            pending?.bio !== undefined
+              ? pending.bio || ""
+              : json.data.bio || ""
+          );
+        }
+      } finally {
+        setLoadingProfile(false);
+      }
+    }
+    loadProfile();
+  }, []);
+
+  useEffect(() => {
+    async function loadTabItems() {
+      if (
+        activeTab === "edit" ||
+        activeTab === "subscriptions" ||
+        activeTab === "verification" ||
+        activeTab === "settings"
+      ) {
+        return;
+      }
+
+      if (activeTab === "favorite_publishers") {
+        try {
+          setLoadingItems(true);
+          const pubs = await getMyFavoritePublishersAction();
+          setFavPublishers(pubs);
+        } finally {
+          setLoadingItems(false);
+        }
+        return;
+      }
+
+      try {
+        setLoadingItems(true);
+        const endpoint =
+          activeTab === "uploads"
+            ? "/api/me/uploads"
+            : activeTab === "favorites"
+            ? "/api/me/favorites"
+            : "/api/me/downloads";
+
+        const res = await fetch(endpoint);
+        const json: ApiResponse<WorksheetWithRelations[]> = await res.json();
+        if (json.success) {
+          setItems(json.data);
+        }
+      } finally {
+        setLoadingItems(false);
+      }
+    }
+    loadTabItems();
+  }, [activeTab]);
+
+  const handleArchiveWorksheet = async (id: string) => {
+    if (!confirm("هل أنت متأكد من أرشفة وإخفاء هذه النشرة؟")) return;
+    const res = await fetch(`/api/worksheets/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setItems((prev) => prev.filter((item) => item.id !== id));
+    }
+  };
+
+  const handleSubmitProfileEditRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEditError(null);
+    setEditMessage(null);
+
+    if (!editName.trim()) {
+      setEditError("الاسم مطلوب ولا يمكن تركه فارغاً");
+      return;
+    }
+
+    try {
+      setEditLoading(true);
+      const res = await updateProfileAction({
+        name: editName.trim(),
+        username: editUsername.trim() || undefined,
+        school: editSchool.trim() || undefined,
+        bio: editBio.trim() || undefined,
+      });
+
+      if (res.pendingApproval) {
+        setEditMessage(
+          "تم إرسال طلب تعديل ملفك الشخصي بنجاح! سيظهر التعديل للعموم فور موافقة المشرف العام عليه."
+        );
+        setProfile((prev) =>
+          prev
+            ? {
+                ...prev,
+                profileEditStatus: "PENDING",
+                pendingProfileData: {
+                  name: editName.trim(),
+                  username: editUsername.trim(),
+                  school: editSchool.trim(),
+                  bio: editBio.trim(),
+                },
+              }
+            : null
+        );
+      } else {
+        setEditMessage("تم تحديث بيانات الملف الشخصي بنجاح.");
+      }
+    } catch (err) {
+      setEditError(
+        err instanceof Error ? err.message : "فشل إرسال طلب تحديث البيانات"
+      );
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleRequestVerificationCode = async () => {
+    try {
+      setVerifLoading(true);
+      setVerifErr(null);
+      await requestIdentityVerificationAction();
+      setProfile((prev) => (prev ? { ...prev, inspectorPending: true } : null));
+      setVerifMsg(
+        "تم إرسال طلب التوثيق إلى المشرف العام. عند التحقق من هويتك سيصدر لك المشرف كود التوثيق الخاص بحسابك."
+      );
+    } catch (err) {
+      setVerifErr(err instanceof Error ? err.message : "تعذر إرسال الطلب");
+    } finally {
+      setVerifLoading(false);
+    }
+  };
+
+  const handleActivateVerificationCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setVerifErr(null);
+    setVerifMsg(null);
+
+    try {
+      setVerifLoading(true);
+      const res = await activateInspectorCodeAction(verifCode);
+      setProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              isVerified: true,
+              inspectorPending: false,
+              role: (res.role as any) || prev.role,
+            }
+          : null
+      );
+      setVerifMsg("🎉 تم تأكيد هويتك وتفعيل شارة التوثيق الرسمية على حسابك بنجاح!");
+      setVerifCode("");
+    } catch (err) {
+      setVerifErr(err instanceof Error ? err.message : "كود التوثيق غير صحيح");
+    } finally {
+      setVerifLoading(false);
+    }
+  };
+
+  const handleDeleteMyAccount = async () => {
+    const confirmed = confirm(
+      "تحذير نهائي: هل أنت متأكد من حذف حسابك وجميع نشراتك نهائياً من منصة المسند؟ لا يمكن التراجع عن هذا الإجراء."
+    );
+    if (!confirmed) return;
+
+    try {
+      setDeletingAccount(true);
+      await deleteMyAccountAction();
+      router.push("/");
+      router.refresh();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "تعذر حذف الحساب");
+      setDeletingAccount(false);
+    }
+  };
+
+  const handleSelectPlan = async (planCode: string) => {
+    try {
+      setPlanLoading(planCode);
+      await updateSubscriptionPlanAction(planCode);
+      setProfile((prev) =>
+        prev ? { ...prev, subscriptionPlan: planCode } : null
+      );
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "تعذر تحديث الاشتراك");
+    } finally {
+      setPlanLoading(null);
+    }
+  };
+
+  if (loadingProfile) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center" dir="rtl">
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-16 text-center" dir="rtl">
+        <p className="text-slate-700 font-bold mb-4">
+          يرجى تسجيل الدخول لعرض مساحتك الشخصية في المسند
+        </p>
+        <Link
+          href="/login"
+          className="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-semibold text-sm"
+        >
+          تسجيل الدخول
+        </Link>
+      </div>
+    );
+  }
+
+  const isAccountVerified =
+    Boolean(profile.isVerified) || profile.role === "INSPECTOR";
+
+  return (
+    <main className="max-w-6xl mx-auto px-4 py-8" dir="rtl">
+      {/* Header Profile Card */}
+      <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div className="flex items-center gap-4">
+          <UserAvatarWithPresence
+            name={profile.name}
+            avatarUrl={profile.avatarUrl}
+            presenceStatus={profile.presenceStatus}
+            lastSeenAt={profile.lastSeenAt}
+            isSelf={true}
+            size="lg"
+          />
+          <div>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+                {profile.name}
+              </h1>
+              {profile.username && (
+                <span
+                  dir="ltr"
+                  className="rounded-lg bg-blue-50 px-2.5 py-0.5 font-mono text-xs font-bold text-blue-700 dark:bg-blue-950/70 dark:text-blue-300"
+                >
+                  @{profile.username}
+                </span>
+              )}
+              {profile.role === "ADMIN" ||
+              profile.role === "MODERATOR" ||
+              profile.role === "INSPECTOR" ? (
+                <Link
+                  href={
+                    profile.role === "ADMIN"
+                      ? "/admin/dashboard"
+                      : profile.role === "MODERATOR"
+                      ? "/moderator/dashboard"
+                      : "/inspector/dashboard"
+                  }
+                  className="inline-flex items-center transition hover:opacity-90"
+                  title="الانتقال إلى لوحة التحكم الخاصة بك"
+                >
+                  <InspectorBadge
+                    role={profile.role}
+                    isVerified={profile.isVerified}
+                    isBanned={profile.isBanned}
+                    size="md"
+                  />
+                </Link>
+              ) : (
+                <InspectorBadge
+                  role={profile.role}
+                  isVerified={profile.isVerified}
+                  isBanned={profile.isBanned}
+                  size="md"
+                />
+              )}
+              <Link
+                href={`/publisher/${profile.id}`}
+                className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 text-blue-600 text-xs font-bold transition"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>ملفي العام كناشر</span>
+              </Link>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 mt-1">
+              <p className="text-sm text-slate-500">{profile.email}</p>
+              <UserPresenceBadge
+                presenceStatus={profile.presenceStatus}
+                lastSeenAt={profile.lastSeenAt}
+                isSelf={true}
+              />
+            </div>
+            <div className="mt-2 inline-flex flex-wrap items-center gap-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 p-1.5 border border-slate-200/80 dark:border-slate-700">
+              <span className="text-[11px] font-bold text-slate-500 px-1.5">
+                حالة الظهور:
+              </span>
+              {(
+                [
+                  { mode: "ONLINE", label: "🟢 متصل" },
+                  { mode: "OFFLINE", label: "⚪ غير متصل" },
+                  { mode: "GHOST", label: "👻 وضع الشبح (تصفح خفي)" },
+                ] as { mode: PresenceMode; label: string }[]
+              ).map((opt) => {
+                const active =
+                  (profile.presenceStatus || "ONLINE") === opt.mode;
+                return (
+                  <button
+                    key={opt.mode}
+                    type="button"
+                    onClick={async () => {
+                      const res = await fetch("/api/me/presence", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ presenceStatus: opt.mode }),
+                      });
+                      const json = await res.json();
+                      if (json.success && json.data) {
+                        setProfile((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                presenceStatus: json.data.presenceStatus,
+                                lastSeenAt: json.data.lastSeenAt,
+                              }
+                            : null
+                        );
+                      }
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold transition cursor-pointer ${
+                      active
+                        ? "bg-blue-600 text-white shadow-sm"
+                        : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+            {profile.school && (
+              <p className="text-xs text-slate-600 dark:text-slate-300 flex items-center gap-1 mt-1">
+                <School className="w-3.5 h-3.5 text-blue-600" />
+                <span>{profile.school}</span>
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4 self-stretch sm:self-auto justify-around bg-slate-50 dark:bg-slate-800 px-6 py-3 rounded-2xl border border-slate-100 dark:border-slate-700">
+          <div className="text-center">
+            <span className="block text-lg font-bold text-slate-900 dark:text-white">
+              {profile._count?.worksheets ?? 0}
+            </span>
+            <span className="text-xs text-slate-500">نشراتي</span>
+          </div>
+          <div className="h-8 w-px bg-slate-200 dark:bg-slate-700" />
+          <div className="text-center">
+            <span className="block text-lg font-bold text-slate-900 dark:text-white">
+              {profile.followersCount ?? 0}
+            </span>
+            <span className="text-xs text-slate-500">المتابعون</span>
+          </div>
+          <div className="h-8 w-px bg-slate-200 dark:bg-slate-700" />
+          <div className="text-center">
+            <span className="block text-lg font-bold text-slate-900 dark:text-white">
+              {profile._count?.favorites ?? 0}
+            </span>
+            <span className="text-xs text-slate-500">المفضلة</span>
+          </div>
+        </div>
+      </section>
+
+      {profile.profileEditStatus === "PENDING" && (
+        <div className="mb-6 p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 text-amber-900 dark:text-amber-200 text-xs font-bold">
+            <Clock className="w-5 h-5 text-amber-600 shrink-0" />
+            <span>
+              لديك طلب تعديل بيانات شخصية قيد المراجعة حالياً بانتظار موافقة المشرف العام.
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Navigation Tabs */}
+      <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-200 dark:border-slate-800 mb-6 pb-2">
+        <button
+          onClick={() => setActiveTab("uploads")}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition cursor-pointer ${
+            activeTab === "uploads"
+              ? "bg-blue-600 text-white"
+              : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+          }`}
+        >
+          <Upload className="w-4 h-4" />
+          <span>نشراتي</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("favorites")}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition cursor-pointer ${
+            activeTab === "favorites"
+              ? "bg-blue-600 text-white"
+              : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+          }`}
+        >
+          <Heart className="w-4 h-4" />
+          <span>النشرات المفضلة</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("favorite_publishers")}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition cursor-pointer ${
+            activeTab === "favorite_publishers"
+              ? "bg-blue-600 text-white"
+              : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>الناشرون المفضلون</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("downloads")}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition cursor-pointer ${
+            activeTab === "downloads"
+              ? "bg-blue-600 text-white"
+              : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+          }`}
+        >
+          <Download className="w-4 h-4" />
+          <span>سجل التحميلات</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("edit")}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition cursor-pointer ${
+            activeTab === "edit"
+              ? "bg-blue-600 text-white"
+              : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+          }`}
+        >
+          <UserCog className="w-4 h-4" />
+          <span>تعديل الملف الشخصي</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("subscriptions")}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition cursor-pointer ${
+            activeTab === "subscriptions"
+              ? "bg-blue-600 text-white"
+              : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+          }`}
+        >
+          <CreditCard className="w-4 h-4" />
+          <span>الاشتراكات</span>
+        </button>
+
+        {/* قسم التوثيق مباشرة تحت/بجانب خانة الاشتراكات */}
+        <button
+          onClick={() => setActiveTab("verification")}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition cursor-pointer ${
+            activeTab === "verification"
+              ? "bg-blue-600 text-white"
+              : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+          }`}
+        >
+          <BadgeCheck className="w-4 h-4" />
+          <span>التوثيق</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("settings")}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition cursor-pointer ${
+            activeTab === "settings"
+              ? "bg-blue-600 text-white"
+              : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+          }`}
+        >
+          <Settings className="w-4 h-4" />
+          <span>الإعدادات</span>
+        </button>
+      </div>
+
+      {/* TAB: VERIFICATION (قسم التوثيق للمؤسسات والمعلمين والمتفقدين) */}
+      {activeTab === "verification" && (
+        <section className="max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
+          <div className="flex items-start justify-between gap-4 border-b pb-4 border-slate-100 dark:border-slate-800">
+            <div>
+              <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <BadgeCheck className="w-6 h-6 text-blue-600" />
+                <span>توثيق الهوية والشارة الرسمية في المسند</span>
+              </h2>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                يُتاح لجميع المؤسسات التربوية، المعلمين، والمتفقدين توثيق هويتهم عبر كود سري يمنحه المشرف العام لإضافة شارة التوثيق الرسمية بجانب الاسم.
+              </p>
+            </div>
+            <InspectorBadge
+              role={profile.role}
+              isVerified={profile.isVerified}
+              isBanned={profile.isBanned}
+              size="md"
+            />
+          </div>
+
+          {isAccountVerified ? (
+            <div className="p-6 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 text-emerald-800 dark:text-emerald-200 space-y-2 text-center">
+              <CheckCircle2 className="w-10 h-10 text-emerald-600 mx-auto" />
+              <h3 className="font-black text-base">
+                حسابك موثق رسمياً في منصة المسند ✓
+              </h3>
+              <p className="text-xs">
+                تظهر شارة التوثيق الرسمية بجانب اسمك في جميع نشراتك وفي ملفك العام كناشر.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {verifMsg && (
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
+                  {verifMsg}
+                </div>
+              )}
+
+              {verifErr && (
+                <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold">
+                  {verifErr}
+                </div>
+              )}
+
+              {/* Step 1: Request Code from Admin */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <p className="text-xs font-extrabold text-slate-900 dark:text-white">
+                    1. طلب كود توثيق الهوية من المشرف العام
+                  </p>
+                  <p className="text-[11px] text-slate-500">
+                    {profile.inspectorPending
+                      ? "طلبك قيد المراجعة حالياً لدى المشرف العام."
+                      : "أرسل إشعاراً للإدارة لمراجعة بياناتك وإصدار كود التوثيق."}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={Boolean(profile.inspectorPending) || verifLoading}
+                  onClick={handleRequestVerificationCode}
+                  className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-blue-600 disabled:bg-slate-300 text-white text-xs font-bold transition cursor-pointer shrink-0"
+                >
+                  {profile.inspectorPending
+                    ? "تم إرسال الطلب ✓"
+                    : "طلب كود التوثيق"}
+                </button>
+              </div>
+
+              {/* Step 2: Enter Code */}
+              <form
+                onSubmit={handleActivateVerificationCode}
+                className="space-y-4 pt-2"
+              >
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                    2. أدخل كود التوثيق السري الممنوح لك من المشرف *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    dir="ltr"
+                    value={verifCode}
+                    onChange={(e) => setVerifCode(e.target.value.toUpperCase())}
+                    placeholder="VERF-XXXX-XXXX / INSP-XXXX-XXXX"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-center font-mono text-base font-bold tracking-widest uppercase outline-none focus:border-blue-600"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={verifLoading}
+                  className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer"
+                >
+                  {verifLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Key className="w-4 h-4" />
+                  )}
+                  <span>تأكيد الكود وتفعيل شارة التوثيق</span>
+                </button>
+              </form>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* TAB: EDIT PROFILE */}
+      {activeTab === "edit" && (
+        <section className="max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm space-y-5">
+          <div>
+            <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
+              طلب تعديل بيانات الملف الشخصي
+            </h2>
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+              تخضع تعديلات الاسم والمؤسسة والنبذة التعريفية لمراجعة وموافقة المشرف العام قبل نشرها للعموم.
+            </p>
+          </div>
+
+          {editMessage && (
+            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>{editMessage}</span>
+            </div>
+          )}
+
+          {editError && (
+            <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{editError}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmitProfileEditRequest} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                الاسم الكامل / اسم المؤسسة *
+              </label>
+              <input
+                type="text"
+                required
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="أدخل الاسم الكامل"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:border-blue-600"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                اسم المستخدم (المعرف الشخصي للإشارة @username)
+              </label>
+              <div className="relative">
+                <span className="text-slate-400 absolute start-3.5 top-2.5 font-mono text-sm font-bold">@</span>
+                <input
+                  type="text"
+                  dir="ltr"
+                  value={editUsername}
+                  onChange={(e) => setEditUsername(e.target.value.toLowerCase().replace(/[^a-zA-Z0-9_.]/g, ""))}
+                  placeholder="username"
+                  className="w-full ps-9 pe-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-mono outline-none focus:border-blue-600"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                المؤسسة التربوية / المدرسة / الدائرة التفقدية
+              </label>
+              <input
+                type="text"
+                value={editSchool}
+                onChange={(e) => setEditSchool(e.target.value)}
+                placeholder="أدخل اسم المؤسسة أو المدرسة"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:border-blue-600"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                النبذة التعريفية للناشر (تظهر للأعضاء في ملفك العام)
+              </label>
+              <textarea
+                rows={4}
+                value={editBio}
+                onChange={(e) => setEditBio(e.target.value)}
+                placeholder="اكتب نبذة عن تخصصك التربوي والمواد التي تنشر فيها..."
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:border-blue-600"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={editLoading}
+              className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold inline-flex items-center gap-2 transition cursor-pointer"
+            >
+              {editLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Check className="w-4 h-4" />
+              )}
+              <span>إرسال التعديلات لموافقة المشرف</span>
+            </button>
+          </form>
+        </section>
+      )}
+
+      {/* TAB: SUBSCRIPTIONS (Copied/Preserved & Marked Coming Soon / سيأتي قريباً) */}
+      {activeTab === "subscriptions" && (
+        <ArchivedSubscriptionsPlans
+          currentPlan={profile.subscriptionPlan || "STANDARD"}
+          planLoading={planLoading}
+          onSelectPlan={handleSelectPlan}
+        />
+      )}
+
+      {/* TAB: SETTINGS & ACCOUNT DELETION */}
+      {activeTab === "settings" && (
+        <section className="max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
+          <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
+            إعدادات الحساب والواجهة
+          </h2>
+
+          <div className="flex items-center justify-between py-3 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <p className="text-sm font-bold text-slate-800 dark:text-white">
+                مظهر المنصة (الوضع النهاري / الليلي)
+              </p>
+              <p className="text-xs text-slate-500">
+                اختر المظهر المريح للقراءة والعمل
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-800 dark:text-white cursor-pointer"
+            >
+              {theme === "light"
+                ? "تفعيل الوضع الليلي 🌙"
+                : "تفعيل الوضع النهاري ☀️"}
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between py-3 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <p className="text-sm font-bold text-slate-800 dark:text-white">
+                لغة الواجهة
+              </p>
+              <p className="text-xs text-slate-500">
+                العربية، الفرنسية، أو الإنجليزية
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {(["ar", "fr", "en"] as Locale[]).map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  onClick={() => setLocale(l)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${
+                    locale === l
+                      ? "bg-blue-600 text-white"
+                      : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                  }`}
+                >
+                  {l.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Delete Publisher Account Section */}
+          <div className="p-5 rounded-2xl bg-red-50/70 dark:bg-red-950/30 border border-red-200 dark:border-red-900 space-y-3">
+            <div className="flex items-center gap-2 text-red-700 dark:text-red-400 font-extrabold text-sm">
+              <AlertTriangle className="w-5 h-5 shrink-0" />
+              <span>حذف حساب الناشر نهائياً</span>
+            </div>
+            <p className="text-xs text-red-600 dark:text-red-300 leading-relaxed">
+              حذف حسابك سيؤدي إلى إزالة ملفك الشخصي وجميع النشرات المرتبطة به نهائياً من منصة المسند.
+            </p>
+            <button
+              type="button"
+              disabled={deletingAccount}
+              onClick={handleDeleteMyAccount}
+              className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold inline-flex items-center gap-2 transition cursor-pointer"
+            >
+              {deletingAccount ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
+              <span>حذف حسابي نهائياً</span>
+            </button>
+          </div>
+        </section>
+      )}
+
+      {/* TAB: FAVORITE PUBLISHERS */}
+      {activeTab === "favorite_publishers" && (
+        <section>
+          {loadingItems ? (
+            <div className="py-12 flex justify-center">
+              <Loader2 className="w-7 h-7 text-blue-600 animate-spin" />
+            </div>
+          ) : favPublishers.length === 0 ? (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-12 text-center">
+              <p className="text-slate-600 font-medium mb-4">
+                لم تقم بإضافة أي ناشر إلى قائمتك المفضلة بعد.
+              </p>
+              <Link
+                href="/browse"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold"
+              >
+                استكشف النشرات والناشرين
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {favPublishers.map((pub) => (
+                <Link
+                  key={pub.id}
+                  href={`/publisher/${pub.id}`}
+                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm hover:border-blue-500 transition flex items-center justify-between gap-4"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-700 font-black flex items-center justify-center shrink-0">
+                      {pub.name.charAt(0)}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="font-bold text-slate-900 dark:text-white text-sm truncate">
+                          {pub.name}
+                        </p>
+                        <InspectorBadge
+                          role={pub.role}
+                          isVerified={pub.isVerified}
+                          isBanned={pub.isBanned}
+                          size="sm"
+                        />
+                      </div>
+                      <p className="text-xs text-slate-500 truncate">
+                        {pub.school || "ناشر في منصة المسند"}
+                      </p>
+                      <p className="text-[11px] text-blue-600 font-semibold mt-1">
+                        {pub._count?.worksheets ?? 0} نشرة •{" "}
+                        {pub.followersCount ?? 0} متابع
+                      </p>
+                    </div>
+                  </div>
+                  <ExternalLink className="w-4 h-4 text-slate-400 shrink-0" />
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* TABS: UPLOADS / FAVORITES / DOWNLOADS */}
+      {(activeTab === "uploads" ||
+        activeTab === "favorites" ||
+        activeTab === "downloads") && (
+        <section>
+          {loadingItems ? (
+            <div className="py-12 flex justify-center">
+              <Loader2 className="w-7 h-7 text-blue-600 animate-spin" />
+            </div>
+          ) : items.length === 0 ? (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-12 text-center">
+              <p className="text-slate-600 font-medium mb-4">
+                لا توجد نشرات في هذا القسم حتى الآن.
+              </p>
+              <Link
+                href={activeTab === "uploads" ? "/upload" : "/browse"}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold"
+              >
+                {activeTab === "uploads"
+                  ? "انشر أول وثيقة لك"
+                  : "تصفح النشرات"}
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {items.map((ws) => (
+                <div
+                  key={ws.id}
+                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col justify-between gap-4"
+                >
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span
+                        className="px-2.5 py-0.5 rounded-full text-xs font-bold text-white"
+                        style={{
+                          backgroundColor: ws.subject.color || "#2563EB",
+                        }}
+                      >
+                        {ws.subject.nameAr}
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-full text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold">
+                        {ws.grade.nameAr}
+                      </span>
+                    </div>
+                    <Link
+                      href={`/worksheet/${ws.id}`}
+                      className="font-bold text-slate-900 dark:text-white hover:text-blue-600 line-clamp-2"
+                    >
+                      {ws.titleAr || ws.title}
+                    </Link>
+                  </div>
+
+                  <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3 text-xs text-slate-500">
+                    <span>التحميلات: {ws.downloadCount}</span>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/worksheet/${ws.id}`}
+                        className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 text-slate-700 dark:text-slate-300 hover:text-blue-600"
+                        title="معاينة وتعديل"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </Link>
+                      {activeTab === "uploads" && (
+                        <button
+                          onClick={() => handleArchiveWorksheet(ws.id)}
+                          className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 cursor-pointer"
+                          title="أرشفة وحذف"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+    </main>
+  );
+}
+
+export default function TeacherProfilePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[60vh] flex items-center justify-center" dir="rtl">
+          <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+        </div>
+      }
+    >
+      <ProfileWorkspaceContent />
+    </Suspense>
+  );
+}
+```
+
+---
+
+### File: `src/app/(main)/support/page.tsx`
+
+```typescript
+"use client";
+
+/**
+ * Technical Support & Customer Service Center — Al-Musnad (المسند) v13.0
+ *
+ * Route: /support
+ * Implements:
+ * 1. Two Role-Dedicated WhatsApp Direct Support Channels (معلمين وتلاميذ / مؤسسات ومتفقدين):
+ *    - خط المعلمين والتلاميذ: 27764985 (https://wa.me/21627764985)
+ *    - خط المؤسسات التربوية والمتفقدين: 76907101 (https://wa.me/21676907101)
+ * 2. One-Click Quick Support Topic Cards (فك القفل بعد 6 محاولات، توثيق الهوية، استفسارات، مقترحات).
+ * 3. Direct Support Ticket Submission Form.
+ * 4. Live Ticket History & Official Replies Tracker.
+ * 5. Instant Self-Service Help & Troubleshooting Guide.
+ */
+
+import React, { useState, useEffect, FormEvent } from "react";
+import Link from "next/link";
+import {
+  Headphones,
+  Send,
+  CheckCircle2,
+  MessageSquare,
+  Loader2,
+  Mail,
+  User as UserIcon,
+  HelpCircle,
+  BadgeCheck,
+  Unlock,
+  FileWarning,
+  Sparkles,
+  ChevronDown,
+  PhoneCall,
+  Building2,
+  ExternalLink,
+} from "lucide-react";
+import {
+  submitSupportTicketAction,
+  getMySupportTicketsAction,
+} from "@/actions/report-support.actions";
+
+const QUICK_SUPPORT_CARDS = [
+  {
+    id: "unlock",
+    category: "TECHNICAL",
+    title: "🔓 طلب فك قفل الحساب (6 محاولات كلمة مرور)",
+    desc: "إذا قُفل حسابك بعد 6 محاولات خاطئة لكلمة المرور، اضغط هنا لمراسلة المشرف أو المسؤول لفك القفل.",
+    defaultSubject: "طلب فك قفل حسابي بعد استنفاد محاولات كلمة المرور",
+    icon: Unlock,
+    badgeClass: "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800",
+  },
+  {
+    id: "verify",
+    category: "VERIFICATION",
+    title: "🎖️ طلب توثيق الهوية والشارة الرسمية",
+    desc: "للمعلمين والمؤسسات والمتفقدين الراغبين في التثبت من الهوية والحصول على كود التوثيق الرسمي.",
+    defaultSubject: "طلب التثبت من الهوية والحصول على كود التوثيق الرسمي",
+    icon: BadgeCheck,
+    badgeClass: "bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800",
+  },
+  {
+    id: "upload-help",
+    category: "TECHNICAL",
+    title: "📄 مساعدة في رفع أو تحويل ملفات Word/PDF",
+    desc: "استفسار حول مراجعة ملفات وورد أو الصور وتحويلها إلى PDF أو تصنيفها داخل المواد.",
+    defaultSubject: "استفسار بخصوص رفع وتحويل ملف تربوي",
+    icon: FileWarning,
+    badgeClass: "bg-indigo-50 text-indigo-800 border-indigo-200 dark:bg-indigo-950/50 dark:text-indigo-300 dark:border-indigo-800",
+  },
+  {
+    id: "general",
+    category: "CUSTOMER_SERVICE",
+    title: "💬 اقتراح تطوير أو استفسار عام",
+    desc: "تواصل مباشر مع إدارة منصة المسند لتقديم مقترحات التحسين أو الاستفسارات التربوية.",
+    defaultSubject: "مقترح / استفسار عام لإدارة منصة المسند",
+    icon: Sparkles,
+    badgeClass: "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800",
+  },
+];
+
+const SUPPORT_INSTANT_ANSWERS = [
+  {
+    q: "كيف أستعيد الدخول إذا تم قفل حسابي بعد 6 محاولات كلمة مرور؟",
+    a: "اختر بطاقة «طلب فك قفل الحساب» أعلاه واكتب بريدك الإلكتروني أو معرفك @username، وسيقوم المشرف العام أو المسؤول الإداري بفك غلق حسابك وتصفير العداد فوراً من لوحة التحكم.",
+  },
+  {
+    q: "أين أدخل كود التوثيق السري بعد استلامه من المشرف العام؟",
+    a: "انتقل إلى «ملفي الشخصي» ثم افتح تبويب «التوثيق»، وأدخل الكود (مثل VERF-XXXX أو INSP-XXXX) لتفعيل شارة التوثيق الرسمية فوراً.",
+  },
+  {
+    q: "لماذا يظهر ملفي بصيغة Word أو صورة في حالة مراجعة؟",
+    a: "حفاظاً على جودة العرض لجميع المستخدمين، يتم استلام ملفات Word والصور ومراجعتها من قِبل المتفقد أو المشرف لتحويلها إلى صيغة PDF موحدة ومعتمدة.",
+  },
+];
+
+export default function SupportAndCustomerServicePage() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [category, setCategory] = useState("TECHNICAL");
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+
+  const [submitting, setSubmitting] = useState(false);
+  const [submittedSuccess, setSubmittedSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [myTickets, setMyTickets] = useState<any[]>([]);
+  const [loadingTickets, setLoadingTickets] = useState(true);
+  const [openHelpIdx, setOpenHelpIdx] = useState<number | null>(0);
+
+  useEffect(() => {
+    async function loadUserAndTickets() {
+      try {
+        const [meRes, tickets] = await Promise.all([
+          fetch("/api/auth/me").catch(() => null),
+          getMySupportTicketsAction().catch(() => []),
+        ]);
+        if (meRes && meRes.ok) {
+          const json = await meRes.json();
+          if (json.success && json.data) {
+            setName(json.data.name || "");
+            setEmail(json.data.email || "");
+            setUserRole(json.data.role || null);
+          }
+        }
+        setMyTickets(tickets);
+      } catch {
+        // ignore
+      } finally {
+        setLoadingTickets(false);
+      }
+    }
+    loadUserAndTickets();
+  }, []);
+
+  const handleSelectQuickCard = (card: typeof QUICK_SUPPORT_CARDS[0]) => {
+    setCategory(card.category);
+    setSubject(card.defaultSubject);
+    setSubmittedSuccess(false);
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSubmittedSuccess(false);
+
+    try {
+      setSubmitting(true);
+      const created = await submitSupportTicketAction({
+        name,
+        email,
+        category,
+        subject,
+        message,
+      });
+      setSubmittedSuccess(true);
+      setSubject("");
+      setMessage("");
+      setMyTickets((prev) => [created, ...prev]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "تعذر إرسال التذكرة");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10" dir="rtl">
+      {/* Header */}
+      <div className="text-center max-w-2xl mx-auto space-y-3">
+        <div className="w-14 h-14 rounded-2xl bg-blue-600 text-white flex items-center justify-center mx-auto shadow-md">
+          <Headphones className="w-7 h-7" />
+        </div>
+        <h1 className="text-3xl font-black text-slate-900 dark:text-white">
+          مركز الدعم الفني وخدمة الأعضاء — المسند
+        </h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+          تواصل معنا مباشرة عبر قنوات الواتساب الرسمية المخصصة أو أرسل تذكرة دعم مباشر لفريق الإشراف.
+        </p>
+      </div>
+
+      {/* WhatsApp Direct Support Channels (الإصدار v14.0) */}
+      {(() => {
+        const isStaff = userRole === "ADMIN" || userRole === "MODERATOR";
+        const isInstitutionOrInspector =
+          userRole === "INSTITUTION" || userRole === "INSPECTOR";
+        const showTeacherStudent = !isInstitutionOrInspector || isStaff;
+        const showInstitution = isInstitutionOrInspector || isStaff;
+
+        return (
+          <section
+            className={`grid gap-5 ${
+              showTeacherStudent && showInstitution
+                ? "grid-cols-1 md:grid-cols-2"
+                : "grid-cols-1 max-w-2xl mx-auto w-full"
+            }`}
+          >
+            {/* Channel 1: Teachers & Students (27764985) */}
+            {showTeacherStudent && (
+              <a
+                href="https://wa.me/21627764985?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%20%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9%20%D9%85%D9%86%D8%B5%D8%A9%20%D8%A7%D9%84%D9%85%D8%B3%D9%86%D8%AF%D8%8C%20%D8%A3%D8%AA%D9%88%D8%A7%D8%B5%D9%84%20%D9%85%D8%B9%D9%83%D9%85%20%D8%B9%D8%A8%D8%B1%20%D8%AE%D8%B7%20%D8%A7%D9%84%D9%85%D8%B9%D9%84%D9%85%D9%8A%D9%86%20%D9%88%D8%A7%D9%84%D8%AA%D9%84%D8%A7%D9%85%D9%8A%D8%B0%3A"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative overflow-hidden rounded-3xl border-2 border-emerald-300 dark:border-emerald-800/80 bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/40 dark:via-slate-900 dark:to-teal-950/20 p-6 shadow-sm hover:shadow-md hover:border-emerald-500 transition flex items-start gap-4"
+              >
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg shadow-emerald-600/25 group-hover:scale-105 transition">
+                  <PhoneCall className="h-7 w-7" />
+                </div>
+                <div className="space-y-1.5 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-700">
+                      خط المعلمين والتلاميذ
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                      واتساب فوري <ExternalLink className="w-3.5 h-3.5" />
+                    </span>
+                  </div>
+                  <h3 className="text-base font-black text-slate-900 dark:text-white">
+                    الرقم العام للمعلمين والتلاميذ
+                  </h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                    للاستفسارات العامة، التوجيه البيداغوجي، المساعدة في رفع وتحميل المذكرات، ودعم التلاميذ.
+                  </p>
+                  <div className="pt-2 flex items-center gap-2 text-sm font-black text-emerald-700 dark:text-emerald-300" dir="ltr">
+                    <span>+216 27 764 985</span>
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
+                      WhatsApp: 27764985
+                    </span>
+                  </div>
+                </div>
+              </a>
+            )}
+
+            {/* Channel 2: Institutions & Inspectors (46907101) */}
+            {showInstitution && (
+              <a
+                href="https://wa.me/21646907101?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%20%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9%20%D9%85%D9%86%D8%B5%D8%A9%20%D8%A7%D9%84%D9%85%D8%B3%D9%86%D8%AF%D8%8C%20%D8%A3%D8%AA%D9%88%D8%A7%D8%B5%D9%84%20%D9%85%D8%B9%D9%83%D9%85%20%D8%B9%D8%A8%D8%B1%20%D8%AE%D8%B7%20%D8%A7%D9%84%D9%85%D8%A4%D8%B3%D8%B3%D8%A7%D8%AA%20%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%88%D9%8A%D8%A9%20%D9%88%D8%A7%D9%84%D9%85%D8%AA%D9%81%D9%82%D8%AF%D9%8A%D9%86%3A"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative overflow-hidden rounded-3xl border-2 border-indigo-300 dark:border-indigo-800/80 bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-indigo-950/40 dark:via-slate-900 dark:to-purple-950/20 p-6 shadow-sm hover:shadow-md hover:border-indigo-500 transition flex items-start gap-4"
+              >
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 group-hover:scale-105 transition">
+                  <Building2 className="h-7 w-7" />
+                </div>
+                <div className="space-y-1.5 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-700">
+                      خط المؤسسات والمتفقدين
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-indigo-700 dark:text-indigo-400">
+                      واتساب فوري <ExternalLink className="w-3.5 h-3.5" />
+                    </span>
+                  </div>
+                  <h3 className="text-base font-black text-slate-900 dark:text-white">
+                    الرقم المخصص للمؤسسات التربوية والمتفقدين
+                  </h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                    للتنسيق الإداري والمؤسساتي، توثيق اعتماد المتفقدين والمدارس، واستلام أكواد التوثيق.
+                  </p>
+                  <div className="pt-2 flex items-center gap-2 text-sm font-black text-indigo-700 dark:text-indigo-300" dir="ltr">
+                    <span>+216 46 907 101</span>
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-950 text-indigo-800 dark:text-indigo-300">
+                      WhatsApp: 46907101
+                    </span>
+                  </div>
+                </div>
+              </a>
+            )}
+          </section>
+        );
+      })()}
+
+      {/* Quick Service Selection Cards */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {QUICK_SUPPORT_CARDS.map((card) => {
+          const Icon = card.icon;
+          const isSelected = subject === card.defaultSubject;
+          return (
+            <button
+              key={card.id}
+              type="button"
+              onClick={() => handleSelectQuickCard(card)}
+              className={`text-right rounded-2xl border-2 p-4 transition cursor-pointer flex flex-col justify-between gap-3 ${
+                isSelected
+                  ? "border-blue-600 bg-blue-50/60 dark:bg-blue-950/40 shadow-md"
+                  : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-400"
+              }`}
+            >
+              <div className="space-y-2">
+                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-extrabold ${card.badgeClass}`}>
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span>خدمة سريعة</span>
+                </div>
+                <h3 className="text-sm font-black text-slate-900 dark:text-white">
+                  {card.title}
+                </h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  {card.desc}
+                </p>
+              </div>
+              <span className="text-[11px] font-extrabold text-blue-600 dark:text-blue-400">
+                اختيار وتعبئة الطلب تلقائياً ←
+              </span>
+            </button>
+          );
+        })}
+      </section>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Submit Ticket Form */}
+        <section className="lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm space-y-5">
+          <h2 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-blue-600" />
+            <span>إرسال رسالة أو تذكرة دعم مباشر للإدارة</span>
+          </h2>
+
+          {submittedSuccess && (
+            <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs font-bold flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>تم إرسال تذكرتك بنجاح! سيتم مراجعتها والرد عليها من قِبل الإدارة في أقرب وقت.</span>
+            </div>
+          )}
+
+          {error && (
+            <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs font-bold">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  الاسم الكامل
+                </label>
+                <div className="relative">
+                  <UserIcon className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5" />
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="اسمك الثلاثي أو صفة الحساب"
+                    className="w-full pr-10 pl-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  البريد الإلكتروني للرد
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="email@example.com"
+                    className="w-full pr-10 pl-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  تصنيف الطلب
+                </label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="TECHNICAL">مشكلة تقنية / فك قفل الحساب</option>
+                  <option value="VERIFICATION">طلب توثيق رسمي أو كود متفقد</option>
+                  <option value="INAPPROPRIATE_CONTENT">إبلاغ عن محتوى أو انتهاك حقوق</option>
+                  <option value="CUSTOMER_SERVICE">استفسار عام أو اقتراح تطوير</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  موضوع الطلب
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  placeholder="عنوان مختصر للطلب"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                تفاصيل الرسالة أو المشكلة
+              </label>
+              <textarea
+                required
+                rows={5}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="اكتب تفاصيل طلبك بدقة، مع ذكر المعرف @username أو رقم الهاتف إن لزم..."
+                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs flex items-center justify-center gap-2 shadow-sm transition disabled:opacity-50 cursor-pointer"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>جاري إرسال التذكرة...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  <span>إرسال التذكرة إلى إدارة المنصة</span>
+                </>
+              )}
+            </button>
+          </form>
+        </section>
+
+        {/* Live Ticket History & Instant FAQ Guide */}
+        <div className="lg:col-span-5 space-y-6">
+          {/* Live User Tickets Tracker */}
+          <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
+            <h2 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+              <BadgeCheck className="w-4 h-4 text-emerald-600" />
+              <span>سجل تذاكري وردود الإدارة</span>
+            </h2>
+
+            {loadingTickets ? (
+              <div className="py-6 flex items-center justify-center text-xs text-slate-400 gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>جاري تحميل التذاكر...</span>
+              </div>
+            ) : myTickets.length === 0 ? (
+              <p className="text-xs text-slate-500 dark:text-slate-400 text-center py-4">
+                لا توجد تذاكر سابقة مسجلة بهذا البريد الإلكتروني.
+              </p>
+            ) : (
+              <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+                {myTickets.map((t) => (
+                  <div
+                    key={t.id}
+                    className="p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 space-y-2 text-xs"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-extrabold text-slate-900 dark:text-white truncate">
+                        {t.subject}
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded-md text-[10px] font-black ${
+                          t.status === "RESOLVED"
+                            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                            : t.status === "IN_PROGRESS"
+                            ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                            : "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
+                        }`}
+                      >
+                        {t.status === "RESOLVED"
+                          ? "تم الحل ✓"
+                          : t.status === "IN_PROGRESS"
+                          ? "قيد المعالجة"
+                          : "جديدة"}
+                      </span>
+                    </div>
+
+                    <p className="text-slate-600 dark:text-slate-400 text-[11px] line-clamp-2">
+                      {t.message}
+                    </p>
+
+                    {t.response && (
+                      <div className="pt-2 mt-2 border-t border-slate-200/60 dark:border-slate-700/60 text-[11px] text-blue-800 dark:text-blue-300 bg-blue-50/80 dark:bg-blue-950/40 p-2 rounded-xl">
+                        <strong className="block mb-0.5">رد الإدارة:</strong>
+                        {t.response}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Quick FAQ Accordion */}
+          <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
+            <h2 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+              <HelpCircle className="w-4 h-4 text-amber-600" />
+              <span>إجابات فورية لأكثر الاستفسارات تكراراً</span>
+            </h2>
+
+            <div className="space-y-2">
+              {SUPPORT_INSTANT_ANSWERS.map((item, idx) => {
+                const isOpen = openHelpIdx === idx;
+                return (
+                  <div
+                    key={idx}
+                    className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setOpenHelpIdx(isOpen ? null : idx)}
+                      className="w-full p-3 text-right text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between gap-2 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition cursor-pointer"
+                    >
+                      <span>{item.q}</span>
+                      <ChevronDown
+                        className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${
+                          isOpen ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+                    {isOpen && (
+                      <div className="p-3 pt-0 text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed bg-slate-50/50 dark:bg-slate-800/30">
+                        {item.a}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+```
+
+---
+
+### File: `src/app/(main)/inspector/activate/page.tsx`
+
+```typescript
+"use client";
+
+import React, { useState, FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { KeyRound, ShieldCheck, CheckCircle2, AlertCircle, Loader2, ArrowRight } from "lucide-react";
+import { activateInspectorCodeAction } from "@/actions/inspector.actions";
+
+export default function InspectorActivatePage() {
+  const router = useRouter();
+  const [code, setCode] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [activated, setActivated] = useState(false);
+
+  const handleActivate = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!code.trim()) {
+      setError("يرجى إدخال كود التفعيل المقدم من المشرف");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await activateInspectorCodeAction(code);
+      setActivated(true);
+      setTimeout(() => {
+        router.push("/profile");
+        router.refresh();
+      }, 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "كود التفعيل غير صالح");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <main className="min-h-[75vh] flex items-center justify-center px-4 py-12" dir="rtl">
+      <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl p-8 shadow-sm text-center">
+        <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto mb-4">
+          <KeyRound className="w-7 h-7" />
+        </div>
+
+        <h1 className="text-2xl font-bold text-slate-900 mb-2">تفعيل صلاحية المتفقد التربوي</h1>
+        <p className="text-sm text-slate-500 mb-6 leading-relaxed">
+          بعد التحقق من هويتك من قِبل إدارة المنصة، أدخل الكود السري الممنوح لك لتفعيل شارة المتفقد المعتمد وصلاحية إضافة التوجيهات البيداغوجية.
+        </p>
+
+        {activated ? (
+          <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 space-y-3">
+            <CheckCircle2 className="w-10 h-10 text-emerald-600 mx-auto" />
+            <h2 className="font-bold text-base">تم تفعيل صلاحية المتفقد بنجاح!</h2>
+            <p className="text-xs">تظهر الآن الشارة الرسمية بجانب اسمك في جميع أنحاء المنصة.</p>
+          </div>
+        ) : (
+          <form onSubmit={handleActivate} className="space-y-4 text-right">
+            {error && (
+              <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                كود التفعيل الخاص بالمتفقد *
+              </label>
+              <input
+                type="text"
+                required
+                dir="ltr"
+                value={code}
+                onChange={(e) => setCode(e.target.value.toUpperCase())}
+                placeholder="INSP-XXXX-XXXX"
+                className="w-full px-4 py-3 rounded-xl border border-slate-300 text-center font-mono text-base font-bold tracking-widest uppercase outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-100"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white font-bold text-sm flex items-center justify-center gap-2 transition cursor-pointer"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+              <span>تفعيل الصلاحية والشارة الرسمية</span>
+            </button>
+          </form>
+        )}
+
+        <div className="mt-6 pt-4 border-t border-slate-100">
+          <Link
+            href="/"
+            className="text-xs font-semibold text-slate-500 hover:text-slate-800 inline-flex items-center gap-1"
+          >
+            <ArrowRight className="w-3.5 h-3.5" />
+            <span>العودة لتصفح الأنشطة</span>
+          </Link>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+```
+
+---
+
+### File: `src/app/(main)/inspector/register/page.tsx`
+
+```typescript
+export { default } from "@/app/(auth)/register/inspector/page";
+
+```
+
+---
+
+### File: `src/app/(auth)/login/page.tsx`
+
+```typescript
+"use client";
+
+/**
+ * Multi-Role Login Page — Al-Musnad (المسند) v13.0
+ *
+ * Implements:
+ * 1. 6 Instant One-Click Demo Accounts Switcher (ADMIN, MODERATOR, INSPECTOR, INSTITUTION, TEACHER, STUDENT)
+ *    with unified password `Musnad@2026`.
+ * 2. Pressing `Enter` after typing email/username and password immediately submits login.
+ * 3. Smart Password Check & 6-Attempt Lockout Protection (`/api/auth/login-guard`).
+ * 4. Google OAuth redirection fix with `skipBrowserRedirect: true` and `window.top` iframe breakout.
+ */
+
+import React, {
+  useState,
+  FormEvent,
+  KeyboardEvent,
+  Suspense,
+  useEffect,
+} from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import {
+  Lock,
+  Mail,
+  Loader2,
+  AlertCircle,
+  HelpCircle,
+  Eye,
+  EyeOff,
+} from "lucide-react";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { signInSchema } from "@/lib/validators/auth";
+import { useAppPreferences } from "@/context/AppPreferencesContext";
+import { ROLE_VISUAL_CARDS } from "@/components/auth/AuthRoleModal";
+import { MAX_LOGIN_PASSWORD_ATTEMPTS } from "@/config/constants";
+import type { AccountRoleOption } from "@/types/api";
+
+function GoogleIcon() {
+  return (
+    <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="#4285F4"
+        d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.27 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.98-3.09z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.98 3.09c.95-2.85 3.6-4.96 6.73-4.96z"
+      />
+    </svg>
+  );
+}
+
+function LoginContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams?.get("redirectTo") || "/";
+  const errorParam = searchParams?.get("error");
+  const roleParam = searchParams?.get("role");
+
+  const { t } = useAppPreferences();
+
+  const [selectedRole, setSelectedRole] = useState<string | null>(
+    roleParam || null
+  );
+
+  useEffect(() => {
+    if (roleParam) setSelectedRole(roleParam);
+  }, [roleParam]);
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [isAccountLocked, setIsAccountLocked] = useState<boolean>(
+    errorParam === "account-locked"
+  );
+  const [remainingAttempts, setRemainingAttempts] = useState<number>(
+    MAX_LOGIN_PASSWORD_ATTEMPTS
+  );
+
+  const executeLogin = async (overrideEmail?: string, overridePassword?: string, overrideRole?: string) => {
+    if (loading) return;
+    setError(null);
+
+    const emailToUse = overrideEmail || email;
+    const passwordToUse = overridePassword || password;
+    const roleToUse = overrideRole || selectedRole || "TEACHER";
+
+    const parsed = signInSchema.safeParse({
+      email: emailToUse,
+      password: passwordToUse,
+      role: roleToUse,
+    });
+
+    if (!parsed.success) {
+      setError(parsed.error.errors[0]?.message || "البيانات المدخلة غير صحيحة");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const rawIdentifier = parsed.data.email.trim();
+
+      // Step 1: Pre-check if email/username is registered and whether account is locked
+      let loginEmail = rawIdentifier;
+      let resolvedRole = roleToUse;
+      let existsInDb = false;
+
+      try {
+        const preRes = await fetch("/api/auth/login-guard", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "PRECHECK",
+            identifier: rawIdentifier,
+          }),
+        });
+        const preJson = await preRes.json();
+        if (preJson.success && preJson.data) {
+          existsInDb = Boolean(preJson.data.exists);
+          if (preJson.data.resolvedEmail) {
+            loginEmail = preJson.data.resolvedEmail;
+          }
+          if (preJson.data.role) {
+            resolvedRole = preJson.data.role;
+          }
+          if (typeof preJson.data.remainingAttempts === "number") {
+            setRemainingAttempts(preJson.data.remainingAttempts);
+          }
+          if (preJson.data.isLocked || preJson.data.isBanned) {
+            setIsAccountLocked(true);
+            setError(
+              preJson.data.lockMessage ||
+                "🔒 هذا الحساب مقفل حالياً. رجاءً تواصل مع المسؤول أو المشرف العام لفك قفل الحساب."
+            );
+            return;
+          }
+        }
+      } catch {
+        // Fallback
+      }
+
+      // Step 2: Attempt Supabase Auth login
+      const supabase = createSupabaseBrowserClient();
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: parsed.data.password,
+      });
+
+      if (authError) {
+        if (existsInDb) {
+          try {
+            const failRes = await fetch("/api/auth/login-guard", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                action: "FAILED_ATTEMPT",
+                identifier: loginEmail,
+              }),
+            });
+            const failJson = await failRes.json();
+            if (failJson.success && failJson.data) {
+              setIsAccountLocked(Boolean(failJson.data.isLocked));
+              if (typeof failJson.data.remainingAttempts === "number") {
+                setRemainingAttempts(failJson.data.remainingAttempts);
+              }
+              setError(
+                failJson.data.message ||
+                  "❌ كلمة المرور خاطئة لهذا الحساب المسجل. تنبيه: لديك 6 محاولات كحد أقصى قبل قفل الحساب."
+              );
+              return;
+            }
+          } catch {
+            // fallback
+          }
+          setError(
+            "❌ البريد الإلكتروني مسجل في المنصة ولكن كلمة المرور خاطئة! تنبيه: لديك فرصة 6 مرات فقط لكتابة كلمة المرور قبل قفل الحساب."
+          );
+          return;
+        }
+
+        setError(
+          "هذا البريد الإلكتروني أو المعرف غير مسجل في المنصة، أو أن البيانات غير صحيحة."
+        );
+        return;
+      }
+
+      // Step 3: Reset failed attempts counter on successful login
+      await fetch("/api/auth/login-guard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "RESET_SUCCESS",
+          identifier: loginEmail,
+        }),
+      }).catch(() => null);
+
+      const isAdminAccount =
+        loginEmail.toLowerCase() === "bjasser123@gmail.com" ||
+        loginEmail.toLowerCase() === "admin@musnad.tn" ||
+        resolvedRole === "ADMIN" ||
+        roleToUse === "ADMIN";
+
+      const targetDestination = isAdminAccount
+        ? "/admin/dashboard"
+        : resolvedRole === "MODERATOR" || roleToUse === "MODERATOR"
+        ? "/moderator/dashboard"
+        : resolvedRole === "INSPECTOR" || roleToUse === "INSPECTOR"
+        ? "/inspector/dashboard"
+        : resolvedRole === "INSTITUTION" || roleToUse === "INSTITUTION"
+        ? (redirectTo && redirectTo !== "/" ? redirectTo : "/#institutions-hub")
+        : resolvedRole === "TEACHER" || roleToUse === "TEACHER"
+        ? (redirectTo && redirectTo !== "/" ? redirectTo : "/#teachers-hub")
+        : redirectTo;
+
+      router.push(targetDestination);
+      router.refresh();
+    } catch {
+      setError("حدث خطأ أثناء تسجيل الدخول");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogin = async (e: FormEvent) => {
+    e.preventDefault();
+    await executeLogin();
+  };
+
+  const handleKeyDownEnter = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (email.trim() && password) {
+        void executeLogin();
+      }
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      setGoogleLoading(true);
+      setError(null);
+      const supabase = createSupabaseBrowserClient();
+      const roleToPass = selectedRole || "TEACHER";
+      const callbackUrl = `${window.location.origin}/api/auth/callback?role=${encodeURIComponent(
+        roleToPass
+      )}&next=${encodeURIComponent(redirectTo)}`;
+
+      const { data, error: oauthErr } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: callbackUrl,
+          skipBrowserRedirect: true,
+          queryParams: {
+            access_type: "offline",
+            prompt: "select_account",
+          },
+        },
+      });
+
+      if (oauthErr) {
+        setError(
+          "مزود Google غير مفعّل في إعدادات Supabase الحالية أو تعذر الاتصال به. يرجى تسجيل الدخول بالبريد الإلكتروني وكلمة المرور."
+        );
+        setGoogleLoading(false);
+        return;
+      }
+
+      if (data?.url) {
+        if (window.top && window.top !== window.self) {
+          window.top.location.href = data.url;
+        } else {
+          window.location.href = data.url;
+        }
+      }
+    } catch {
+      setError("تعذر بدء تسجيل الدخول بحساب Google. يرجى استخدام البريد الإلكتروني وكلمة المرور.");
+      setGoogleLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-7xl w-full mx-auto py-8 px-4 space-y-8" dir={t.dir}>
+
+      {!selectedRole ? (
+        <div className="space-y-6">
+          <div className="text-center space-y-3 max-w-2xl mx-auto">
+            <h1 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white">
+              {t.authModal.loginTitle}
+            </h1>
+            <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400">
+              {t.authModal.loginSubtitle}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {ROLE_VISUAL_CARDS.map((card) => {
+              const Icon = card.icon;
+              const roleText = t.roles[card.role];
+              return (
+                <button
+                  key={card.role}
+                  type="button"
+                  onClick={() => setSelectedRole(card.role)}
+                  className={`group relative text-start bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 ${card.borderHover} rounded-3xl p-6 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col justify-between cursor-pointer overflow-hidden`}
+                >
+                  <div
+                    className={`absolute top-0 inset-x-0 h-2 bg-gradient-to-r ${card.gradient}`}
+                  />
+                  <div className="space-y-4 pt-2">
+                    <div className="flex items-center justify-between">
+                      <span
+                        className={`px-3 py-1 rounded-full text-[11px] font-extrabold border ${card.badgeStyle}`}
+                      >
+                        {roleText.badge}
+                      </span>
+                      <div
+                        className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-md ${card.iconBg}`}
+                      >
+                        <Icon className="w-6 h-6" />
+                      </div>
+                    </div>
+                    <h3 className="text-xl font-black text-slate-900 dark:text-white">
+                      {roleText.title}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                      {roleText.subtitle}
+                    </p>
+                  </div>
+                  <div className="pt-5 mt-5 border-t border-slate-100 dark:border-slate-800 text-xs font-extrabold text-blue-600 dark:text-blue-400">
+                    {t.authModal.continueBtn} →
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <div className="max-w-md w-full mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl">
+          <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => setSelectedRole(null)}
+              className="text-xs font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white transition flex items-center gap-1 cursor-pointer"
+            >
+              <span>←</span>
+              <span>تغيير الفئة المحددة</span>
+            </button>
+            <span className="text-xs font-black text-blue-600 bg-blue-50 dark:bg-blue-950 px-2.5 py-1 rounded-lg">
+              {selectedRole === "ADMIN"
+                ? "مشرف عام"
+                : selectedRole === "MODERATOR"
+                ? "مسؤول إداري"
+                : t.roles[selectedRole as AccountRoleOption]?.badge || selectedRole}
+            </span>
+          </div>
+
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-black text-slate-900 dark:text-white">
+              {t.nav.login} —{" "}
+              {selectedRole === "ADMIN"
+                ? "المشرف العام"
+                : selectedRole === "MODERATOR"
+                ? "المسؤول الإداري"
+                : t.roles[selectedRole as AccountRoleOption]?.title || selectedRole}
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+              {selectedRole === "ADMIN"
+                ? "إدارة النظام والتحكم الشامل"
+                : selectedRole === "MODERATOR"
+                ? "معالجة البلاغات وإدارة المحتوى"
+                : t.roles[selectedRole as AccountRoleOption]?.subtitle}
+            </p>
+          </div>
+
+          {error && (
+            <div className="mb-5 p-3.5 rounded-2xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800/80 text-red-700 dark:text-red-300 text-xs font-semibold leading-relaxed flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
+              <div className="space-y-1">
+                <p>{error}</p>
+                {isAccountLocked && (
+                  <Link
+                    href="/support"
+                    className="inline-flex items-center gap-1 text-[11px] font-black text-red-800 dark:text-red-200 underline mt-1"
+                  >
+                    <HelpCircle className="w-3.5 h-3.5" />
+                    <span>مراسلة الدعم الفني لفك قفل الحساب فوراً ←</span>
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                {t.authForm.emailLabel}
+              </label>
+              <div className="relative">
+                <Mail className="w-4 h-4 text-slate-400 absolute start-3.5 top-3.5 pointer-events-none" />
+                <input
+                  type="text"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onKeyDown={handleKeyDownEnter}
+                  placeholder="example@mail.com"
+                  className="w-full ps-10 pe-3.5 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                  {t.authForm.passwordLabel}
+                </label>
+                <Link
+                  href="/support"
+                  className="text-[11px] text-blue-600 hover:underline"
+                >
+                  نسيت كلمة المرور؟
+                </Link>
+              </div>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-slate-400 absolute start-3.5 top-3.5 pointer-events-none" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={handleKeyDownEnter}
+                  placeholder="••••••••"
+                  className="w-full ps-10 pe-10 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute end-3.5 top-3.5 p-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer"
+                  title={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-sm flex items-center justify-center gap-2 shadow-md transition disabled:opacity-50 cursor-pointer"
+            >
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <span>{t.authForm.submitLogin} (Enter ↵)</span>
+              )}
+            </button>
+          </form>
+
+          <div className="my-5 flex items-center gap-3">
+            <div className="h-px bg-slate-200 dark:bg-slate-700 flex-1" />
+            <span className="text-[11px] font-bold text-slate-400">أو</span>
+            <div className="h-px bg-slate-200 dark:bg-slate-700 flex-1" />
+          </div>
+
+          <button
+            type="button"
+            disabled={googleLoading}
+            onClick={handleGoogleLogin}
+            className="w-full py-3 px-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 text-slate-800 dark:text-slate-100 font-extrabold text-sm flex items-center justify-center gap-2.5 transition cursor-pointer shadow-sm"
+          >
+            {googleLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+            ) : (
+              <GoogleIcon />
+            )}
+            <span>تسجيل الدخول بحساب Google</span>
+          </button>
+
+          <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 text-center text-xs text-slate-600 dark:text-slate-400">
+            <Link
+              href={`/register?role=${selectedRole}`}
+              className="font-black text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              ليس لديك حساب؟ أنشئ حسابك الآن ←
+            </Link>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <main className="min-h-[82vh] flex items-center justify-center px-4 py-10">
+      <Suspense
+        fallback={
+          <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl p-12 flex flex-col items-center justify-center gap-3">
+            <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+            <p className="text-xs text-slate-400">جاري تحميل واجهة الدخول...</p>
+          </div>
+        }
+      >
+        <LoginContent />
+      </Suspense>
+    </main>
+  );
+}
+
+```
+
+---
+
+### File: `src/app/(auth)/register/page.tsx`
+
+```typescript
+"use client";
+
+/**
+ * Upgraded Multi-Role Registration Page — Al-Musnad (المسند) v6.0
+ *
+ * Implements all Project Manager v6.0 Directives:
+ * 1. Removed all verification code alerts, banners, and code activation links
+ *    from the registration form so the user creates their account normally.
+ * 2. After registration succeeds, displays a dedicated Thank You screen thanking
+ *    the user for registering and informing them that identity verification
+ *    (which grants broader privileges and the official verification badge)
+ *    takes place after communicating with the Administrator (`المشرف`).
+ * 3. Preserves Show/Hide password toggle, mandatory Student Grade Level,
+ *    mandatory Terms & Conditions checkbox, and zero example names in placeholders.
+ */
+
+import React, { useState, useEffect, FormEvent, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
+import {
+  User,
+  Mail,
+  Lock,
+  Building2,
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  GraduationCap,
+  FileCheck,
+  ShieldCheck,
+  ArrowLeft,
+  Headphones,
+} from "lucide-react";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { signUpSchema } from "@/lib/validators/auth";
+import { useAppPreferences } from "@/context/AppPreferencesContext";
+import { ROLE_VISUAL_CARDS } from "@/components/auth/AuthRoleModal";
+import type { AccountRoleOption } from "@/types/api";
+
+const STUDENT_GRADE_OPTIONS = [
+  "السنة الأولى ابتدائي",
+  "السنة الثانية ابتدائي",
+  "السنة الثالثة ابتدائي",
+  "السنة الرابعة ابتدائي",
+  "السنة الخامسة ابتدائي",
+  "السنة السادسة ابتدائي",
+];
+
+function RegisterContent() {
+  const searchParams = useSearchParams();
+  const roleParam = searchParams
+    ?.get("role")
+    ?.toUpperCase() as AccountRoleOption | undefined;
+
+  const { t } = useAppPreferences();
+
+  const [selectedRole, setSelectedRole] = useState<AccountRoleOption>(
+    roleParam &&
+      ["INSTITUTION", "INSPECTOR", "TEACHER", "STUDENT"].includes(roleParam)
+      ? roleParam
+      : "TEACHER"
+  );
+
+  useEffect(() => {
+    if (
+      roleParam &&
+      ["INSTITUTION", "INSPECTOR", "TEACHER", "STUDENT"].includes(roleParam)
+    ) {
+      setSelectedRole(roleParam);
+    }
+  }, [roleParam]);
+
+  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
+  const [school, setSchool] = useState("");
+  const [studentGrade, setStudentGrade] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+
+  const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const handleGoogleRegister = async () => {
+    try {
+      setGoogleLoading(true);
+      setError(null);
+      const supabase = createSupabaseBrowserClient();
+      const callbackUrl = `${window.location.origin}/api/auth/callback?role=${encodeURIComponent(
+        selectedRole
+      )}&next=/`;
+
+      const { data, error: oauthErr } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: callbackUrl,
+          skipBrowserRedirect: true,
+          queryParams: {
+            access_type: "offline",
+            prompt: "select_account",
+          },
+        },
+      });
+
+      if (oauthErr) {
+        setError(
+          "مزود Google غير مفعّل في إعدادات Supabase الحالية أو تعذر الاتصال به. يرجى إنشاء الحساب باستخدام النموذج المباشر أدناه."
+        );
+        setGoogleLoading(false);
+        return;
+      }
+
+      if (data?.url) {
+        if (window.top && window.top !== window.self) {
+          window.top.location.href = data.url;
+        } else {
+          window.location.href = data.url;
+        }
+      }
+    } catch {
+      setError("تعذر بدء التسجيل بحساب Google. يرجى إكمال التسجيل بالنموذج المباشر أدناه.");
+      setGoogleLoading(false);
+    }
+  };
+  const [error, setError] = useState<string | null>(null);
+  const [registeredSuccessfully, setRegisteredSuccessfully] = useState(false);
+
+  const activeCard =
+    ROLE_VISUAL_CARDS.find((c) => c.role === selectedRole) ||
+    ROLE_VISUAL_CARDS[2];
+  const ActiveIcon = activeCard.icon;
+  const roleCopy = t.roles[selectedRole];
+
+  const handleRegister = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (
+      (selectedRole === "INSTITUTION" || selectedRole === "INSPECTOR") &&
+      !school.trim()
+    ) {
+      setError(roleCopy.orgLabel);
+      return;
+    }
+
+    if (selectedRole === "STUDENT" && !studentGrade.trim()) {
+      setError("يرجى اختيار المستوى الدراسي للتلميذ (حقل إجباري)");
+      return;
+    }
+
+    if (!acceptedTerms) {
+      setError("يجب الموافقة على الشروط والأحكام قبل إنشاء الحساب");
+      return;
+    }
+
+    const parsed = signUpSchema.safeParse({
+      name,
+      username: username.trim() || undefined,
+      email,
+      password,
+      school:
+        selectedRole === "STUDENT"
+          ? [school.trim(), studentGrade.trim()].filter(Boolean).join(" — ")
+          : school.trim() || undefined,
+      studentGrade: selectedRole === "STUDENT" ? studentGrade.trim() : undefined,
+      role: selectedRole,
+      acceptedTerms: true,
+    });
+
+    if (!parsed.success) {
+      setError(parsed.error.errors[0]?.message || "يرجى التأكد من صحة البيانات");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const fallbackUname =
+        parsed.data.username ||
+        `${parsed.data.email.split("@")[0].toLowerCase().replace(/[^a-z0-9_.]/g, "")}`;
+
+      const supabase = createSupabaseBrowserClient();
+      const { error: signUpError } = await supabase.auth.signUp({
+        email: parsed.data.email,
+        password: parsed.data.password,
+        options: {
+          data: {
+            name: parsed.data.name,
+            username: fallbackUname,
+            school: parsed.data.school,
+            student_grade: parsed.data.studentGrade,
+            role: selectedRole,
+          },
+        },
+      });
+
+      if (signUpError) {
+        setError(signUpError.message);
+        return;
+      }
+
+      // Show the Post-Registration Thank You & Identity Verification Notice Screen
+      setRegisteredSuccessfully(true);
+    } catch {
+      setError("حدث خطأ أثناء إنشاء الحساب");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (registeredSuccessfully) {
+    return (
+      <div className="max-w-xl w-full mx-auto" dir={t.dir}>
+        <div className="bg-white dark:bg-slate-900 border-2 border-emerald-200 dark:border-emerald-800 rounded-3xl p-8 shadow-xl text-center space-y-6">
+          <div className="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm">
+            <CheckCircle2 className="w-10 h-10" />
+          </div>
+
+          <div className="space-y-2">
+            <span className="inline-block px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-extrabold border border-emerald-200">
+              تم إنشاء الحساب بنجاح
+            </span>
+            <h1 className="text-2xl font-black text-slate-900 dark:text-white">
+              شكراً لك على التسجيل في منصة المسند!
+            </h1>
+            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+              مرحباً بك <strong>{name}</strong> في فضاء ({roleCopy.title}). يمكنك الآن الدخول إلى حسابك والاستفادة من خدمات المنصة.
+            </p>
+          </div>
+
+          {/* Post-Registration Note on Identity Verification */}
+          <div className="p-5 rounded-2xl bg-blue-50/80 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 text-start space-y-2">
+            <div className="flex items-center gap-2 text-blue-900 dark:text-blue-200 font-extrabold text-sm">
+              <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0" />
+              <span>ملاحظة حول إثبات الهوية وعلامة التوثيق</span>
+            </div>
+            <p className="text-xs text-blue-800 dark:text-blue-200/90 leading-relaxed">
+              إن عملية إثبات الهوية — التي تمنح حسابك صلاحيات أكبر وتضيف لك <strong>علامة التوثيق الرسمية</strong> — تتم بعد التواصل مع المشرف للتثبت من الهوية وإعطائك علامة التوثيق.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <Link
+              href="/"
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm inline-flex items-center justify-center gap-2 shadow-sm transition"
+            >
+              <span>الدخول إلى المنصة الآن</span>
+              <ArrowLeft className="w-4 h-4" />
+            </Link>
+            <Link
+              href="/support"
+              className="w-full sm:w-auto px-5 py-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs inline-flex items-center justify-center gap-2 transition"
+            >
+              <Headphones className="w-4 h-4 text-blue-600" />
+              <span>التواصل مع المشرف لإثبات الهوية</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-4xl w-full mx-auto space-y-8" dir={t.dir}>
+      {/* Top 4-Role Selector Cards */}
+      <div className="space-y-3 text-center">
+        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+          {t.authModal.registerTitle}
+        </h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          اختر نوع الحساب المناسب لك وأكمل البيانات الأساسية للتسجيل في المنصة
+        </p>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-3">
+          {ROLE_VISUAL_CARDS.map((card) => {
+            const Icon = card.icon;
+            const isSelected = selectedRole === card.role;
+            const cardText = t.roles[card.role];
+
+            return (
+              <button
+                key={card.role}
+                type="button"
+                onClick={() => setSelectedRole(card.role)}
+                className={`relative text-start p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between gap-2 ${
+                  isSelected
+                    ? "bg-blue-50/70 dark:bg-blue-950/40 border-blue-600 shadow-md"
+                    : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300"
+                }`}
+              >
+                <div className="flex items-center justify-between w-full">
+                  <div
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center ${card.iconBg}`}
+                  >
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  {isSelected && (
+                    <CheckCircle2 className="w-5 h-5 text-blue-600" />
+                  )}
+                </div>
+                <div>
+                  <div className="font-extrabold text-sm text-slate-900 dark:text-white">
+                    {cardText.title}
+                  </div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5">
+                    {cardText.subtitle}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Clean Registration Form Card (Zero code alerts or verification warnings during signup) */}
+      <div className="max-w-xl mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-lg">
+        <div className="flex items-center gap-3.5 pb-5 mb-6 border-b border-slate-100 dark:border-slate-800">
+          <div
+            className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-md ${activeCard.iconBg}`}
+          >
+            <ActiveIcon className="w-6 h-6" />
+          </div>
+          <div>
+            <span
+              className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border mb-1 ${activeCard.badgeStyle}`}
+            >
+              {roleCopy.badge}
+            </span>
+            <h2 className="text-xl font-black text-slate-900 dark:text-white">
+              {roleCopy.title}
+            </h2>
+          </div>
+        </div>
+
+        {error && (
+          <div className="mb-5 p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleRegister} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+              {roleCopy.nameLabel}
+            </label>
+            <div className="relative">
+              <User className="w-4 h-4 text-slate-400 absolute start-3.5 top-3.5" />
+              <input
+                type="text"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={roleCopy.namePlaceholder}
+                className="w-full ps-10 pe-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:border-blue-600"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+              اسم المستخدم (المعرف الشخصي للإشارة @username)
+            </label>
+            <div className="relative">
+              <span className="text-slate-400 absolute start-3.5 top-2.5 font-mono text-sm font-bold">@</span>
+              <input
+                type="text"
+                value={username}
+                dir="ltr"
+                onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-zA-Z0-9_.]/g, ""))}
+                placeholder="username"
+                className="w-full ps-9 pe-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-mono outline-none focus:border-blue-600"
+              />
+            </div>
+          </div>
+
+          {selectedRole === "STUDENT" && (
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                {t.authForm.studentGradeLabel}
+              </label>
+              <div className="relative">
+                <GraduationCap className="w-4 h-4 text-slate-400 absolute start-3.5 top-3.5" />
+                <select
+                  required
+                  value={studentGrade}
+                  onChange={(e) => setStudentGrade(e.target.value)}
+                  className="w-full ps-10 pe-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:border-blue-600"
+                >
+                  <option value="">{t.authForm.studentGradePlaceholder}</option>
+                  {STUDENT_GRADE_OPTIONS.map((g) => (
+                    <option key={g} value={g}>
+                      {g}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+              {roleCopy.orgLabel}
+            </label>
+            <div className="relative">
+              <Building2 className="w-4 h-4 text-slate-400 absolute start-3.5 top-3.5" />
+              <input
+                type="text"
+                required={
+                  selectedRole === "INSTITUTION" || selectedRole === "INSPECTOR"
+                }
+                value={school}
+                onChange={(e) => setSchool(e.target.value)}
+                placeholder={roleCopy.orgPlaceholder}
+                className="w-full ps-10 pe-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:border-blue-600"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+              {t.authForm.emailLabel}
+            </label>
+            <div className="relative">
+              <Mail className="w-4 h-4 text-slate-400 absolute start-3.5 top-3.5" />
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="أدخل البريد الإلكتروني"
+                className="w-full ps-10 pe-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:border-blue-600"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+              {t.authForm.passwordLabel} ({t.authForm.passwordHint})
+            </label>
+            <div className="relative">
+              <Lock className="w-4 h-4 text-slate-400 absolute start-3.5 top-3.5" />
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                minLength={8}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="أدخل كلمة المرور"
+                className="w-full ps-10 pe-10 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:border-blue-600"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute end-3 top-2.5 p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer"
+                title={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
+              >
+                {showPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          <div className="pt-2">
+            <label className="flex items-start gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                required
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="mt-1 w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+              />
+              <span className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                {t.authForm.termsLabel}{" "}
+                <button
+                  type="button"
+                  onClick={() => setShowTermsModal(true)}
+                  className="text-blue-600 font-bold underline cursor-pointer"
+                >
+                  (عرض الشروط والأحكام)
+                </button>
+              </span>
+            </label>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold text-sm flex items-center justify-center gap-2 transition cursor-pointer shadow-sm"
+          >
+            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+            <span>
+              {t.authForm.submitRegister} ({roleCopy.title})
+            </span>
+          </button>
+        </form>
+
+        <div className="my-5 flex items-center gap-3">
+          <div className="h-px bg-slate-200 dark:bg-slate-700 flex-1" />
+          <span className="text-xs text-slate-400">أو التسجيل السريع عبر</span>
+          <div className="h-px bg-slate-200 dark:bg-slate-700 flex-1" />
+        </div>
+
+        <button
+          type="button"
+          disabled={googleLoading}
+          onClick={handleGoogleRegister}
+          className="w-full py-3 px-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 text-slate-800 dark:text-slate-100 font-extrabold text-sm flex items-center justify-center gap-2.5 transition cursor-pointer shadow-sm"
+        >
+          {googleLoading ? (
+            <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+          ) : (
+            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z" />
+              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z" />
+              <path fill="#FBBC05" d="M5.27 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.98-3.09z" />
+              <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.98 3.09c.95-2.85 3.6-4.96 6.73-4.96z" />
+            </svg>
+          )}
+          <span>التسجيل أو المتابعة باستخدام حساب جوجل (Google)</span>
+        </button>
+
+        <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 text-center text-xs text-slate-600 dark:text-slate-400">
+          <Link
+            href={`/login?role=${selectedRole}`}
+            className="text-blue-600 dark:text-blue-400 font-bold hover:underline"
+          >
+            {t.authModal.switchToLogin}
+          </Link>
+        </div>
+      </div>
+
+      {/* Terms & Conditions Modal */}
+      {showTermsModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl">
+            <div className="flex items-center gap-2 text-slate-900 dark:text-white font-extrabold text-base border-b pb-3 border-slate-100 dark:border-slate-800">
+              <FileCheck className="w-5 h-5 text-blue-600" />
+              <span>شروط وأحكام استخدام منصة المسند</span>
+            </div>
+            <div className="text-xs text-slate-600 dark:text-slate-300 space-y-2.5 leading-relaxed max-h-72 overflow-y-auto">
+              <p>
+                1. <strong>الموثوقية التربوية:</strong> يلتزم جميع الناشرين بنشر محتوى علمي وبيداغوجي سليم يتوافق مع البرامج الرسمية.
+              </p>
+              <p>
+                2. <strong>إثبات الهوية والتوثيق:</strong> يُنشأ الحساب بشكل عادي ومباشر، وتتم عملية إثبات الهوية للحصول على صلاحيات أكبر وعلامة التوثيق بعد التواصل مع المشرف للتثبت من الهوية.
+              </p>
+              <p>
+                3. <strong>تعديل النشرات المعتمدة:</strong> في حال حصول النشرة على شارة اعتماد من المتفقد، فإن تعديل العنوان أو الوصف لا يؤثر على الشارة، بينما استبدال الملف يلغي شارة الاعتماد تلقائياً لحين إعادة المراجعة.
+              </p>
+              <p>
+                4. <strong>احترام الملكية الفكرية والضوابط:</strong> يحق لإدارة المنصة حظر أي حساب أو حذف أي منشور يثبت انتهاكه لحقوق النشر أو ضوابط المنصة.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setAcceptedTerms(true);
+                  setShowTermsModal(false);
+                }}
+                className="px-5 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold cursor-pointer"
+              >
+                قرأت وأوافق على الشروط
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <main className="min-h-[85vh] flex items-center justify-center px-4 py-10">
+      <Suspense
+        fallback={
+          <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl p-12 flex flex-col items-center justify-center gap-3">
+            <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+          </div>
+        }
+      >
+        <RegisterContent />
+      </Suspense>
+    </main>
+  );
+}
+```
+
+---
+
+### File: `src/app/(auth)/register/inspector/page.tsx`
+
+```typescript
+import { redirect } from "next/navigation";
+
+export default function InspectorRegisterRedirectPage() {
+  redirect("/register?role=INSPECTOR");
+}
+
+```
+
+---
+
+### File: `src/app/inspector/dashboard/page.tsx`
+
+```typescript
+"use client";
+
+/**
+ * Inspector Dedicated Dashboard (لوحة تحكم المتفقد التربوي) — Al-Musnad v10.0
+ *
+ * المستوى الأول في سلم الأولوية الرقابية والبيداغوجية (القاعدة):
+ * - إذا دخل المشرف العام (`ADMIN`) إلى هذه اللوحة، يظهر له شريط التنقل العلوي `SupervisoryHierarchyBar`
+ *   الذي يمكّنه بضغطة زر من الرجوع فوراً إلى «لوحة المشرف العام» أو الانتقال إلى «لوحة المسؤول».
+ * - إذا دخل المتفقد التربوي (`INSPECTOR`)، يكتفي بالصلاحيات البيداغوجية الموجودة له فقط في هذه اللوحة الحصرية له
+ *   دون أي قدرة على الانتقال إلى لوحة المسؤول أو لوحة المشرف العام.
+ */
+
+import React, { useEffect, useState, useMemo, FormEvent } from "react";
+import Link from "next/link";
+import {
+  BadgeCheck,
+  Lock,
+  Flag,
+  Search,
+  RefreshCw,
+  Loader2,
+  AlertTriangle,
+  Send,
+  Pin,
+  X,
+} from "lucide-react";
+import {
+  getInspectorDashboardData,
+  toggleWorksheetEndorsementAction,
+  addInspectorCommentAction,
+  submitInspectorDirectReportToAdminAction,
+} from "@/actions/inspector.actions";
+import MentionText from "@/components/ui/MentionText";
+import SupervisoryHierarchyBar from "@/components/layout/SupervisoryHierarchyBar";
+
+type InspectorDashboardData = Awaited<ReturnType<typeof getInspectorDashboardData>>;
+type InspectorWorksheet = InspectorDashboardData["worksheets"][number];
+
+export default function InspectorDashboardPage() {
+  const [data, setData] = useState<InspectorDashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [activeTab, setActiveTab] = useState<
+    "worksheets" | "my_comments" | "direct_reports"
+  >("worksheets");
+
+  const [search, setSearch] = useState("");
+  const [endorseFilter, setEndorseFilter] = useState<"ALL" | "ENDORSED" | "UNENDORSED" | "DRAFT">("ALL");
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [bannerMessage, setBannerMessage] = useState<string | null>(null);
+
+  // Modal for Pinned Top Comment or Private Comment to Publisher
+  const [selectedWorksheet, setSelectedWorksheet] = useState<InspectorWorksheet | null>(null);
+  const [commentMode, setCommentMode] = useState<"PINNED_PUBLIC" | "PRIVATE_PUBLISHER">("PINNED_PUBLIC");
+  const [commentText, setCommentText] = useState("");
+  const [submittingComment, setSubmittingComment] = useState(false);
+
+  // Modal for Direct Report to Top Admin
+  const [reportTargetWs, setReportTargetWs] = useState<InspectorWorksheet | null>(null);
+  const [reportReason, setReportReason] = useState("أخطاء علمية أو بيداغوجية جسيمة تستوجب تدخل المشرف");
+  const [reportDetails, setReportDetails] = useState("");
+  const [submittingReport, setSubmittingReport] = useState(false);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await getInspectorDashboardData();
+      setData(res);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "غير مصرح لك بالدخول إلى لوحة تحكم المتفقد التربوي"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const inspectorExclusiveWorksheets = useMemo(() => {
+    if (!data) return [];
+    return data.worksheets.filter(
+      (ws) => ws.uploader.role === "INSPECTOR"
+    );
+  }, [data]);
+
+  const filteredWorksheets = useMemo(() => {
+    if (!data) return [];
+    return data.worksheets.filter((ws) => {
+      if (endorseFilter === "ENDORSED" && !ws.isEndorsed) return false;
+      if (endorseFilter === "UNENDORSED" && ws.isEndorsed) return false;
+      if (endorseFilter === "DRAFT" && ws.status !== "DRAFT") return false;
+
+      if (search.trim()) {
+        const q = search.trim().toLowerCase();
+        const title = (ws.titleAr || ws.title).toLowerCase();
+        const uploader = ws.uploader.name.toLowerCase();
+        const uname = (ws.uploader.username || "").toLowerCase();
+        return title.includes(q) || uploader.includes(q) || uname.includes(q);
+      }
+      return true;
+    });
+  }, [data, endorseFilter, search]);
+
+  const handleToggleEndorse = async (worksheetId: string) => {
+    try {
+      setActionLoadingId(worksheetId);
+      await toggleWorksheetEndorsementAction(worksheetId);
+      await loadData();
+      setBannerMessage("تم تحديث حالة التوثيق البيداغوجي للمنشور بنجاح.");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "فشل تحديث التوثيق البيداغوجي");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleSubmitComment = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!selectedWorksheet || !commentText.trim()) return;
+    try {
+      setSubmittingComment(true);
+      await addInspectorCommentAction({
+        worksheetId: selectedWorksheet.id,
+        comment: commentText.trim(),
+        isPrivateToPublisher: commentMode === "PRIVATE_PUBLISHER",
+      });
+      setBannerMessage(
+        commentMode === "PRIVATE_PUBLISHER"
+          ? `تم إرسال التعليق الخاص مباشرة إلى الناشر (${selectedWorksheet.uploader.name}) بنجاح.`
+          : "تم نشر تعليق المتفقد وتثبيته في صدارة المنشور بنجاح."
+      );
+      setSelectedWorksheet(null);
+      setCommentText("");
+      await loadData();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "تعذر إرسال التعليق");
+    } finally {
+      setSubmittingComment(false);
+    }
+  };
+
+  const handleSubmitDirectReport = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!reportTargetWs) return;
+    try {
+      setSubmittingReport(true);
+      await submitInspectorDirectReportToAdminAction({
+        targetType: "WORKSHEET",
+        targetWorksheetId: reportTargetWs.id,
+        targetUserId: reportTargetWs.uploader.id,
+        reason: reportReason,
+        details: reportDetails,
+      });
+      setBannerMessage("🚨 تم رفع الإبلاغ المباشر إلى المشرف العام في القمة بنجاح.");
+      setReportTargetWs(null);
+      setReportDetails("");
+      await loadData();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "تعذر رفع البلاغ للمشرف");
+    } finally {
+      setSubmittingReport(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-3">
+        <Loader2 className="h-9 w-9 animate-spin text-amber-600" />
+        <p className="text-sm font-bold text-slate-600 dark:text-slate-300">
+          جاري تحميل لوحة تحكم المتفقد التربوي...
+        </p>
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-16 text-center" dir="rtl">
+        <div className="rounded-3xl border border-red-200 bg-red-50 p-8 dark:border-red-900/50 dark:bg-red-950/30">
+          <AlertTriangle className="mx-auto mb-3 h-10 w-10 text-red-600" />
+          <h1 className="text-lg font-extrabold text-red-900 dark:text-red-200">
+            وصول مقيد — لوحة تحكم حصرية للمتفقد التربوي
+          </h1>
+          <p className="mt-2 text-xs text-red-700 dark:text-red-300">{error}</p>
+          <p className="mt-2 text-[11px] text-slate-600 dark:text-slate-400">
+            لا يمكن للمسؤول الإداري أو غيره الانتقال إلى لوحة المتفقد؛ كل رتبة تكتفي بالصلاحيات واللوحة المخصصة لها فقط.
+          </p>
+          <Link
+            href="/"
+            className="mt-5 inline-block rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-bold text-white"
+          >
+            العودة للرئيسية
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div dir="rtl" className="min-h-screen bg-slate-50/70 pb-16 pt-8 dark:bg-slate-950">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Supervisory Hierarchy Bar: Shows Admin Switcher + "Return to Admin Dashboard" ONLY if viewerRole === "ADMIN", otherwise shows Exclusive Inspector Scope Notice */}
+        <SupervisoryHierarchyBar
+          viewerRole={data.inspector.role}
+          currentDashboard="INSPECTOR"
+        />
+
+        {/* Header */}
+        <div className="mb-8 rounded-3xl border border-amber-200/80 bg-gradient-to-l from-amber-50 via-white to-amber-50/40 p-6 shadow-sm dark:border-amber-900/40 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/20">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-extrabold text-slate-900 sm:text-3xl dark:text-white">
+                لوحة تحكم المتفقد التربوي ({data.inspector.name})
+              </h1>
+            </div>
+            <button
+              type="button"
+              onClick={loadData}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+            >
+              <RefreshCw className="h-4 w-4" />
+              تحديث البيانات
+            </button>
+          </div>
+
+          {/* KPI Stats */}
+          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+              <span className="text-[11px] font-bold text-slate-500">إجمالي المنشورات للرقابة</span>
+              <p className="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
+                {data.stats.totalWorksheets}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-900/50 dark:bg-amber-950/30">
+              <span className="text-[11px] font-bold text-amber-900 dark:text-amber-300">
+                منشورات موثقة بيداغوجياً
+              </span>
+              <p className="mt-1 text-2xl font-extrabold text-amber-700 dark:text-amber-300">
+                {data.stats.endorsedWorksheetsCount}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-4 dark:border-blue-900/50 dark:bg-blue-950/30">
+              <span className="text-[11px] font-bold text-blue-900 dark:text-blue-300">
+                تعليقاتي المتصدرة والخاصة
+              </span>
+              <p className="mt-1 text-2xl font-extrabold text-blue-700 dark:text-blue-300">
+                {data.myComments.length}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-rose-200 bg-rose-50/60 p-4 dark:border-rose-900/50 dark:bg-rose-950/30">
+              <span className="text-[11px] font-bold text-rose-900 dark:text-rose-300">
+                إبلاغاتي المباشرة للمشرف
+              </span>
+              <p className="mt-1 text-2xl font-extrabold text-rose-700 dark:text-rose-300">
+                {data.stats.myDirectReportsCount}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Dedicated Top Section for Inspector-Only Publications (للتفاعل بين المتفقدين) */}
+        <div className="mb-8 rounded-3xl border-2 border-amber-300/90 bg-white p-6 shadow-sm dark:border-amber-800/70 dark:bg-slate-900">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-amber-100 pb-4 dark:border-slate-800">
+            <div>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-0.5 text-[11px] font-extrabold text-amber-900 dark:bg-amber-950 dark:text-amber-300">
+                🏅 قسم التفاعل البيداغوجي الخاص بالمتفقدين
+              </span>
+              <h2 className="mt-1 text-lg font-black text-slate-900 dark:text-white">
+                منشورات وتوجيهات المتفقدين التربويين ({inspectorExclusiveWorksheets.length})
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                يعرض هذا القسم العلوي جميع المنشورات والوثائق المرفوعة من قِبل المتفقدين التربويين لتسهيل التنسيق والتفاعل المباشر بين هيئة التفقد.
+              </p>
+            </div>
+            <Link
+              href="/upload?audience=SAME_ROLE_ONLY"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 px-4 py-2.5 text-xs font-extrabold text-white shadow-sm transition"
+            >
+              + نشر وثيقة خاصة بالمتفقدين
+            </Link>
+          </div>
+
+          {inspectorExclusiveWorksheets.length === 0 ? (
+            <p className="py-6 text-center text-xs text-slate-500 dark:text-slate-400">
+              لا توجد منشورات خاصة بالمتفقدين بعد. بادر بنشر أول توجيه أو وثيقة لزملائك المتفقدين.
+            </p>
+          ) : (
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {inspectorExclusiveWorksheets.slice(0, 6).map((ws) => (
+                <Link
+                  key={ws.id}
+                  href={`/worksheet/${ws.id}`}
+                  className="flex flex-col justify-between rounded-2xl border border-amber-200/80 bg-amber-50/40 p-4 transition hover:border-amber-500 hover:bg-white dark:border-slate-800 dark:bg-slate-800/50 dark:hover:border-amber-500"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2 text-[10px] font-bold text-amber-800 dark:text-amber-300">
+                      <span>{ws.subject.nameAr} • {ws.grade.nameAr}</span>
+                      <span className="rounded-md bg-amber-200/70 dark:bg-amber-950 px-2 py-0.5">
+                        {ws.category.nameAr}
+                      </span>
+                    </div>
+                    <h3 className="mt-1.5 text-xs font-extrabold text-slate-900 dark:text-white line-clamp-2">
+                      {ws.titleAr || ws.title}
+                    </h3>
+                  </div>
+                  <div className="mt-3 pt-2 border-t border-amber-200/60 dark:border-slate-700 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                    <span>المتفقد: {ws.uploader.name}</span>
+                    <span className="font-bold text-amber-700 dark:text-amber-400">معاينة ←</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {bannerMessage && (
+          <div className="mb-6 flex items-center justify-between rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3.5 text-xs font-bold text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300">
+            <span>✓ {bannerMessage}</span>
+            <button type="button" onClick={() => setBannerMessage(null)}>✕</button>
+          </div>
+        )}
+
+        {/* Tabs */}
+        <div className="mb-6 flex flex-wrap gap-2 border-b border-slate-200 pb-3 dark:border-slate-800">
+          <button
+            type="button"
+            onClick={() => setActiveTab("worksheets")}
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition ${
+              activeTab === "worksheets"
+                ? "bg-amber-600 text-white shadow-sm"
+                : "bg-white text-slate-600 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300"
+            }`}
+          >
+            <BadgeCheck className="h-4 w-4" />
+            توثيق المنشورات والتعليق (في الصدارة / خاص للناشر)
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("my_comments")}
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition ${
+              activeTab === "my_comments"
+                ? "bg-amber-600 text-white shadow-sm"
+                : "bg-white text-slate-600 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300"
+            }`}
+          >
+            <Pin className="h-4 w-4" />
+            سجل تعليقاتي المتصدرة والخاصة ({data.myComments.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("direct_reports")}
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition ${
+              activeTab === "direct_reports"
+                ? "bg-amber-600 text-white shadow-sm"
+                : "bg-white text-slate-600 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300"
+            }`}
+          >
+            <Flag className="h-4 w-4" />
+            الإبلاغات المرفوعة مباشرة للمشرف ({data.myReports.length})
+          </button>
+        </div>
+
+        {/* TAB 1: WORKSHEETS ENDORSEMENT & COMMENTS */}
+        {activeTab === "worksheets" && (
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex flex-wrap gap-2">
+                {(
+                  [
+                    { key: "ALL", label: "الكل" },
+                    { key: "ENDORSED", label: "✓ موثق بيداغوجياً" },
+                    { key: "UNENDORSED", label: "بانتظار التوثيق البيداغوجي" },
+                    { key: "DRAFT", label: "⏳ ملفات وورد/صور قيد التحويل" },
+                  ] as const
+                ).map((f) => (
+                  <button
+                    key={f.key}
+                    type="button"
+                    onClick={() => setEndorseFilter(f.key)}
+                    className={`rounded-xl px-3.5 py-2 text-xs font-bold transition ${
+                      endorseFilter === f.key
+                        ? "bg-amber-600 text-white"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+              <div className="relative w-full sm:w-72">
+                <Search className="pointer-events-none absolute right-3 top-2.5 h-4 w-4 text-slate-400" />
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="ابحث في المنشورات أو @username..."
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-3 pr-9 text-xs text-slate-900 focus:border-amber-500 focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                />
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <div className="overflow-x-auto">
+                <table className="w-full text-right text-xs">
+                  <thead className="border-b border-slate-200 bg-slate-50 font-bold text-slate-600 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-300">
+                    <tr>
+                      <th className="px-5 py-4">المنشور التربوي</th>
+                      <th className="px-4 py-4">الناشر (@username)</th>
+                      <th className="px-4 py-4">المستوى / المادة</th>
+                      <th className="px-4 py-4">حالة التوثيق البيداغوجي</th>
+                      <th className="px-5 py-4 text-left">صلاحيات المتفقد</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {filteredWorksheets.map((ws) => {
+                      const uname =
+                        ws.uploader.username ||
+                        `${ws.uploader.email.split("@")[0].toLowerCase()}`;
+                      return (
+                        <tr key={ws.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+                          <td className="px-5 py-4">
+                            <Link
+                              href={`/worksheet/${ws.id}`}
+                              className="font-extrabold text-slate-900 hover:text-amber-600 dark:text-white"
+                            >
+                              {ws.titleAr || ws.title}
+                            </Link>
+                            {ws.status === "DRAFT" && (
+                              <span className="mr-2 rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-900">
+                                مسودة قيد التحويل لـ PDF
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-4">
+                            <Link
+                              href={`/publisher/${ws.uploader.id}`}
+                              className="font-bold text-slate-800 hover:text-blue-600 dark:text-slate-200"
+                            >
+                              {ws.uploader.name}
+                            </Link>
+                            <div>
+                              <Link
+                                href={`/u/${uname}`}
+                                dir="ltr"
+                                className="font-mono text-[11px] font-bold text-blue-600 hover:underline dark:text-blue-400"
+                              >
+                                @{uname}
+                              </Link>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 font-semibold text-slate-600 dark:text-slate-300">
+                            {ws.grade.nameAr} — {ws.subject.nameAr}
+                          </td>
+                          <td className="px-4 py-4">
+                            {ws.isEndorsed ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-[11px] font-extrabold text-amber-900 dark:bg-amber-950/70 dark:text-amber-300">
+                                <BadgeCheck className="h-3.5 w-3.5" />
+                                موثق بيداغوجياً
+                              </span>
+                            ) : (
+                              <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                                غير موثق بعد
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-5 py-4">
+                            <div className="flex flex-wrap items-center justify-end gap-1.5">
+                              {/* 1. Endorse Toggle */}
+                              <button
+                                type="button"
+                                disabled={actionLoadingId === ws.id}
+                                onClick={() => handleToggleEndorse(ws.id)}
+                                className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-[11px] font-bold transition ${
+                                  ws.isEndorsed
+                                    ? "border border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100"
+                                    : "bg-emerald-600 text-white hover:bg-emerald-700"
+                                }`}
+                              >
+                                <BadgeCheck className="h-3.5 w-3.5" />
+                                {ws.isEndorsed ? "إلغاء التوثيق" : "توثيق المنشور"}
+                              </button>
+
+                              {/* 2. Pinned Top Comment */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedWorksheet(ws);
+                                  setCommentMode("PINNED_PUBLIC");
+                                  setCommentText("");
+                                }}
+                                className="inline-flex items-center gap-1 rounded-xl border border-blue-200 bg-blue-50 px-3 py-1.5 text-[11px] font-bold text-blue-800 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300"
+                              >
+                                <Pin className="h-3.5 w-3.5" />
+                                تعليق في الصدارة
+                              </button>
+
+                              {/* 3. Private Comment Directly to Publisher */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedWorksheet(ws);
+                                  setCommentMode("PRIVATE_PUBLISHER");
+                                  setCommentText(`@${uname} `);
+                                }}
+                                className="inline-flex items-center gap-1 rounded-xl border border-purple-200 bg-purple-50 px-3 py-1.5 text-[11px] font-bold text-purple-800 hover:bg-purple-100 dark:border-purple-800 dark:bg-purple-950/50 dark:text-purple-300"
+                              >
+                                <Lock className="h-3.5 w-3.5" />
+                                تعليق خاص للناشر
+                              </button>
+
+                              {/* 4. Direct Report to Admin */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setReportTargetWs(ws);
+                                  setReportDetails("");
+                                }}
+                                className="inline-flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-[11px] font-bold text-rose-700 hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-300"
+                              >
+                                <Flag className="h-3.5 w-3.5" />
+                                إبلاغ للمشرف
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 2: MY PINNED & PRIVATE COMMENTS */}
+        {activeTab === "my_comments" && (
+          <div className="space-y-3">
+            {data.myComments.length === 0 ? (
+              <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-900">
+                لم تقم بإضافة تعليقات متصدرة أو تعليقات خاصة للناشرين بعد.
+              </div>
+            ) : (
+              data.myComments.map((c) => (
+                <div
+                  key={c.id}
+                  className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                >
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      {c.isPrivateToPublisher ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-3 py-1 text-[11px] font-extrabold text-purple-900 dark:bg-purple-950/70 dark:text-purple-300">
+                          <Lock className="h-3.5 w-3.5" />
+                          تعليق خاص مباشر إلى الناشر ({c.worksheet.uploader.name})
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-[11px] font-extrabold text-amber-900 dark:bg-amber-950/70 dark:text-amber-300">
+                          <Pin className="h-3.5 w-3.5" />
+                          تعليق متفقد مثبت في الصدارة
+                        </span>
+                      )}
+                      <Link
+                        href={`/worksheet/${c.worksheet.id}`}
+                        className="text-xs font-extrabold text-slate-900 hover:text-blue-600 dark:text-white"
+                      >
+                        على المنشور: {c.worksheet.titleAr || c.worksheet.title}
+                      </Link>
+                    </div>
+                    <span className="text-[11px] text-slate-400">
+                      {new Date(c.createdAt).toLocaleDateString("ar-TN")}
+                    </span>
+                  </div>
+                  <p className="text-xs leading-relaxed text-slate-700 dark:text-slate-200">
+                    <MentionText text={c.comment} />
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* TAB 3: DIRECT REPORTS TO ADMIN */}
+        {activeTab === "direct_reports" && (
+          <div className="space-y-3">
+            {data.myReports.length === 0 ? (
+              <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-900">
+                لم تقم برفع أي إبلاغات مباشرة إلى المشرف العام بعد.
+              </div>
+            ) : (
+              data.myReports.map((rep) => (
+                <div
+                  key={rep.id}
+                  className="rounded-2xl border border-rose-200/80 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="rounded-full bg-rose-100 px-3 py-1 text-[11px] font-extrabold text-rose-800 dark:bg-rose-950/70 dark:text-rose-300">
+                      🚨 إبلاغ مباشر للمشرف العام
+                    </span>
+                    <span className="text-[11px] font-bold text-slate-500">
+                      الحالة: {rep.status === "PENDING" ? "قيد مراجعة المشرف" : "تمت المعالجة"}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs font-bold text-slate-900 dark:text-white">
+                    {rep.reason}
+                  </p>
+                  {rep.details && (
+                    <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                      {rep.details}
+                    </p>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Modal: Add Pinned Comment OR Private Comment to Publisher */}
+      {selectedWorksheet && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+            <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
+              <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">
+                {commentMode === "PRIVATE_PUBLISHER"
+                  ? "🔒 رفع تعليق خاص مباشرة إلى الناشر"
+                  : "📌 إضافة تعليق متفقد يظهر في الصدارة"}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setSelectedWorksheet(null)}
+                className="rounded-lg bg-slate-100 p-1 text-slate-500 dark:bg-slate-800"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="mb-4 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setCommentMode("PINNED_PUBLIC")}
+                className={`flex-1 rounded-xl py-2 text-xs font-bold transition ${
+                  commentMode === "PINNED_PUBLIC"
+                    ? "bg-amber-600 text-white"
+                    : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                }`}
+              >
+                📌 تعليق عام في الصدارة
+              </button>
+              <button
+                type="button"
+                onClick={() => setCommentMode("PRIVATE_PUBLISHER")}
+                className={`flex-1 rounded-xl py-2 text-xs font-bold transition ${
+                  commentMode === "PRIVATE_PUBLISHER"
+                    ? "bg-purple-600 text-white"
+                    : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                }`}
+              >
+                🔒 تعليق خاص للناشر فقط
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitComment} className="space-y-4">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                المنشور: <strong>{selectedWorksheet.titleAr || selectedWorksheet.title}</strong> — الناشر:{" "}
+                <strong>{selectedWorksheet.uploader.name}</strong> (يمكنك استخدام <code>@username</code> للإشارة لأي عضو)
+              </p>
+              <textarea
+                rows={4}
+                required
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder={
+                  commentMode === "PRIVATE_PUBLISHER"
+                    ? "اكتب ملاحظتك البيداغوجية الخاصة الموجهة للناشر مباشرة (لا يراها غيره)..."
+                    : "اكتب تعليقك البيداغوجي الذي سيظهر مثبتاً في صدارة التعليقات..."
+                }
+                className="w-full rounded-2xl border border-slate-300 p-3.5 text-xs text-slate-900 focus:border-amber-600 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedWorksheet(null)}
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 dark:border-slate-700 dark:text-slate-300"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingComment}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-5 py-2 text-xs font-bold text-white hover:bg-amber-700"
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  {submittingComment ? "جاري الإرسال..." : "إرسال واعتماد"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Direct Report to Top Admin */}
+      {reportTargetWs && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+            <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
+              <h3 className="text-sm font-extrabold text-rose-700 dark:text-rose-400">
+                🚨 رفع إبلاغ مباشر إلى المشرف العام
+              </h3>
+              <button
+                type="button"
+                onClick={() => setReportTargetWs(null)}
+                className="rounded-lg bg-slate-100 p-1 text-slate-500 dark:bg-slate-800"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitDirectReport} className="space-y-4">
+              <p className="text-xs text-slate-600 dark:text-slate-300">
+                سيصل هذا البلاغ مباشرة إلى إشعارات ولوحة تحكم <strong>المشرف العام</strong> بأولوية قصوى حول المنشور:{" "}
+                <strong>{reportTargetWs.titleAr || reportTargetWs.title}</strong>
+              </p>
+              <div>
+                <label className="mb-1 block text-xs font-bold text-slate-700 dark:text-slate-300">
+                  سبب البلاغ الرقابي *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value)}
+                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-bold text-slate-700 dark:text-slate-300">
+                  تفاصيل وملاحظات المتفقد إلى المشرف
+                </label>
+                <textarea
+                  rows={3}
+                  value={reportDetails}
+                  onChange={(e) => setReportDetails(e.target.value)}
+                  placeholder="اشرح للمشرف العام الإجراء المطلوب..."
+                  className="w-full rounded-xl border border-slate-300 p-3 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setReportTargetWs(null)}
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingReport}
+                  className="rounded-xl bg-rose-600 px-5 py-2 text-xs font-bold text-white hover:bg-rose-700"
+                >
+                  {submittingReport ? "جاري الرفع للمشرف..." : "رفع الإبلاغ للمشرف الآن"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+---
+
+### File: `src/app/moderator/dashboard/page.tsx`
+
+```typescript
+"use client";
+
+/**
+ * Moderator Dedicated Dashboard (لوحة تحكم المسؤول) — Al-Musnad v10.0
+ *
+ * المستوى الثاني في سلم الأولوية الرقابية والإدارية (المسؤول - الوسط):
+ * - إذا دخل المشرف العام (`ADMIN`) إلى هذه اللوحة، يظهر له شريط التنقل العلوي `SupervisoryHierarchyBar`
+ *   الذي يمكّنه بضغطة زر من الرجوع فوراً إلى «لوحة المشرف العام» أو الانتقال إلى «لوحة المتفقد».
+ * - إذا دخل المسؤول الإداري (`MODERATOR`)، يكتفي بالصلاحيات الموجودة له فقط في هذه اللوحة الحصرية له
+ *   دون أي قدرة على الانتقال إلى لوحة المشرف العام أو لوحة المتفقد.
+ */
+
+import React, { useEffect, useState, useMemo, FormEvent } from "react";
+import Link from "next/link";
+import {
+  ShieldAlert,
+  Trash2,
+  Ban,
+  Headphones,
+  Flag,
+  Mail,
+  RefreshCw,
+  Loader2,
+  AlertTriangle,
+  Send,
+  X,
+  Lock,
+} from "lucide-react";
+import {
+  getModeratorDashboardData,
+  deleteWorksheetModeratorAction,
+  updateWorksheetStatusModeratorAction,
+  toggleBanUserModeratorAction,
+  unlockUserAccountModeratorAction,
+  replySupportTicketModeratorAction,
+  resolveReportModeratorAction,
+  sendDirectMessageToPublisherAction,
+} from "@/actions/moderator.actions";
+import MentionText from "@/components/ui/MentionText";
+import { UserPresenceBadge } from "@/components/ui/UserPresenceIndicator";
+import SupervisoryHierarchyBar from "@/components/layout/SupervisoryHierarchyBar";
+
+type ModeratorData = Awaited<ReturnType<typeof getModeratorDashboardData>>;
+type ModeratorPublisher = ModeratorData["publishers"][number];
+
+export default function ModeratorDashboardPage() {
+  const [data, setData] = useState<ModeratorData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [activeTab, setActiveTab] = useState<
+    "worksheets" | "users" | "support" | "reports"
+  >("worksheets");
+
+  const [search, setSearch] = useState("");
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [bannerMessage, setBannerMessage] = useState<string | null>(null);
+  const [replyTexts, setReplyTexts] = useState<Record<string, string>>({});
+
+  // Direct Message Modal State
+  const [dmTargetUser, setDmTargetUser] = useState<ModeratorPublisher | null>(null);
+  const [dmSubject, setDmSubject] = useState("رسالة إدارية مباشرة من مسؤول المنصة");
+  const [dmMessage, setDmMessage] = useState("");
+  const [sendingDm, setSendingDm] = useState(false);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await getModeratorDashboardData();
+      setData(res);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "غير مصرح لك بالدخول إلى لوحة تحكم المسؤول"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const filteredWorksheets = useMemo(() => {
+    if (!data) return [];
+    if (!search.trim()) return data.worksheets;
+    const q = search.trim().toLowerCase();
+    return data.worksheets.filter(
+      (w) =>
+        (w.titleAr || w.title).toLowerCase().includes(q) ||
+        w.uploader.name.toLowerCase().includes(q) ||
+        (w.uploader.username || "").toLowerCase().includes(q)
+    );
+  }, [data, search]);
+
+  const filteredPublishers = useMemo(() => {
+    if (!data) return [];
+    if (!search.trim()) return data.publishers;
+    const q = search.trim().toLowerCase();
+    return data.publishers.filter(
+      (u) =>
+        u.name.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q) ||
+        (u.username || "").toLowerCase().includes(q)
+    );
+  }, [data, search]);
+
+  const handleDeleteWorksheet = async (id: string, title: string) => {
+    if (!window.confirm(`هل أنت متأكد من حذف المنشور "${title}" نهائياً؟`)) return;
+    try {
+      setActionLoadingId(id);
+      await deleteWorksheetModeratorAction(id);
+      setBannerMessage(`تم حذف المنشور "${title}" بنجاح.`);
+      await loadData();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "فشل حذف المنشور");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleToggleBan = async (u: ModeratorPublisher) => {
+    const reason = !u.isBanned
+      ? window.prompt("أدخل سبب حظر المستخدم:", "مخالفة شروط وضوابط النشر في المنصة")
+      : undefined;
+    if (!u.isBanned && reason === null) return;
+
+    try {
+      setActionLoadingId(u.id);
+      await toggleBanUserModeratorAction(u.id, reason || undefined);
+      setBannerMessage(
+        !u.isBanned
+          ? `تم حظر المستخدم (${u.name}) بنجاح.`
+          : `تم رفع الحظر عن المستخدم (${u.name}).`
+      );
+      await loadData();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "تعذر تغيير حالة الحظر");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleSendDirectMessage = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!dmTargetUser || !dmMessage.trim()) return;
+    try {
+      setSendingDm(true);
+      await sendDirectMessageToPublisherAction({
+        targetUserId: dmTargetUser.id,
+        subject: dmSubject,
+        message: dmMessage,
+      });
+      setBannerMessage(`✉️ تم إرسال الرسالة المباشرة إلى الناشر (${dmTargetUser.name}) بنجاح.`);
+      setDmTargetUser(null);
+      setDmMessage("");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "تعذر إرسال الرسالة المباشرة");
+    } finally {
+      setSendingDm(false);
+    }
+  };
+
+  const handleReplyTicket = async (ticketId: string) => {
+    const text = replyTexts[ticketId] || "";
+    if (!text.trim()) return;
+    try {
+      setActionLoadingId(ticketId);
+      await replySupportTicketModeratorAction(ticketId, text, "ANSWERED");
+      setBannerMessage("تم إرسال رد الدعم الفني وإغلاق التذكرة.");
+      await loadData();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "تعذر إرسال الرد");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-3">
+        <Loader2 className="h-9 w-9 animate-spin text-indigo-600" />
+        <p className="text-sm font-bold text-slate-600 dark:text-slate-300">
+          جاري تحميل لوحة تحكم المسؤول...
+        </p>
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-16 text-center" dir="rtl">
+        <div className="rounded-3xl border border-red-200 bg-red-50 p-8 dark:border-red-900/50 dark:bg-red-950/30">
+          <AlertTriangle className="mx-auto mb-3 h-10 w-10 text-red-600" />
+          <h1 className="text-lg font-extrabold text-red-900 dark:text-red-200">
+            وصول مقيد — لوحة تحكم حصرية للمسؤول الإداري
+          </h1>
+          <p className="mt-2 text-xs text-red-700 dark:text-red-300">{error}</p>
+          <p className="mt-2 text-[11px] text-slate-600 dark:text-slate-400">
+            لا يمكن للمتفقد أو غيره الانتقال إلى لوحة المسؤول؛ كل رتبة تكتفي بالصلاحيات واللوحة المخصصة لها فقط.
+          </p>
+          <Link
+            href="/"
+            className="mt-5 inline-block rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-bold text-white"
+          >
+            العودة للرئيسية
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div dir="rtl" className="min-h-screen bg-slate-50/70 pb-16 pt-8 dark:bg-slate-950">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Supervisory Hierarchy Bar: Shows Admin Switcher + "Return to Admin Dashboard" ONLY if viewerRole === "ADMIN", otherwise shows Exclusive Moderator Scope Notice */}
+        <SupervisoryHierarchyBar
+          viewerRole={data.moderator.role}
+          currentDashboard="MODERATOR"
+        />
+
+        {/* Header */}
+        <div className="mb-8 rounded-3xl border border-indigo-200/80 bg-gradient-to-l from-indigo-50 via-white to-indigo-50/40 p-6 shadow-sm dark:border-indigo-900/40 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950/20">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-extrabold text-slate-900 sm:text-3xl dark:text-white">
+                لوحة تحكم المسؤول ({data.moderator.name})
+              </h1>
+            </div>
+            <button
+              type="button"
+              onClick={loadData}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+            >
+              <RefreshCw className="h-4 w-4" />
+              تحديث
+            </button>
+          </div>
+
+          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+              <span className="text-[11px] font-bold text-slate-500">إجمالي المنشورات</span>
+              <p className="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
+                {data.stats.totalWorksheets}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-rose-200 bg-rose-50/60 p-4 dark:border-rose-900/50 dark:bg-rose-950/30">
+              <span className="text-[11px] font-bold text-rose-900 dark:text-rose-300">
+                المستخدمون المحظورون
+              </span>
+              <p className="mt-1 text-2xl font-extrabold text-rose-700 dark:text-rose-300">
+                {data.stats.bannedUsersCount}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/30">
+              <span className="text-[11px] font-bold text-emerald-900 dark:text-emerald-300">
+                تذاكر الدعم الفني المفتوحة
+              </span>
+              <p className="mt-1 text-2xl font-extrabold text-emerald-700 dark:text-emerald-300">
+                {data.stats.openTicketsCount}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-900/50 dark:bg-amber-950/30">
+              <span className="text-[11px] font-bold text-amber-900 dark:text-amber-300">
+                البلاغات قيد المعالجة
+              </span>
+              <p className="mt-1 text-2xl font-extrabold text-amber-700 dark:text-amber-300">
+                {data.stats.pendingReportsCount}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {bannerMessage && (
+          <div className="mb-6 flex items-center justify-between rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3.5 text-xs font-bold text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300">
+            <span>✓ {bannerMessage}</span>
+            <button type="button" onClick={() => setBannerMessage(null)}>✕</button>
+          </div>
+        )}
+
+        {/* Navigation Tabs */}
+        <div className="mb-6 flex flex-wrap gap-2 border-b border-slate-200 pb-3 dark:border-slate-800">
+          <button
+            type="button"
+            onClick={() => setActiveTab("worksheets")}
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition ${
+              activeTab === "worksheets"
+                ? "bg-indigo-600 text-white"
+                : "bg-white text-slate-600 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300"
+            }`}
+          >
+            <Trash2 className="h-4 w-4" />
+            حذف وإدارة المنشورات ({data.worksheets.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("users")}
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition ${
+              activeTab === "users"
+                ? "bg-indigo-600 text-white"
+                : "bg-white text-slate-600 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300"
+            }`}
+          >
+            <Ban className="h-4 w-4" />
+            حظر المستخدمين والتواصل المباشر مع الناشرين ({data.publishers.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("support")}
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition ${
+              activeTab === "support"
+                ? "bg-indigo-600 text-white"
+                : "bg-white text-slate-600 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300"
+            }`}
+          >
+            <Headphones className="h-4 w-4" />
+            إدارة قسم الدعم الفني ({data.stats.openTicketsCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("reports")}
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition ${
+              activeTab === "reports"
+                ? "bg-indigo-600 text-white"
+                : "bg-white text-slate-600 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300"
+            }`}
+          >
+            <Flag className="h-4 w-4" />
+            معالجة البلاغات ({data.stats.pendingReportsCount})
+          </button>
+        </div>
+
+        {/* Search Bar for Worksheets & Users */}
+        {(activeTab === "worksheets" || activeTab === "users") && (
+          <div className="mb-4">
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="ابحث بالاسم أو العنوان أو @username..."
+              className="w-full max-w-md rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs text-slate-900 shadow-sm focus:border-indigo-600 focus:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+            />
+          </div>
+        )}
+
+        {/* TAB 1: DELETE & MANAGE WORKSHEETS */}
+        {activeTab === "worksheets" && (
+          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="overflow-x-auto">
+              <table className="w-full text-right text-xs">
+                <thead className="border-b border-slate-200 bg-slate-50 font-bold text-slate-600 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-300">
+                  <tr>
+                    <th className="px-5 py-4">المنشور</th>
+                    <th className="px-4 py-4">الناشر (@username)</th>
+                    <th className="px-4 py-4">المستوى / المادة</th>
+                    <th className="px-4 py-4">الحالة</th>
+                    <th className="px-5 py-4 text-left">صلاحيات المسؤول</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {filteredWorksheets.map((ws) => {
+                    const uname =
+                      ws.uploader.username ||
+                      ws.uploader.email.split("@")[0].toLowerCase();
+                    return (
+                      <tr key={ws.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+                        <td className="px-5 py-4 font-bold text-slate-900 dark:text-white">
+                          <Link href={`/worksheet/${ws.id}`} className="hover:text-indigo-600">
+                            {ws.titleAr || ws.title}
+                          </Link>
+                        </td>
+                        <td className="px-4 py-4">
+                          <Link
+                            href={`/publisher/${ws.uploader.id}`}
+                            className="font-bold text-slate-800 hover:underline dark:text-slate-200"
+                          >
+                            {ws.uploader.name}
+                          </Link>
+                          <div>
+                            <Link
+                              href={`/u/${uname}`}
+                              dir="ltr"
+                              className="font-mono text-[11px] font-bold text-blue-600 hover:underline"
+                            >
+                              @{uname}
+                            </Link>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 text-slate-600 dark:text-slate-300">
+                          {ws.grade.nameAr} — {ws.subject.nameAr}
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                            {ws.status === "PUBLISHED"
+                              ? "منشور"
+                              : ws.status === "DRAFT"
+                              ? "مسودة قيد التحويل"
+                              : "مؤرشف"}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex items-center justify-end gap-2">
+                            {ws.status !== "PUBLISHED" ? (
+                              <button
+                                type="button"
+                                disabled={actionLoadingId === ws.id}
+                                onClick={async () => {
+                                  setActionLoadingId(ws.id);
+                                  await updateWorksheetStatusModeratorAction(ws.id, "PUBLISHED");
+                                  await loadData();
+                                  setActionLoadingId(null);
+                                }}
+                                className="rounded-xl bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-emerald-700"
+                              >
+                                نشر
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled={actionLoadingId === ws.id}
+                                onClick={async () => {
+                                  setActionLoadingId(ws.id);
+                                  await updateWorksheetStatusModeratorAction(ws.id, "ARCHIVED");
+                                  await loadData();
+                                  setActionLoadingId(null);
+                                }}
+                                className="rounded-xl bg-amber-100 px-3 py-1.5 text-[11px] font-bold text-amber-900 hover:bg-amber-200"
+                              >
+                                أرشفة
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              disabled={actionLoadingId === ws.id}
+                              onClick={() =>
+                                handleDeleteWorksheet(ws.id, ws.titleAr || ws.title)
+                              }
+                              className="inline-flex items-center gap-1 rounded-xl bg-rose-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-rose-700"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              حذف المنشور
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 2: BAN USERS & DIRECT COMMUNICATION WITH PUBLISHERS */}
+        {activeTab === "users" && (
+          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="overflow-x-auto">
+              <table className="w-full text-right text-xs">
+                <thead className="border-b border-slate-200 bg-slate-50 font-bold text-slate-600 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-300">
+                  <tr>
+                    <th className="px-5 py-4">العضو / الناشر</th>
+                    <th className="px-4 py-4">اسم المستخدم (@username)</th>
+                    <th className="px-4 py-4">الرتبة والحالة</th>
+                    <th className="px-4 py-4">التوثيق الرسمي</th>
+                    <th className="px-5 py-4 text-left">التواصل المباشر والحظر</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {filteredPublishers.map((u) => {
+                    const uname =
+                      u.username || u.email.split("@")[0].toLowerCase();
+                    return (
+                      <tr key={u.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+                        <td className="px-5 py-4">
+                          <Link
+                            href={`/publisher/${u.id}`}
+                            className="font-extrabold text-slate-900 hover:text-indigo-600 dark:text-white"
+                          >
+                            {u.name}
+                          </Link>
+                          <p className="text-[11px] text-slate-400">{u.email}</p>
+                        </td>
+                        <td className="px-4 py-4">
+                          <Link
+                            href={`/u/${uname}`}
+                            dir="ltr"
+                            className="rounded-lg bg-blue-50 px-2.5 py-1 font-mono text-xs font-bold text-blue-700 hover:underline dark:bg-blue-950/60 dark:text-blue-300"
+                          >
+                            @{uname}
+                          </Link>
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="font-bold text-slate-700 dark:text-slate-300">
+                              {u.role}
+                            </span>
+                            <UserPresenceBadge
+                              presenceStatus={(u as any).presenceStatus}
+                              lastSeenAt={(u as any).lastSeenAt}
+                              compact
+                            />
+                            {((u as any).lockedAt || ((u as any).failedLoginAttempts ?? 0) >= 6) && (
+                              <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-extrabold text-amber-900 border border-amber-300">
+                                🔒 مقفل (6 محاولات كلمة مرور)
+                              </span>
+                            )}
+                            {u.isBanned && (
+                              <span className="rounded-full bg-rose-100 px-2.5 py-0.5 text-[10px] font-extrabold text-rose-800">
+                                🚫 محظور
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                            <Lock className="h-3 w-3" />
+                            {u.isVerified ? "موثق (بأمر المشرف)" : "التوثيق حصري للمشرف"}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setDmTargetUser(u);
+                                setDmSubject("توجيه إداري مباشر من مسؤول المنصة");
+                                setDmMessage(`مرحباً @${uname}، `);
+                              }}
+                              className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-[11px] font-bold text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-300"
+                            >
+                              <Mail className="h-3.5 w-3.5" />
+                              تواصل مباشر مع الناشر
+                            </button>
+
+                            {((u as any).lockedAt ||
+                              ((u as any).failedLoginAttempts ?? 0) > 0 ||
+                              (u.banReason && u.banReason.includes("قفل"))) && (
+                              <button
+                                type="button"
+                                disabled={actionLoadingId === u.id}
+                                onClick={async () => {
+                                  setActionLoadingId(u.id);
+                                  await unlockUserAccountModeratorAction(u.id);
+                                  setBannerMessage(`🔓 تم فك غلق الحساب وتصفير محاولات كلمة المرور للعضو (${u.name}).`);
+                                  await loadData();
+                                  setActionLoadingId(null);
+                                }}
+                                className="inline-flex items-center gap-1 rounded-xl bg-amber-500 hover:bg-amber-600 px-3 py-1.5 text-[11px] font-extrabold text-white shadow-sm transition"
+                              >
+                                🔓 فك غلق الحساب
+                              </button>
+                            )}
+                            {u.role !== "ADMIN" && u.role !== "MODERATOR" && (
+                              <button
+                                type="button"
+                                disabled={actionLoadingId === u.id}
+                                onClick={() => handleToggleBan(u)}
+                                className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-[11px] font-bold text-white transition ${
+                                  u.isBanned
+                                    ? "bg-emerald-600 hover:bg-emerald-700"
+                                    : "bg-rose-600 hover:bg-rose-700"
+                                }`}
+                              >
+                                <Ban className="h-3.5 w-3.5" />
+                                {u.isBanned ? "رفع الحظر" : "حظر المستخدم"}
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: TECHNICAL SUPPORT MANAGEMENT */}
+        {activeTab === "support" && (
+          <div className="space-y-4">
+            {data.supportTickets.map((t) => (
+              <div
+                key={t.id}
+                className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="max-w-2xl">
+                    <span className="rounded-lg bg-indigo-50 px-2.5 py-1 text-[11px] font-bold text-indigo-700">
+                      {t.category}
+                    </span>
+                    <h3 className="mt-2 text-sm font-extrabold text-slate-900 dark:text-white">
+                      {t.subject}
+                    </h3>
+                    <p className="mt-1 text-xs text-slate-500">
+                      المرسل: {t.name} ({t.email})
+                    </p>
+                    <p className="mt-3 rounded-2xl bg-slate-50 p-3.5 text-xs leading-relaxed text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                      <MentionText text={t.message} />
+                    </p>
+                  </div>
+                  <div className="w-full sm:w-80">
+                    {t.adminReply ? (
+                      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3.5 text-xs text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+                        <p className="font-extrabold">✓ تم الرد:</p>
+                        <p className="mt-1">
+                          <MentionText text={t.adminReply} />
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <textarea
+                          rows={3}
+                          value={replyTexts[t.id] || ""}
+                          onChange={(e) =>
+                            setReplyTexts((prev) => ({ ...prev, [t.id]: e.target.value }))
+                          }
+                          placeholder="اكتب رد قسم الدعم الفني هنا..."
+                          className="w-full rounded-xl border border-slate-300 p-2.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                        />
+                        <button
+                          type="button"
+                          disabled={actionLoadingId === t.id}
+                          onClick={() => handleReplyTicket(t.id)}
+                          className="w-full rounded-xl bg-indigo-600 py-2 text-xs font-bold text-white hover:bg-indigo-700"
+                        >
+                          إرسال الرد وإغلاق التذكرة
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* TAB 4: REPORTS */}
+        {activeTab === "reports" && (
+          <div className="space-y-4">
+            {data.reports.map((rep) => (
+              <div
+                key={rep.id}
+                className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div>
+                    {rep.isInspectorPriority && (
+                      <span className="mb-2 inline-block rounded-full bg-rose-100 px-3 py-1 text-[11px] font-extrabold text-rose-800">
+                        🚨 إبلاغ ذو أولوية مرفوع من المتفقد
+                      </span>
+                    )}
+                    <p className="text-xs font-extrabold text-slate-900 dark:text-white">
+                      السبب: {rep.reason}
+                    </p>
+                    {rep.details && (
+                      <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                        {rep.details}
+                      </p>
+                    )}
+                  </div>
+                  {rep.status === "PENDING" ? (
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await resolveReportModeratorAction(rep.id, "RESOLVED");
+                          await loadData();
+                        }}
+                        className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white"
+                      >
+                        تمت المعالجة ✓
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await resolveReportModeratorAction(rep.id, "DISMISSED");
+                          await loadData();
+                        }}
+                        className="rounded-xl bg-slate-200 px-4 py-2 text-xs font-bold text-slate-700"
+                      >
+                        تجاهل
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="rounded-xl bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                      تمت المراجعة
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Modal: Direct Communication with Publisher */}
+      {dmTargetUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+            <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
+              <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">
+                ✉️ التواصل المباشر مع الناشر ({dmTargetUser.name})
+              </h3>
+              <button
+                type="button"
+                onClick={() => setDmTargetUser(null)}
+                className="rounded-lg bg-slate-100 p-1 text-slate-500 dark:bg-slate-800"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <form onSubmit={handleSendDirectMessage} className="space-y-4">
+              <div>
+                <label className="mb-1 block text-xs font-bold text-slate-700 dark:text-slate-300">
+                  عنوان الرسالة المباشرة *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={dmSubject}
+                  onChange={(e) => setDmSubject(e.target.value)}
+                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-bold text-slate-700 dark:text-slate-300">
+                  نص الرسالة (تصل مباشرة إلى إشعارات الناشر وتدعم الإشارة بـ @username) *
+                </label>
+                <textarea
+                  rows={4}
+                  required
+                  value={dmMessage}
+                  onChange={(e) => setDmMessage(e.target.value)}
+                  className="w-full rounded-xl border border-slate-300 p-3 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDmTargetUser(null)}
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  disabled={sendingDm}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-5 py-2 text-xs font-bold text-white hover:bg-indigo-700"
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  {sendingDm ? "جاري الإرسال..." : "إرسال للناشر"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+---
+
+### File: `src/app/admin/dashboard/page.tsx`
+
+```typescript
+"use client";
+
+/**
+ * Top-Tier Admin Dashboard (لوحة تحكم المشرف العام في القمة) — Al-Musnad v10.0
+ *
+ * المشرف في قمة الهرم يمتلك جميع صلاحيات المتفقد والمسؤول، بالإضافة إلى الميزات الحصرية التالية:
+ * 1. شريط التنقل الموحد بين درجات الإشراف الثلاث (`SupervisoryHierarchyBar`) خاص بالمشرف العام فقط.
+ * 2. تفعيل التوثيق المباشر للحسابات (`toggleVerifyUserAdminAction`) — ميزة حصرية للمشرف!
+ * 3. إنشاء وتوليد أكواد التوثيق في الداشبورد للمشرف (`createVerificationCodeAdminAction`).
+ * 4. التحكم الكامل في الموقع والأدوار وسجل النشاطات والأمن (`AuditLog`).
+ */
+
+import React, { useEffect, useState, useMemo, FormEvent } from "react";
+import Link from "next/link";
+import {
+  ShieldCheck,
+  ShieldAlert,
+  FileText,
+  Users,
+  Search,
+  UserCog,
+  Key,
+  Copy,
+  Check,
+  Loader2,
+  AlertTriangle,
+  RefreshCw,
+  BadgeCheck,
+  Flag,
+  Headphones,
+  Mail,
+  Plus,
+  Send,
+  X,
+} from "lucide-react";
+import {
+  getAdminDashboardData,
+  updateWorksheetStatusAdminAction,
+  deleteWorksheetAdminAction,
+  updateUserRoleAdminAction,
+  approveProfileEditAdminAction,
+  rejectProfileEditAdminAction,
+  toggleBanUserAdminAction,
+  unlockUserAccountAdminAction,
+  toggleVerifyUserAdminAction,
+  createVerificationCodeAdminAction,
+  deleteVerificationCodeAdminAction,
+} from "@/actions/admin.actions";
+import {
+  generateInspectorCodeAdminAction,
+  toggleWorksheetEndorsementAction,
+} from "@/actions/inspector.actions";
+import { sendDirectMessageToPublisherAction } from "@/actions/moderator.actions";
+import {
+  updateReportStatusAdminAction,
+  replySupportTicketAdminAction,
+} from "@/actions/report-support.actions";
+import type { Role } from "@/types";
+import InspectorBadge from "@/components/ui/InspectorBadge";
+import { UserPresenceBadge } from "@/components/ui/UserPresenceIndicator";
+import MentionText from "@/components/ui/MentionText";
+import SupervisoryHierarchyBar from "@/components/layout/SupervisoryHierarchyBar";
+
+type AdminData = Awaited<ReturnType<typeof getAdminDashboardData>>;
+type AdminTeacher = AdminData["teachers"][number];
+
+export default function AdminDashboardPage() {
+  const [data, setData] = useState<AdminData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [activeTab, setActiveTab] = useState<
+    "worksheets" | "teachers" | "codes" | "profile_edits" | "reports" | "support" | "audit"
+  >("worksheets");
+
+  const [auditActionFilter, setAuditActionFilter] = useState<string>("ALL");
+  const [auditSearch, setAuditSearch] = useState<string>("");
+
+  const [worksheetSearch, setWorksheetSearch] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+
+  const [teacherSearch, setTeacherSearch] = useState<string>("");
+  const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
+  const [replyTexts, setReplyTexts] = useState<Record<string, string>>({});
+  const [bannerMessage, setBannerMessage] = useState<string | null>(null);
+
+  // Code Generator State (Exclusive to Admin Dashboard)
+  const [newCodeRole, setNewCodeRole] = useState<Role>("INSPECTOR");
+  const [newCodeNote, setNewCodeNote] = useState<string>("");
+  const [newCodeCount, setNewCodeCount] = useState<number>(1);
+  const [creatingCodes, setCreatingCodes] = useState<boolean>(false);
+
+  // Direct Message Modal State
+  const [dmTargetUser, setDmTargetUser] = useState<AdminTeacher | null>(null);
+  const [dmSubject, setDmSubject] = useState("توجيه مباشر من المشرف العام لمنصة المسند");
+  const [dmMessage, setDmMessage] = useState("");
+  const [sendingDm, setSendingDm] = useState(false);
+
+  const handleCopyCode = async (id: string, code: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedCodeId(id);
+      setTimeout(() => setCopiedCodeId(null), 2000);
+    } catch {
+      // Fallback
+    }
+  };
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await getAdminDashboardData();
+      setData(result);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "غير مصرح لك بالوصول إلى لوحة تحكم المشرف العام"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const filteredWorksheets = useMemo(() => {
+    if (!data) return [];
+    return data.worksheets.filter((ws) => {
+      const matchesStatus =
+        statusFilter === "ALL" ? true : ws.status === statusFilter;
+      const title = (ws.titleAr || ws.title).toLowerCase();
+      const uploaderName = ws.uploader.name.toLowerCase();
+      const uname = (ws.uploader.username || "").toLowerCase();
+      const q = worksheetSearch.trim().toLowerCase();
+      const matchesSearch =
+        !q || title.includes(q) || uploaderName.includes(q) || uname.includes(q);
+      return matchesStatus && matchesSearch;
+    });
+  }, [data, worksheetSearch, statusFilter]);
+
+  const filteredTeachers = useMemo(() => {
+    if (!data) return [];
+    const q = teacherSearch.trim().toLowerCase();
+    if (!q) return data.teachers;
+    return data.teachers.filter(
+      (t) =>
+        t.name.toLowerCase().includes(q) ||
+        t.email.toLowerCase().includes(q) ||
+        (t.username || "").toLowerCase().includes(q) ||
+        (t.school && t.school.toLowerCase().includes(q))
+    );
+  }, [data, teacherSearch]);
+
+  const filteredAuditLogs = useMemo(() => {
+    if (!data?.auditLogs) return [];
+    return data.auditLogs.filter((log) => {
+      const matchAction =
+        auditActionFilter === "ALL" || log.action === auditActionFilter;
+      const q = auditSearch.trim().toLowerCase();
+      const matchSearch =
+        !q ||
+        log.actorName.toLowerCase().includes(q) ||
+        (log.details && log.details.toLowerCase().includes(q)) ||
+        (log.targetType && log.targetType.toLowerCase().includes(q)) ||
+        (log.ipAddress && log.ipAddress.includes(q));
+      return matchAction && matchSearch;
+    });
+  }, [data?.auditLogs, auditActionFilter, auditSearch]);
+
+  const handleCreateVerificationCodes = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      setCreatingCodes(true);
+      const created = await createVerificationCodeAdminAction({
+        targetRole: newCodeRole,
+        note: newCodeNote,
+        count: newCodeCount,
+      });
+      setNewCodeNote("");
+      setBannerMessage(`🔑 تم إنشاء وتوليد (${created.length}) كود توثيق جديد بنجاح!`);
+      await loadData();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "فشل إنشاء أكواد التوثيق");
+    } finally {
+      setCreatingCodes(false);
+    }
+  };
+
+  const handleToggleVerifyUser = async (t: AdminTeacher) => {
+    try {
+      setActionLoadingId(t.id);
+      await toggleVerifyUserAdminAction(t.id);
+      setBannerMessage(
+        !t.isVerified
+          ? `🎖️ تم تفعيل شارة التوثيق الرسمية لحساب (${t.name}) بنجاح.`
+          : `تم إلغاء شارة التوثيق عن حساب (${t.name}).`
+      );
+      await loadData();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "فشل تحديث حالة التوثيق");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleSendDirectMessage = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!dmTargetUser || !dmMessage.trim()) return;
+    try {
+      setSendingDm(true);
+      await sendDirectMessageToPublisherAction({
+        targetUserId: dmTargetUser.id,
+        subject: dmSubject,
+        message: dmMessage,
+      });
+      setBannerMessage(`✉️ تم إرسال الرسالة المباشرة إلى (${dmTargetUser.name}) بنجاح.`);
+      setDmTargetUser(null);
+      setDmMessage("");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "تعذر إرسال الرسالة المباشرة");
+    } finally {
+      setSendingDm(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-3">
+        <Loader2 className="h-9 w-9 animate-spin text-blue-700" />
+        <p className="text-sm font-bold text-slate-600 dark:text-slate-300">
+          جاري تحميل لوحة تحكم المشرف العام...
+        </p>
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-16 text-center" dir="rtl">
+        <div className="rounded-3xl border border-red-200 bg-red-50 p-8 dark:border-red-900/50 dark:bg-red-950/30">
+          <AlertTriangle className="mx-auto mb-3 h-10 w-10 text-red-600" />
+          <h1 className="text-lg font-extrabold text-red-900 dark:text-red-200">
+            وصول مقيد — هذه اللوحة حصرية للمشرف العام فقط
+          </h1>
+          <p className="mt-2 text-xs text-red-700 dark:text-red-300">{error}</p>
+          <p className="mt-2 text-[11px] text-slate-600 dark:text-slate-400">
+            كل رتبة إشرافية (متفقد أو مسؤول) مخصص لها لوحة تحكم حصرية خاصة بها فقط ولا يمكنها الانتقال إلى لوحات المستويات الأخرى.
+          </p>
+          <Link
+            href="/"
+            className="mt-5 inline-block rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-bold text-white"
+          >
+            العودة للرئيسية
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div dir="rtl" className="min-h-screen bg-slate-50/70 pb-16 pt-8 dark:bg-slate-950">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Unified 3-Tier Supervisory Switcher Bar (Exclusive to ADMIN) */}
+        <SupervisoryHierarchyBar
+          viewerRole={data.admin.role}
+          currentDashboard="ADMIN"
+        />
+
+        {/* Top Header */}
+        <div className="mb-8 rounded-3xl border border-blue-200/80 bg-gradient-to-l from-blue-50 via-white to-indigo-50/50 p-6 shadow-sm dark:border-blue-900/40 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/20">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-extrabold text-slate-900 sm:text-3xl dark:text-white">
+                لوحة تحكم المشرف العام ({data.admin.name})
+              </h1>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={loadData}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                تحديث البيانات
+              </button>
+            </div>
+          </div>
+
+          {/* KPI Cards */}
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+              <span className="text-[11px] font-bold text-slate-500">إجمالي المنشورات</span>
+              <p className="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
+                {data.stats.totalWorksheets}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-sky-200 bg-sky-50/60 p-4 dark:border-sky-900/50 dark:bg-sky-950/30">
+              <span className="text-[11px] font-bold text-sky-900 dark:text-sky-300">
+                الحسابات الموثقة (حصري)
+              </span>
+              <p className="mt-1 text-2xl font-extrabold text-sky-700 dark:text-sky-300">
+                {data.stats.verifiedUsersCount}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-900/50 dark:bg-amber-950/30">
+              <span className="text-[11px] font-bold text-amber-900 dark:text-amber-300">
+                أكواد توثيق جاهزة للتوزيع
+              </span>
+              <p className="mt-1 text-2xl font-extrabold text-amber-700 dark:text-amber-300">
+                {data.stats.unusedCodesCount}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-indigo-200 bg-indigo-50/60 p-4 dark:border-indigo-900/50 dark:bg-indigo-950/30">
+              <span className="text-[11px] font-bold text-indigo-900 dark:text-indigo-300">
+                طلبات تعديل الهوية
+              </span>
+              <p className="mt-1 text-2xl font-extrabold text-indigo-700 dark:text-indigo-300">
+                {data.stats.pendingProfileEditsCount}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-rose-200 bg-rose-50/60 p-4 dark:border-rose-900/50 dark:bg-rose-950/30">
+              <span className="text-[11px] font-bold text-rose-900 dark:text-rose-300">
+                البلاغات المفتوحة
+              </span>
+              <p className="mt-1 text-2xl font-extrabold text-rose-700 dark:text-rose-300">
+                {data.stats.pendingReportsCount}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/30">
+              <span className="text-[11px] font-bold text-emerald-900 dark:text-emerald-300">
+                تذاكر الدعم الفني
+              </span>
+              <p className="mt-1 text-2xl font-extrabold text-emerald-700 dark:text-emerald-300">
+                {data.stats.openTicketsCount}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-violet-200 bg-violet-50/60 p-4 dark:border-violet-900/50 dark:bg-violet-950/30">
+              <span className="text-[11px] font-bold text-violet-900 dark:text-violet-300">
+                سجلات النشاط والأمن
+              </span>
+              <p className="mt-1 text-2xl font-extrabold text-violet-700 dark:text-violet-300">
+                {data.stats.totalAuditLogsCount ?? data.auditLogs?.length ?? 0}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {bannerMessage && (
+          <div className="mb-6 flex items-center justify-between rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3.5 text-xs font-bold text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300">
+            <span>{bannerMessage}</span>
+            <button type="button" onClick={() => setBannerMessage(null)}>✕</button>
+          </div>
+        )}
+
+        {/* Navigation Tabs */}
+        <div className="mb-6 flex flex-wrap gap-2 border-b border-slate-200 pb-3 dark:border-slate-800">
+          <button
+            type="button"
+            onClick={() => setActiveTab("worksheets")}
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition ${
+              activeTab === "worksheets"
+                ? "bg-blue-700 text-white shadow-sm"
+                : "bg-white text-slate-600 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300"
+            }`}
+          >
+            <FileText className="h-4 w-4" />
+            إدارة النشرات ({data.worksheets.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("teachers")}
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition ${
+              activeTab === "teachers"
+                ? "bg-blue-700 text-white shadow-sm"
+                : "bg-white text-slate-600 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300"
+            }`}
+          >
+            <Users className="h-4 w-4" />
+            الأعضاء، تفعيل التوثيق، الأدوار والحظر ({data.teachers.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("codes")}
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition ${
+              activeTab === "codes"
+                ? "bg-amber-600 text-white shadow-sm"
+                : "bg-amber-50 text-amber-900 hover:bg-amber-100 dark:bg-amber-950/50 dark:text-amber-300"
+            }`}
+          >
+            <Key className="h-4 w-4" />
+            🔑 إنشاء وإدارة أكواد التوثيق ({data.verificationCodes.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("profile_edits")}
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition ${
+              activeTab === "profile_edits"
+                ? "bg-blue-700 text-white shadow-sm"
+                : "bg-white text-slate-600 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300"
+            }`}
+          >
+            <UserCog className="h-4 w-4" />
+            طلبات تعديل الهوية ({data.pendingProfileUsers.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("reports")}
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition ${
+              activeTab === "reports"
+                ? "bg-blue-700 text-white shadow-sm"
+                : "bg-white text-slate-600 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300"
+            }`}
+          >
+            <Flag className="h-4 w-4" />
+            البلاغات وإبلاغات المتفقد ({data.stats.pendingReportsCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("support")}
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition ${
+              activeTab === "support"
+                ? "bg-blue-700 text-white shadow-sm"
+                : "bg-white text-slate-600 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300"
+            }`}
+          >
+            <Headphones className="h-4 w-4" />
+            الدعم الفني ({data.stats.openTicketsCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("audit")}
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition ${
+              activeTab === "audit"
+                ? "bg-violet-700 text-white shadow-sm ring-2 ring-violet-400/50"
+                : "bg-violet-50/80 text-violet-900 hover:bg-violet-100 dark:bg-violet-950/40 dark:text-violet-300"
+            }`}
+          >
+            <ShieldAlert className="h-4 w-4" />
+            🛡️ سجل النشاطات والأمن ({data.stats.totalAuditLogsCount ?? data.auditLogs?.length ?? 0})
+          </button>
+        </div>
+
+        {/* ================================================================= */}
+        {/* TAB: EXCLUSIVE ADMIN CODE GENERATOR (إنشاء الأكواد في الداشبورد للمشرف) */}
+        {/* ================================================================= */}
+        {activeTab === "codes" && (
+          <div className="space-y-6">
+            <div className="rounded-3xl border border-amber-200 bg-white p-6 shadow-sm dark:border-amber-900/50 dark:bg-slate-900">
+              <div className="mb-4 flex items-center gap-2.5">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500 text-white">
+                  <Key className="h-5 w-5" />
+                </span>
+                <div>
+                  <h2 className="text-base font-extrabold text-slate-900 dark:text-white">
+                    إنشاء وتوليد أكواد التوثيق الرسمية (حصري للمشرف العام)
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    قم بإنشاء أكواد توثيق جديدة وتوزيعها على المتفقدين أو المعلمين أو المؤسسات التربوية لتفعيل شارة التوثيق الرسمية.
+                  </p>
+                </div>
+              </div>
+
+              <form
+                onSubmit={handleCreateVerificationCodes}
+                className="grid grid-cols-1 gap-4 sm:grid-cols-4"
+              >
+                <div>
+                  <label className="mb-1 block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    الفئة المخصص لها الكود *
+                  </label>
+                  <select
+                    value={newCodeRole}
+                    onChange={(e) => setNewCodeRole(e.target.value as Role)}
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-xs font-bold text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  >
+                    <option value="INSPECTOR">كود متفقد تربوي (INSP-XXXX)</option>
+                    <option value="TEACHER">كود توثيق معلم (VERF-XXXX)</option>
+                    <option value="INSTITUTION">كود توثيق مؤسسة (INST-XXXX)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    عدد الأكواد المراد إنشاؤها
+                  </label>
+                  <select
+                    value={newCodeCount}
+                    onChange={(e) => setNewCodeCount(Number(e.target.value))}
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-xs font-bold text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  >
+                    <option value={1}>كود واحد (1)</option>
+                    <option value={3}>3 أكواد دفعة واحدة</option>
+                    <option value={5}>5 أكواد دفعة واحدة</option>
+                    <option value={10}>10 أكواد دفعة واحدة</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    ملاحظة أو اسم الجهة (اختياري)
+                  </label>
+                  <input
+                    type="text"
+                    value={newCodeNote}
+                    onChange={(e) => setNewCodeNote(e.target.value)}
+                    placeholder="تخصيص الكود أو ملاحظة..."
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  />
+                </div>
+
+                <div className="flex items-end">
+                  <button
+                    type="submit"
+                    disabled={creatingCodes}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-xs font-extrabold text-white shadow-sm transition hover:bg-amber-700"
+                  >
+                    <Plus className="h-4 w-4" />
+                    {creatingCodes ? "جاري التوليد..." : "إنشاء الأكواد الآن"}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Generated Codes Table */}
+            <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <div className="overflow-x-auto">
+                <table className="w-full text-right text-xs">
+                  <thead className="border-b border-slate-200 bg-slate-50 font-bold text-slate-600 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-300">
+                    <tr>
+                      <th className="px-5 py-4">كود التوثيق</th>
+                      <th className="px-4 py-4">الفئة المستهدفة</th>
+                      <th className="px-4 py-4">الملاحظة</th>
+                      <th className="px-4 py-4">الحالة والمستفيد</th>
+                      <th className="px-5 py-4 text-left">إجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {data.verificationCodes.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="p-10 text-center text-slate-400">
+                          لا توجد أكواد منشأة بعد. استخدم النموذج أعلاه لإنشاء الأكواد.
+                        </td>
+                      </tr>
+                    ) : (
+                      data.verificationCodes.map((vc) => (
+                        <tr key={vc.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+                          <td className="px-5 py-4">
+                            <span
+                              dir="ltr"
+                              className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-1.5 font-mono text-xs font-black tracking-wider text-amber-900 dark:border-amber-800 dark:bg-amber-950/70 dark:text-amber-300"
+                            >
+                              {vc.code}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 font-bold text-slate-700 dark:text-slate-300">
+                            {vc.targetRole === "INSPECTOR"
+                              ? "متفقد تربوي"
+                              : vc.targetRole === "INSTITUTION"
+                              ? "مؤسسة تربوية"
+                              : "معلم"}
+                          </td>
+                          <td className="px-4 py-4 text-slate-500">
+                            {vc.note || "—"}
+                          </td>
+                          <td className="px-4 py-4">
+                            {vc.isUsed && vc.usedBy ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-bold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                                ✓ مستخدم بواسطة: {vc.usedBy.name}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-[11px] font-bold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
+                                جاهز للاستخدام
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-5 py-4">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleCopyCode(vc.id, vc.code)}
+                                className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                              >
+                                {copiedCodeId === vc.id ? (
+                                  <>
+                                    <Check className="h-3.5 w-3.5 text-emerald-600" />
+                                    تم النسخ
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="h-3.5 w-3.5" />
+                                    نسخ الكود
+                                  </>
+                                )}
+                              </button>
+                              {!vc.isUsed && (
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    await deleteVerificationCodeAdminAction(vc.id);
+                                    await loadData();
+                                  }}
+                                  className="rounded-xl bg-rose-50 px-3 py-1.5 text-[11px] font-bold text-rose-700 hover:bg-rose-100"
+                                >
+                                  حذف
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================================================================= */}
+        {/* TAB 1: WORKSHEETS MANAGEMENT                                      */}
+        {/* ================================================================= */}
+        {activeTab === "worksheets" && (
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex flex-wrap gap-2">
+                {(
+                  [
+                    { key: "ALL", label: `الكل (${data.stats.totalWorksheets})` },
+                    { key: "PUBLISHED", label: `منشور (${data.stats.publishedWorksheets})` },
+                    { key: "DRAFT", label: `⏳ وورد/صور قيد التحويل (${data.stats.draftWorksheets})` },
+                    { key: "ARCHIVED", label: `مؤرشف (${data.stats.archivedWorksheets})` },
+                  ] as const
+                ).map((st) => (
+                  <button
+                    key={st.key}
+                    type="button"
+                    onClick={() => setStatusFilter(st.key)}
+                    className={`rounded-xl px-3.5 py-2 text-xs font-bold transition ${
+                      statusFilter === st.key
+                        ? "bg-blue-700 text-white"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                    }`}
+                  >
+                    {st.label}
+                  </button>
+                ))}
+              </div>
+              <input
+                type="search"
+                value={worksheetSearch}
+                onChange={(e) => setWorksheetSearch(e.target.value)}
+                placeholder="ابحث في النشرات أو @username..."
+                className="w-full max-w-xs rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              />
+            </div>
+
+            <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <div className="overflow-x-auto">
+                <table className="w-full text-right text-xs">
+                  <thead className="border-b border-slate-200 bg-slate-50 font-bold text-slate-600 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-300">
+                    <tr>
+                      <th className="px-5 py-4">المنشور</th>
+                      <th className="px-4 py-4">الناشر (@username)</th>
+                      <th className="px-4 py-4">المستوى / المادة</th>
+                      <th className="px-4 py-4">الحالة والاعتماد</th>
+                      <th className="px-5 py-4 text-left">إجراءات المشرف</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {filteredWorksheets.map((ws) => {
+                      const uname =
+                        ws.uploader.username || ws.uploader.email.split("@")[0].toLowerCase();
+                      return (
+                        <tr key={ws.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+                          <td className="px-5 py-4 font-extrabold text-slate-900 dark:text-white">
+                            <Link href={`/worksheet/${ws.id}`} className="hover:text-blue-600">
+                              {ws.titleAr || ws.title}
+                            </Link>
+                          </td>
+                          <td className="px-4 py-4">
+                            <Link
+                              href={`/publisher/${ws.uploader.id}`}
+                              className="font-bold text-slate-800 hover:underline dark:text-slate-200"
+                            >
+                              {ws.uploader.name}
+                            </Link>
+                            <div>
+                              <Link
+                                href={`/u/${uname}`}
+                                dir="ltr"
+                                className="font-mono text-[11px] font-bold text-blue-600 hover:underline"
+                              >
+                                @{uname}
+                              </Link>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-slate-600 dark:text-slate-300">
+                            {ws.grade.nameAr} — {ws.subject.nameAr}
+                          </td>
+                          <td className="px-4 py-4">
+                            <div className="flex flex-wrap gap-1.5">
+                              <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                {ws.status === "PUBLISHED"
+                                  ? "منشور"
+                                  : ws.status === "DRAFT"
+                                  ? "⏳ مسودة قيد التحويل"
+                                  : "مؤرشف"}
+                              </span>
+                              {ws.isEndorsed && (
+                                <span className="rounded-lg bg-amber-100 px-2.5 py-1 text-[10px] font-extrabold text-amber-900">
+                                  ✓ موثق بيداغوجياً
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-5 py-4">
+                            <div className="flex flex-wrap items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                disabled={actionLoadingId === ws.id}
+                                onClick={async () => {
+                                  setActionLoadingId(ws.id);
+                                  await toggleWorksheetEndorsementAction(ws.id);
+                                  await loadData();
+                                  setActionLoadingId(null);
+                                }}
+                                className="rounded-xl border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-[11px] font-bold text-amber-900 hover:bg-amber-100"
+                              >
+                                {ws.isEndorsed ? "إلغاء الاعتماد" : "اعتماد بيداغوجي"}
+                              </button>
+                              {ws.status !== "PUBLISHED" ? (
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    await updateWorksheetStatusAdminAction(ws.id, "PUBLISHED");
+                                    await loadData();
+                                  }}
+                                  className="rounded-xl bg-emerald-600 px-2.5 py-1.5 text-[11px] font-bold text-white"
+                                >
+                                  نشر
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    await updateWorksheetStatusAdminAction(ws.id, "ARCHIVED");
+                                    await loadData();
+                                  }}
+                                  className="rounded-xl bg-slate-100 px-2.5 py-1.5 text-[11px] font-bold text-slate-700"
+                                >
+                                  أرشفة
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (!window.confirm("حذف المنشور نهائياً؟")) return;
+                                  await deleteWorksheetAdminAction(ws.id);
+                                  await loadData();
+                                }}
+                                className="rounded-xl bg-rose-600 px-2.5 py-1.5 text-[11px] font-bold text-white"
+                              >
+                                حذف
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================================================================= */}
+        {/* TAB 2: USERS, EXCLUSIVE VERIFICATION ACTIVATION, ROLES & BAN      */}
+        {/* ================================================================= */}
+        {activeTab === "teachers" && (
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+              <input
+                type="search"
+                value={teacherSearch}
+                onChange={(e) => setTeacherSearch(e.target.value)}
+                placeholder="ابحث عن عضو بالاسم، البريد، أو @username..."
+                className="w-full max-w-md rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              />
+            </div>
+
+            <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <div className="overflow-x-auto">
+                <table className="w-full text-right text-xs">
+                  <thead className="border-b border-slate-200 bg-slate-50 font-bold text-slate-600 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-300">
+                    <tr>
+                      <th className="px-5 py-4">المستخدم (@username)</th>
+                      <th className="px-4 py-4">الرتبة في النظام</th>
+                      <th className="px-4 py-4">تفعيل التوثيق (حصري للمشرف)</th>
+                      <th className="px-4 py-4">كود التوثيق الشخصي</th>
+                      <th className="px-5 py-4 text-left">تواصل مباشر / حظر</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {filteredTeachers.map((t) => {
+                      const uname =
+                        t.username || t.email.split("@")[0].toLowerCase();
+                      return (
+                        <tr key={t.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-2">
+                              <Link
+                                href={`/publisher/${t.id}`}
+                                className="font-extrabold text-slate-900 hover:text-blue-600 dark:text-white"
+                              >
+                                {t.name}
+                              </Link>
+                              <InspectorBadge role={t.role} isVerified={t.isVerified} isBanned={t.isBanned} size="sm" />
+                              <UserPresenceBadge
+                                presenceStatus={(t as any).presenceStatus}
+                                lastSeenAt={(t as any).lastSeenAt}
+                                compact
+                              />
+                              {((t as any).lockedAt || ((t as any).failedLoginAttempts ?? 0) >= 6) && (
+                                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-extrabold text-amber-900 border border-amber-300">
+                                  🔒 حساب مقفل (6 محاولات كلمة مرور)
+                                </span>
+                              )}
+                              {t.isBanned && (
+                                <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-extrabold text-rose-800">
+                                  🚫 محظور
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-0.5 flex items-center gap-2">
+                              <Link
+                                href={`/u/${uname}`}
+                                dir="ltr"
+                                className="font-mono text-[11px] font-bold text-blue-600 hover:underline"
+                              >
+                                @{uname}
+                              </Link>
+                              <span className="text-[11px] text-slate-400">• {t.email}</span>
+                            </div>
+                          </td>
+
+                          {/* Role Selector including MODERATOR & INSPECTOR */}
+                          <td className="px-4 py-4">
+                            <select
+                              value={t.role}
+                              onChange={async (e) => {
+                                const nextRole = e.target.value as Role;
+                                await updateUserRoleAdminAction(t.id, nextRole);
+                                await loadData();
+                              }}
+                              className="rounded-xl border border-slate-300 bg-slate-50 px-2.5 py-1.5 text-xs font-bold text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                            >
+                              <option value="TEACHER">معلم (TEACHER)</option>
+                              <option value="INSPECTOR">متفقد تربوي (INSPECTOR)</option>
+                              <option value="MODERATOR">مسؤول إداري (MODERATOR)</option>
+                              <option value="INSTITUTION">مؤسسة تربوية (INSTITUTION)</option>
+                              <option value="STUDENT">تلميذ (STUDENT)</option>
+                              <option value="ADMIN">مشرف عام (ADMIN)</option>
+                            </select>
+                          </td>
+
+                          {/* Exclusive Admin Direct Verification Toggle */}
+                          <td className="px-4 py-4">
+                            <button
+                              type="button"
+                              disabled={actionLoadingId === t.id}
+                              onClick={() => handleToggleVerifyUser(t)}
+                              className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-extrabold transition ${
+                                t.isVerified
+                                  ? "border border-emerald-300 bg-emerald-50 text-emerald-900 hover:bg-emerald-100"
+                                  : "bg-sky-600 text-white hover:bg-sky-700"
+                              }`}
+                            >
+                              <BadgeCheck className="h-3.5 w-3.5" />
+                              {t.isVerified ? "موثق رسمياً (إلغاء)" : "تفعيل التوثيق الآن"}
+                            </button>
+                          </td>
+
+                          {/* Generate Per-User Verification Code */}
+                          <td className="px-4 py-4">
+                            {t.inspectorCode ? (
+                              <div className="flex items-center gap-1.5">
+                                <span
+                                  dir="ltr"
+                                  className="rounded-lg bg-amber-50 px-2 py-1 font-mono text-[11px] font-bold text-amber-900"
+                                >
+                                  {t.inspectorCode}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyCode(t.id, t.inspectorCode!)}
+                                  className="rounded-lg border border-slate-200 p-1 text-slate-600 hover:bg-slate-100"
+                                >
+                                  {copiedCodeId === t.id ? (
+                                    <Check className="h-3.5 w-3.5 text-emerald-600" />
+                                  ) : (
+                                    <Copy className="h-3.5 w-3.5" />
+                                  )}
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  await generateInspectorCodeAdminAction(
+                                    t.id,
+                                    t.role === "INSPECTOR"
+                                  );
+                                  await loadData();
+                                }}
+                                className="inline-flex items-center gap-1 rounded-xl border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-[11px] font-bold text-amber-900 hover:bg-amber-100"
+                              >
+                                <Key className="h-3.5 w-3.5" />
+                                إصدار كود خاص
+                              </button>
+                            )}
+                          </td>
+
+                          {/* Direct Message & Ban */}
+                          <td className="px-5 py-4">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setDmTargetUser(t);
+                                  setDmSubject("رسالة مباشرة من المشرف العام");
+                                  setDmMessage(`مرحباً @${uname}، `);
+                                }}
+                                className="inline-flex items-center gap-1 rounded-xl border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-[11px] font-bold text-blue-700 hover:bg-blue-100"
+                              >
+                                <Mail className="h-3.5 w-3.5" />
+                                مراسلة
+                              </button>
+                              {((t as any).lockedAt ||
+                                ((t as any).failedLoginAttempts ?? 0) > 0 ||
+                                (t.banReason && t.banReason.includes("قفل"))) && (
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    setActionLoadingId(t.id);
+                                    await unlockUserAccountAdminAction(t.id);
+                                    setBannerMessage(`🔓 تم فك غلق الحساب وتصفير محاولات كلمة المرور للعضو (${t.name}).`);
+                                    await loadData();
+                                    setActionLoadingId(null);
+                                  }}
+                                  className="inline-flex items-center gap-1 rounded-xl bg-amber-500 hover:bg-amber-600 px-2.5 py-1.5 text-[11px] font-extrabold text-white shadow-sm"
+                                  title="فك قفل الحساب الناتج عن تجاوز 6 محاولات لكلمة المرور"
+                                >
+                                  🔓 فك غلق الحساب
+                                </button>
+                              )}
+                              {t.role !== "ADMIN" && (
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    await toggleBanUserAdminAction(t.id);
+                                    await loadData();
+                                  }}
+                                  className={`rounded-xl px-2.5 py-1.5 text-[11px] font-bold text-white ${
+                                    t.isBanned ? "bg-emerald-600" : "bg-rose-600"
+                                  }`}
+                                >
+                                  {t.isBanned ? "رفع الحظر" : "حظر"}
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: PROFILE EDITS */}
+        {activeTab === "profile_edits" && (
+          <div className="space-y-4">
+            {data.pendingProfileUsers.length === 0 ? (
+              <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-900">
+                لا توجد طلبات تعديل ملفات شخصية معلقة حالياً.
+              </div>
+            ) : (
+              data.pendingProfileUsers.map((u) => {
+                const pending = (u.pendingProfileData || {}) as {
+                  name?: string;
+                  username?: string;
+                  school?: string | null;
+                  bio?: string | null;
+                };
+                return (
+                  <div
+                    key={u.id}
+                    className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                      <div>
+                        <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">
+                          طلب تعديل من: {u.name} ({u.email})
+                        </h3>
+                        <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                          الاسم الجديد: <strong>{pending.name || u.name}</strong> • المعرّف:{" "}
+                          <strong dir="ltr">@{pending.username || u.username}</strong> • المؤسسة:{" "}
+                          <strong>{pending.school || "—"}</strong>
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            await approveProfileEditAdminAction(u.id);
+                            await loadData();
+                          }}
+                          className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white"
+                        >
+                          موافقة واعتماد ✓
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            await rejectProfileEditAdminAction(u.id);
+                            await loadData();
+                          }}
+                          className="rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white"
+                        >
+                          رفض ✕
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+
+        {/* TAB 4: REPORTS (Including Inspector Priority Escalations) */}
+        {activeTab === "reports" && (
+          <div className="space-y-4">
+            {data.reports.map((rep) => (
+              <div
+                key={rep.id}
+                className={`rounded-3xl border p-6 shadow-sm ${
+                  rep.isInspectorPriority
+                    ? "border-rose-300 bg-rose-50/40 dark:border-rose-800 dark:bg-rose-950/20"
+                    : "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+                }`}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div>
+                    {rep.isInspectorPriority && (
+                      <span className="mb-2 inline-block rounded-full bg-rose-600 px-3 py-1 text-[11px] font-extrabold text-white">
+                        🚨 إبلاغ مباشر للمشرف مرفوع من المتفقد التربوي ({rep.reporter.name})
+                      </span>
+                    )}
+                    <p className="text-sm font-extrabold text-slate-900 dark:text-white">
+                      {rep.reason}
+                    </p>
+                    {rep.details && (
+                      <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                        {rep.details}
+                      </p>
+                    )}
+                  </div>
+                  {rep.status === "PENDING" ? (
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await updateReportStatusAdminAction(rep.id, "RESOLVED");
+                          await loadData();
+                        }}
+                        className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white"
+                      >
+                        اعتماد المعالجة ✓
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await updateReportStatusAdminAction(rep.id, "DISMISSED");
+                          await loadData();
+                        }}
+                        className="rounded-xl bg-slate-200 px-4 py-2 text-xs font-bold text-slate-700"
+                      >
+                        إغلاق
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="rounded-xl bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                      تمت المعالجة
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* TAB 5: TECHNICAL SUPPORT */}
+        {activeTab === "support" && (
+          <div className="space-y-4">
+            {data.supportTickets.map((t) => (
+              <div
+                key={t.id}
+                className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="max-w-2xl">
+                    <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">
+                      {t.subject}
+                    </h3>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {t.name} ({t.email})
+                    </p>
+                    <p className="mt-3 rounded-2xl bg-slate-50 p-3.5 text-xs text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                      <MentionText text={t.message} />
+                    </p>
+                  </div>
+                  <div className="w-full sm:w-80">
+                    {t.adminReply ? (
+                      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3.5 text-xs text-emerald-900">
+                        <p className="font-bold">✓ الرد المعتمد:</p>
+                        <p className="mt-1">{t.adminReply}</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <textarea
+                          rows={2}
+                          value={replyTexts[t.id] || ""}
+                          onChange={(e) =>
+                            setReplyTexts((prev) => ({ ...prev, [t.id]: e.target.value }))
+                          }
+                          placeholder="اكتب رد المشرف العام..."
+                          className="w-full rounded-xl border border-slate-300 p-2.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!replyTexts[t.id]?.trim()) return;
+                            await replySupportTicketAdminAction(
+                              t.id,
+                              replyTexts[t.id],
+                              "ANSWERED"
+                            );
+                            await loadData();
+                          }}
+                          className="w-full rounded-xl bg-blue-700 py-2 text-xs font-bold text-white"
+                        >
+                          إرسال الرد
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ================================================================= */}
+        {/* TAB: AUDIT LOGS & SECURITY (🛡️ سجل النشاطات والأمن) */}
+        {/* ================================================================= */}
+        {activeTab === "audit" && (
+          <div className="space-y-6">
+            <div className="rounded-3xl border border-violet-200/80 bg-gradient-to-l from-violet-50 via-white to-purple-50/40 p-6 shadow-sm dark:border-violet-900/40 dark:from-slate-900 dark:via-slate-900 dark:to-violet-950/20">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-600 text-white shadow-md shadow-violet-600/30">
+                    <ShieldAlert className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
+                      سجل النشاطات الرقابية والأمن المتقدم (Audit Logs)
+                    </h2>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      مراقبة حية وشاملة لكافة العمليات الحساسة في المنصة: تفعيل التوثيق، إصدار أكواد التفعيل، الحظر، تعديلات الأدوار، وحذف المحتوى.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-violet-100 px-3 py-1 font-mono text-xs font-bold text-violet-800 dark:bg-violet-950/80 dark:text-violet-300">
+                    إجمالي الأحداث المسجلة: {data.stats.totalAuditLogsCount ?? data.auditLogs?.length ?? 0}
+                  </span>
+                </div>
+              </div>
+
+              {/* Filters & Search */}
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200/80 pt-4 dark:border-slate-800">
+                <div className="flex flex-1 flex-wrap items-center gap-2 min-w-[280px]">
+                  <div className="relative flex-1">
+                    <Search className="absolute right-3.5 top-2.5 h-4 w-4 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="بحث بالفاعل، التفاصيل، أو الـ IP..."
+                      value={auditSearch}
+                      onChange={(e) => setAuditSearch(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-3 pr-9 text-xs font-medium placeholder-slate-400 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <select
+                    value={auditActionFilter}
+                    onChange={(e) => setAuditActionFilter(e.target.value)}
+                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-violet-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+                  >
+                    <option value="ALL">جميع العمليات ({data.auditLogs?.length ?? 0})</option>
+                    <option value="USER_VERIFIED">🎖️ توثيق الحسابات (USER_VERIFIED)</option>
+                    <option value="USER_UNVERIFIED">إلغاء التوثيق (USER_UNVERIFIED)</option>
+                    <option value="VERIFICATION_CODE_CREATED">🔑 إنشاء كود توثيق (VERIFICATION_CODE_CREATED)</option>
+                    <option value="VERIFICATION_CODE_DELETED">حذف كود توثيق (VERIFICATION_CODE_DELETED)</option>
+                    <option value="USER_BANNED">🚫 حظر مستخدم (USER_BANNED)</option>
+                    <option value="USER_UNBANNED">رفع الحظر (USER_UNBANNED)</option>
+                    <option value="USER_ROLE_CHANGED">تغيير رتبة (USER_ROLE_CHANGED)</option>
+                    <option value="PROFILE_APPROVED">موافقة على تعديل ملف (PROFILE_APPROVED)</option>
+                    <option value="PROFILE_REJECTED">رفض تعديل ملف (PROFILE_REJECTED)</option>
+                    <option value="WORKSHEET_DELETED">🗑️ حذف منشور (WORKSHEET_DELETED)</option>
+                    <option value="WORKSHEET_STATUS_CHANGED">تغيير حالة منشور (WORKSHEET_STATUS_CHANGED)</option>
+                    <option value="WORKSHEET_ENDORSED">اعتماد بيداغوجي (WORKSHEET_ENDORSED)</option>
+                    <option value="WORKSHEET_UNENDORSED">إلغاء اعتماد بيداغوجي (WORKSHEET_UNENDORSED)</option>
+                    <option value="DIRECT_MESSAGE_SENT">✉️ رسالة توجيه مباشرة (DIRECT_MESSAGE_SENT)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Audit Logs Table */}
+            <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <div className="overflow-x-auto">
+                <table className="w-full text-right text-xs">
+                  <thead className="border-b border-slate-200 bg-slate-50/80 font-bold text-slate-700 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-300">
+                    <tr>
+                      <th className="px-4 py-3.5">التاريخ والوقت</th>
+                      <th className="px-4 py-3.5">الفاعل (المستخدم والرتبة)</th>
+                      <th className="px-4 py-3.5">العملية والنوع</th>
+                      <th className="px-4 py-3.5">الهدف</th>
+                      <th className="px-4 py-3.5">البيان والتفاصيل</th>
+                      <th className="px-4 py-3.5">عنوان IP</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                    {filteredAuditLogs.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-12 text-center text-slate-500">
+                          لا توجد سجلات نشاطات تطابق الفلتر الحالي.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredAuditLogs.map((log) => {
+                        const isSecurityAlert =
+                          log.action === "USER_BANNED" ||
+                          log.action === "WORKSHEET_DELETED" ||
+                          log.action === "USER_ROLE_CHANGED";
+                        const isSuccessEvent =
+                          log.action === "USER_VERIFIED" ||
+                          log.action === "WORKSHEET_ENDORSED" ||
+                          log.action === "PROFILE_APPROVED" ||
+                          log.action === "VERIFICATION_CODE_CREATED";
+
+                        const actionLabelAr =
+                          log.action === "USER_VERIFIED"
+                            ? "توثيق حساب"
+                            : log.action === "USER_UNVERIFIED"
+                            ? "إلغاء توثيق"
+                            : log.action === "VERIFICATION_CODE_CREATED"
+                            ? "إنشاء كود توثيق"
+                            : log.action === "VERIFICATION_CODE_DELETED"
+                            ? "حذف كود توثيق"
+                            : log.action === "USER_BANNED"
+                            ? "حظر مستخدم"
+                            : log.action === "USER_UNBANNED"
+                            ? "رفع الحظر"
+                            : log.action === "USER_ROLE_CHANGED"
+                            ? "تغيير رتبة"
+                            : log.action === "PROFILE_APPROVED"
+                            ? "اعتماد ملف"
+                            : log.action === "PROFILE_REJECTED"
+                            ? "رفض تعديل ملف"
+                            : log.action === "WORKSHEET_DELETED"
+                            ? "حذف منشور"
+                            : log.action === "WORKSHEET_STATUS_CHANGED"
+                            ? "تغيير حالة منشور"
+                            : log.action === "WORKSHEET_ENDORSED"
+                            ? "اعتماد بيداغوجي"
+                            : log.action === "WORKSHEET_UNENDORSED"
+                            ? "إلغاء اعتماد بيداغوجي"
+                            : log.action === "DIRECT_MESSAGE_SENT"
+                            ? "رسالة مباشرة"
+                            : log.action;
+
+                        return (
+                          <tr
+                            key={log.id}
+                            className={`transition hover:bg-slate-50/60 dark:hover:bg-slate-800/40 ${
+                              isSecurityAlert
+                                ? "bg-rose-50/20 dark:bg-rose-950/10"
+                                : ""
+                            }`}
+                          >
+                            <td className="whitespace-nowrap px-4 py-3 font-mono text-[11px] text-slate-500 dark:text-slate-400">
+                              {new Date(log.createdAt).toLocaleString("ar-TN", {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="font-extrabold text-slate-900 dark:text-white">
+                                {log.actorName}
+                              </div>
+                              <span className="inline-block rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                {log.actorRole}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span
+                                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-extrabold ${
+                                  isSecurityAlert
+                                    ? "bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300"
+                                    : isSuccessEvent
+                                    ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300"
+                                    : "bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300"
+                                }`}
+                              >
+                                {actionLabelAr}
+                              </span>
+                              <div className="mt-0.5 font-mono text-[10px] text-slate-400">
+                                {log.action}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 font-mono text-[11px] text-slate-600 dark:text-slate-400">
+                              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold dark:bg-slate-800">
+                                {log.targetType}
+                              </span>
+                              {log.targetId && (
+                                <div className="mt-0.5 text-[10px] text-slate-400" title={log.targetId}>
+                                  {log.targetId.slice(0, 8)}...
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-slate-800 dark:text-slate-200">
+                              <div className="max-w-md font-medium leading-relaxed">
+                                {log.details || "—"}
+                              </div>
+                            </td>
+                            <td className="whitespace-nowrap px-4 py-3 font-mono text-[11px] text-slate-500 dark:text-slate-400">
+                              {log.ipAddress || "داخلي"}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Direct Message Modal */}
+      {dmTargetUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+            <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
+              <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">
+                ✉️ مراسلة مباشرة من المشرف العام إلى ({dmTargetUser.name})
+              </h3>
+              <button
+                type="button"
+                onClick={() => setDmTargetUser(null)}
+                className="rounded-lg bg-slate-100 p-1 text-slate-500"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <form onSubmit={handleSendDirectMessage} className="space-y-4">
+              <input
+                type="text"
+                required
+                value={dmSubject}
+                onChange={(e) => setDmSubject(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              />
+              <textarea
+                rows={4}
+                required
+                value={dmMessage}
+                onChange={(e) => setDmMessage(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 p-3 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDmTargetUser(null)}
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  disabled={sendingDm}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-blue-700 px-5 py-2 text-xs font-bold text-white"
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  {sendingDm ? "جاري الإرسال..." : "إرسال الآن"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+---
+
+*نهاية الجزء الثاني (Part 2/2) — اكتملت جميع ملفات المشروع — Total included files: 39.*
