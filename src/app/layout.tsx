@@ -6,6 +6,7 @@ import Navbar from "@/components/layout/Navbar";
 import AuthRoleModal from "@/components/auth/AuthRoleModal";
 import { AppPreferencesProvider } from "@/context/AppPreferencesContext";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const cairo = Cairo({
@@ -50,6 +51,9 @@ export default function RootLayout({
 
           {/* Vercel Speed Insights */}
           <SpeedInsights />
+          
+          {/* Vercel Web Analytics */}
+          <Analytics />
 
           {/* Global Bottom Footer with Technical Support & Customer Service at the bottom of the page */}
           <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 pt-12 pb-8 mt-16">
