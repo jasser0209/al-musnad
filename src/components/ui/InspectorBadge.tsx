@@ -1,5 +1,5 @@
 import React from "react";
-import { BadgeCheck, Building2, GraduationCap, Ban, ShieldAlert, ShieldCheck } from "lucide-react";
+import { BadgeCheck, BookOpen, GraduationCap, Ban, ShieldAlert, ShieldCheck } from "lucide-react";
 import type { Role } from "@/types";
 
 interface InspectorBadgeProps {
@@ -60,7 +60,7 @@ export default function InspectorBadge({
     );
   }
 
-  // 4. Certified Inspector Badge (Only shown when isVerified === true!)
+  // 4. Certified Inspector Badge — STRICTLY EXCLUSIVE to verified Inspectors (isVerified === true)
   if (role === "INSPECTOR") {
     if (isVerified) {
       return (
@@ -78,7 +78,7 @@ export default function InspectorBadge({
     return null;
   }
 
-  // 5. Educational Institution Badge (Verified via Admin Code vs Standard)
+  // 5. Educational Institution Badge — STRICTLY EXCLUSIVE to verified Institutions (isVerified === true)
   if (role === "INSTITUTION") {
     if (isVerified) {
       return (
@@ -93,20 +93,10 @@ export default function InspectorBadge({
         </span>
       );
     }
-    return (
-      <span
-        title="مؤسسة تربوية"
-        className={`inline-flex items-center gap-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold select-none ${
-          size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-xs"
-        }`}
-      >
-        <Building2 className={size === "sm" ? "w-3 h-3" : "w-4 h-4"} />
-        <span>مؤسسة تربوية</span>
-      </span>
-    );
+    return null;
   }
 
-  // 6. Teacher Badge (Verified via Admin Code vs Standard)
+  // 6. Teacher Badge — Appears immediately upon login ("معلم"), and upgrades to "معلم موثق" when verified
   if (role === "TEACHER") {
     if (isVerified) {
       return (
@@ -121,10 +111,20 @@ export default function InspectorBadge({
         </span>
       );
     }
-    return null;
+    return (
+      <span
+        title="حساب معلم"
+        className={`inline-flex items-center gap-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 font-bold select-none ${
+          size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-xs"
+        }`}
+      >
+        <BookOpen className={size === "sm" ? "w-3 h-3" : "w-4 h-4"} />
+        <span>معلم</span>
+      </span>
+    );
   }
 
-  // 7. Student Badge
+  // 7. Student Badge — Appears immediately upon login ("تلميذ")
   if (role === "STUDENT") {
     return (
       <span

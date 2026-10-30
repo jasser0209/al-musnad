@@ -6348,6 +6348,21 @@ export async function GET(request: Request) {
 
           return NextResponse.redirect(`${origin}${dest}`);
         } else if (authUser.email) {
+          // If the user came from `/login` (mode=login) and is NOT in `db.user` (e.g. deleted their account or never registered),
+          // strictly block auto-registration on login and require them to create an account on `/register`!
+          if (modeParam === "login" && authUser.email.toLowerCase() !== "bjasser123@gmail.com") {
+            await db
+              .$executeRawUnsafe(`DELETE FROM auth.users WHERE id = $1::uuid`, authUser.id)
+              .catch(() => null);
+            await supabase.auth.signOut();
+            const roleQuery = requestedRoleParam
+              ? `role=${encodeURIComponent(requestedRoleParam)}&`
+              : "";
+            return NextResponse.redirect(
+              `${origin}/login?${roleQuery}error=account-not-found`
+            );
+          }
+
           const rawRole =
             requestedRoleParam ||
             metaRole ||
@@ -8451,12 +8466,20 @@ export async function deleteMyAccountAction() {
     where: { id: user.id },
   });
 
-  // 2. Delete auth user via Supabase Admin client if service role is configured
+  // 2. Delete auth user directly from Supabase PostgreSQL `auth.users` so credentials cannot be reused without re-registering
   try {
-    const adminSupabase = createSupabaseAdminClient();
-    await adminSupabase.auth.admin.deleteUser(user.id);
+    await db.$executeRawUnsafe(
+      `DELETE FROM auth.users WHERE id = $1::uuid`,
+      user.id
+    );
   } catch {
-    // Fallback sign out
+    // Fallback to Supabase Admin API if direct auth schema delete is restricted
+    try {
+      const adminSupabase = createSupabaseAdminClient();
+      await adminSupabase.auth.admin.deleteUser(user.id);
+    } catch {
+      // ignore
+    }
   }
 
   await supabase.auth.signOut();
@@ -10947,7 +10970,7 @@ html.dark tbody td {
 }
 
 html.dark tbody tr:hover {
-  background-color: #1e293b/60 !important;
+  background-color: rgba(30, 41, 59, 0.6) !important;
 }
 
 /* Floating Modals, Dropdowns & Popovers */
@@ -12034,7 +12057,7 @@ const LANGUAGES: { code: Locale; label: string; short: string }[] = [
   { code: "en", label: "English", short: "EN" },
 ];
 
-function getRoleUsernameBoxStyle(role?: string): {
+function getRoleUsernameBoxStyle(role?: string, isVerified?: boolean): {
   boxClass: string;
   avatarBgClass: string;
   roleLabel: string;
@@ -12064,25 +12087,47 @@ function getRoleUsernameBoxStyle(role?: string): {
     };
   }
   if (role === "INSPECTOR") {
+    if (isVerified) {
+      return {
+        boxClass:
+          "border-2 border-amber-500/80 bg-amber-50/70 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 hover:border-amber-600 shadow-sm",
+        avatarBgClass: "bg-gradient-to-br from-amber-500 to-orange-600 text-white",
+        roleLabel: "متفقد معتمد",
+        roleShortTag: "متفقد",
+        badgeClass:
+          "bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-200 border border-amber-300 dark:border-amber-700",
+      };
+    }
     return {
       boxClass:
-        "border-2 border-amber-500/80 bg-amber-50/70 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 hover:border-amber-600 shadow-sm",
-      avatarBgClass: "bg-gradient-to-br from-amber-500 to-orange-600 text-white",
-      roleLabel: "المتفقد التربوي",
-      roleShortTag: "متفقد",
+        "border-2 border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-200 hover:border-amber-400 shadow-sm",
+      avatarBgClass: "bg-gradient-to-br from-slate-600 to-slate-700 text-white",
+      roleLabel: "حساب قيد توثيق الهوية",
+      roleShortTag: "غير موثق",
       badgeClass:
-        "bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-200 border border-amber-300 dark:border-amber-700",
+        "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-700",
     };
   }
   if (role === "INSTITUTION") {
+    if (isVerified) {
+      return {
+        boxClass:
+          "border-2 border-violet-500/80 bg-violet-50/70 dark:bg-violet-950/40 text-violet-950 dark:text-violet-200 hover:border-violet-600 shadow-sm",
+        avatarBgClass: "bg-gradient-to-br from-violet-600 to-indigo-600 text-white",
+        roleLabel: "مؤسسة معتمدة",
+        roleShortTag: "مؤسسة",
+        badgeClass:
+          "bg-violet-100 text-violet-800 dark:bg-violet-900/60 dark:text-violet-200 border border-violet-300 dark:border-violet-700",
+      };
+    }
     return {
       boxClass:
-        "border-2 border-violet-500/80 bg-violet-50/70 dark:bg-violet-950/40 text-violet-950 dark:text-violet-200 hover:border-violet-600 shadow-sm",
-      avatarBgClass: "bg-gradient-to-br from-violet-600 to-indigo-600 text-white",
-      roleLabel: "المؤسسة التربوية",
-      roleShortTag: "مؤسسة",
+        "border-2 border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-200 hover:border-violet-400 shadow-sm",
+      avatarBgClass: "bg-gradient-to-br from-slate-600 to-slate-700 text-white",
+      roleLabel: "حساب قيد توثيق الهوية",
+      roleShortTag: "غير موثق",
       badgeClass:
-        "bg-violet-100 text-violet-800 dark:bg-violet-900/60 dark:text-violet-200 border border-violet-300 dark:border-violet-700",
+        "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-700",
     };
   }
   if (role === "STUDENT") {
@@ -12090,7 +12135,7 @@ function getRoleUsernameBoxStyle(role?: string): {
       boxClass:
         "border-2 border-emerald-500/80 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-950 dark:text-emerald-200 hover:border-emerald-600 shadow-sm",
       avatarBgClass: "bg-gradient-to-br from-emerald-600 to-teal-600 text-white",
-      roleLabel: "التلميذ",
+      roleLabel: "تلميذ",
       roleShortTag: "تلميذ",
       badgeClass:
         "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700",
@@ -12100,7 +12145,7 @@ function getRoleUsernameBoxStyle(role?: string): {
     boxClass:
       "border-2 border-blue-500/80 bg-blue-50/70 dark:bg-blue-950/40 text-blue-950 dark:text-blue-200 hover:border-blue-600 shadow-sm",
     avatarBgClass: "bg-gradient-to-br from-blue-600 to-cyan-600 text-white",
-    roleLabel: "المعلم / الأستاذ",
+    roleLabel: isVerified ? "معلم موثق" : "معلم",
     roleShortTag: "معلم",
     badgeClass:
       "bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-200 border border-blue-300 dark:border-blue-700",
@@ -12111,7 +12156,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createSupabaseBrowserClient();
-  const { locale, setLocale, theme, toggleTheme, t, openAuthModal } =
+  const { locale, setLocale, theme, toggleTheme, t, openAuthModal, closeAuthModal } =
     useAppPreferences();
 
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -12351,15 +12396,28 @@ export default function Navbar() {
 
   const handleSignOut = async () => {
     setProfileMenuOpen(false);
-    await fetch("/api/me/presence", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ presenceStatus: "OFFLINE" }),
-    }).catch(() => null);
-    await supabase.auth.signOut();
+    setNotifMenuOpen(false);
+    setMobileMenuOpen(false);
+    closeAuthModal();
     setUser(null);
-    router.push("/login");
-    router.refresh();
+
+    try {
+      void fetch("/api/me/presence", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ presenceStatus: "OFFLINE" }),
+        keepalive: true,
+      }).catch(() => null);
+      await supabase.auth.signOut();
+    } catch {
+      // ignore
+    }
+
+    if (typeof window !== "undefined") {
+      window.location.replace("/login");
+    } else {
+      router.push("/login");
+    }
   };
 
   const getNavLinks = () => {
@@ -12372,7 +12430,9 @@ export default function Navbar() {
     if (user?.role === "INSPECTOR") {
       return [
         ...base,
-        { label: "للمتفقدين", href: "/#inspectors-hub" },
+        user.isVerified
+          ? { label: "للمتفقدين", href: "/#inspectors-hub" }
+          : { label: "توثيق حساب المتفقد", href: "/profile?tab=verification" },
         { label: "اعرف المزيد", href: "/#learn-more" },
       ];
     }
@@ -12380,7 +12440,9 @@ export default function Navbar() {
     if (user?.role === "TEACHER") {
       return [
         ...base,
-        { label: "للمعلمين", href: "/#teachers-hub" },
+        user.isVerified
+          ? { label: "للمعلمين", href: "/#teachers-hub" }
+          : { label: "توثيق الحساب", href: "/profile?tab=verification" },
         { label: "اعرف المزيد", href: "/#learn-more" },
       ];
     }
@@ -12388,7 +12450,9 @@ export default function Navbar() {
     if (user?.role === "INSTITUTION") {
       return [
         ...base,
-        { label: "للمؤسسات", href: "/#institutions-hub" },
+        user.isVerified
+          ? { label: "للمؤسسات", href: "/#institutions-hub" }
+          : { label: "توثيق المؤسسة", href: "/profile?tab=verification" },
         { label: "اعرف المزيد", href: "/#learn-more" },
       ];
     }
@@ -12422,7 +12486,7 @@ export default function Navbar() {
     user?.role === "MODERATOR" ||
     user?.role === "INSPECTOR";
 
-  const roleBoxStyle = getRoleUsernameBoxStyle(user?.role);
+  const roleBoxStyle = getRoleUsernameBoxStyle(user?.role, user?.isVerified);
   const currentPresenceInfo = getPublicPresenceState(
     {
       presenceStatus: user?.presenceStatus,
@@ -13219,7 +13283,7 @@ export default function SupervisoryHierarchyBar({
 
 ```typescript
 import React from "react";
-import { BadgeCheck, Building2, GraduationCap, Ban, ShieldAlert, ShieldCheck } from "lucide-react";
+import { BadgeCheck, BookOpen, GraduationCap, Ban, ShieldAlert, ShieldCheck } from "lucide-react";
 import type { Role } from "@/types";
 
 interface InspectorBadgeProps {
@@ -13280,7 +13344,7 @@ export default function InspectorBadge({
     );
   }
 
-  // 4. Certified Inspector Badge (Only shown when isVerified === true!)
+  // 4. Certified Inspector Badge — STRICTLY EXCLUSIVE to verified Inspectors (isVerified === true)
   if (role === "INSPECTOR") {
     if (isVerified) {
       return (
@@ -13298,7 +13362,7 @@ export default function InspectorBadge({
     return null;
   }
 
-  // 5. Educational Institution Badge (Verified via Admin Code vs Standard)
+  // 5. Educational Institution Badge — STRICTLY EXCLUSIVE to verified Institutions (isVerified === true)
   if (role === "INSTITUTION") {
     if (isVerified) {
       return (
@@ -13313,20 +13377,10 @@ export default function InspectorBadge({
         </span>
       );
     }
-    return (
-      <span
-        title="مؤسسة تربوية"
-        className={`inline-flex items-center gap-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold select-none ${
-          size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-xs"
-        }`}
-      >
-        <Building2 className={size === "sm" ? "w-3 h-3" : "w-4 h-4"} />
-        <span>مؤسسة تربوية</span>
-      </span>
-    );
+    return null;
   }
 
-  // 6. Teacher Badge (Verified via Admin Code vs Standard)
+  // 6. Teacher Badge — Appears immediately upon login ("معلم"), and upgrades to "معلم موثق" when verified
   if (role === "TEACHER") {
     if (isVerified) {
       return (
@@ -13341,10 +13395,20 @@ export default function InspectorBadge({
         </span>
       );
     }
-    return null;
+    return (
+      <span
+        title="حساب معلم"
+        className={`inline-flex items-center gap-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 font-bold select-none ${
+          size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-xs"
+        }`}
+      >
+        <BookOpen className={size === "sm" ? "w-3 h-3" : "w-4 h-4"} />
+        <span>معلم</span>
+      </span>
+    );
   }
 
-  // 7. Student Badge
+  // 7. Student Badge — Appears immediately upon login ("تلميذ")
   if (role === "STUDENT") {
     return (
       <span
@@ -13953,6 +14017,10 @@ export default function RolePersonalizedHub({
     });
 
   useEffect(() => {
+    if (!isStaff) {
+      setActiveHub(initialHub);
+      return;
+    }
     const handleHash = () => {
       if (typeof window !== "undefined") {
         const hash = window.location.hash;
@@ -13965,7 +14033,7 @@ export default function RolePersonalizedHub({
     handleHash();
     window.addEventListener("hashchange", handleHash);
     return () => window.removeEventListener("hashchange", handleHash);
-  }, []);
+  }, [isStaff, initialHub]);
 
   // 1. Institution-specific publications
   const institutionWorksheets = useMemo(() => {
@@ -14063,6 +14131,9 @@ export default function RolePersonalizedHub({
         dir="rtl"
         className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 scroll-mt-24"
       >
+        <div id="inspectors-hub" />
+        <div id="institutions-hub" />
+        <div id="teachers-hub" />
         <div className="rounded-3xl border-2 border-amber-300 bg-gradient-to-l from-amber-50 via-white to-amber-50/40 p-6 sm:p-8 shadow-sm dark:border-amber-800/80 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/30">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
             <div className="space-y-2 max-w-3xl">
@@ -17721,7 +17792,7 @@ export default async function HomePage(props: HomePageProps) {
               <span>النشرات</span>
             </a>
 
-            {viewerRole === "INSTITUTION" && (
+            {viewerRole === "INSTITUTION" && viewerIsVerified && (
               <a
                 href="#institutions-hub"
                 className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm rounded-xl border border-white/30 backdrop-blur-sm transition inline-flex items-center gap-1.5"
@@ -17731,7 +17802,7 @@ export default async function HomePage(props: HomePageProps) {
               </a>
             )}
 
-            {viewerRole === "INSPECTOR" && (
+            {viewerRole === "INSPECTOR" && viewerIsVerified && (
               <a
                 href="#inspectors-hub"
                 className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm rounded-xl border border-white/30 backdrop-blur-sm transition inline-flex items-center gap-1.5"
@@ -17741,7 +17812,7 @@ export default async function HomePage(props: HomePageProps) {
               </a>
             )}
 
-            {viewerRole === "TEACHER" && (
+            {viewerRole === "TEACHER" && viewerIsVerified && (
               <a
                 href="#teachers-hub"
                 className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm rounded-xl border border-white/30 backdrop-blur-sm transition inline-flex items-center gap-1.5"
@@ -20767,8 +20838,7 @@ function ProfileWorkspaceContent() {
     try {
       setDeletingAccount(true);
       await deleteMyAccountAction();
-      router.push("/");
-      router.refresh();
+      window.location.replace("/login");
     } catch (err) {
       alert(err instanceof Error ? err.message : "تعذر حذف الحساب");
       setDeletingAccount(false);
@@ -20814,7 +20884,9 @@ function ProfileWorkspaceContent() {
   }
 
   const isAccountVerified =
-    Boolean(profile.isVerified) || profile.role === "INSPECTOR";
+    Boolean(profile.isVerified) ||
+    profile.role === "ADMIN" ||
+    profile.role === "MODERATOR";
 
   return (
     <main className="max-w-6xl mx-auto px-4 py-8" dir="rtl">
@@ -20844,7 +20916,7 @@ function ProfileWorkspaceContent() {
               )}
               {profile.role === "ADMIN" ||
               profile.role === "MODERATOR" ||
-              profile.role === "INSPECTOR" ? (
+              (profile.role === "INSPECTOR" && profile.isVerified) ? (
                 <Link
                   href={
                     profile.role === "ADMIN"
@@ -22295,6 +22367,10 @@ function LoginContent() {
     } else if (errorParam === "account-locked") {
       setIsAccountLocked(true);
       setError("تم تعليق الدخول مؤقتاً لحماية الحساب. يرجى التواصل مع الدعم الفني لتفعيل الحساب.");
+    } else if (errorParam === "account-not-found") {
+      setError(
+        "هذا الحساب غير موجود أو تم حذفه مسبقاً. عند حذف الحساب أو عدم وجوده، يجب عليك إعادة إنشاء حساب جديد أولاً."
+      );
     }
   }, [errorParam, actualRoleParam]);
 
@@ -22383,6 +22459,19 @@ function LoginContent() {
             setError(
               preJson.data.lockMessage ||
                 "هذا الحساب موقوف مؤقتاً. يرجى التواصل مع الدعم الفني."
+            );
+            return;
+          }
+
+          // Block deleted or non-existent accounts immediately so they must register first
+          const isPrimaryAdminCheck =
+            rawIdentifier.toLowerCase() === "bjasser123@gmail.com" ||
+            rawIdentifier.toLowerCase() === "bjasser" ||
+            rawIdentifier.toLowerCase() === "@bjasser";
+
+          if (!existsInDb && !isPrimaryAdminCheck) {
+            setError(
+              "هذا الحساب غير مسجل في المنصة أو تم حذفه مسبقاً. يجب عليك إنشاء حساب جديد أولاً من صفحة إنشاء الحساب."
             );
             return;
           }
@@ -25300,7 +25389,15 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* KPI Cards */}
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
+            <div className="rounded-2xl border-2 border-blue-300 bg-blue-50/70 p-4 dark:border-blue-800 dark:bg-blue-950/40">
+              <span className="text-[11px] font-extrabold text-blue-900 dark:text-blue-300">
+                إجمالي الحسابات في الموقع
+              </span>
+              <p className="mt-1 text-2xl font-black text-blue-700 dark:text-blue-200">
+                {data.stats.totalUsers}
+              </p>
+            </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
               <span className="text-[11px] font-bold text-slate-500">إجمالي المنشورات</span>
               <p className="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
@@ -25389,7 +25486,7 @@ export default function AdminDashboardPage() {
             }`}
           >
             <Users className="h-4 w-4" />
-            الأعضاء، تفعيل التوثيق، الأدوار والحظر ({data.teachers.length})
+            الأعضاء وتفعيل التوثيق ({data.stats.totalUsers})
           </button>
           <button
             type="button"

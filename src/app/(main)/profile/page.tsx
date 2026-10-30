@@ -297,8 +297,7 @@ function ProfileWorkspaceContent() {
     try {
       setDeletingAccount(true);
       await deleteMyAccountAction();
-      router.push("/");
-      router.refresh();
+      window.location.replace("/login");
     } catch (err) {
       alert(err instanceof Error ? err.message : "تعذر حذف الحساب");
       setDeletingAccount(false);
@@ -344,7 +343,9 @@ function ProfileWorkspaceContent() {
   }
 
   const isAccountVerified =
-    Boolean(profile.isVerified) || profile.role === "INSPECTOR";
+    Boolean(profile.isVerified) ||
+    profile.role === "ADMIN" ||
+    profile.role === "MODERATOR";
 
   return (
     <main className="max-w-6xl mx-auto px-4 py-8" dir="rtl">
@@ -374,7 +375,7 @@ function ProfileWorkspaceContent() {
               )}
               {profile.role === "ADMIN" ||
               profile.role === "MODERATOR" ||
-              profile.role === "INSPECTOR" ? (
+              (profile.role === "INSPECTOR" && profile.isVerified) ? (
                 <Link
                   href={
                     profile.role === "ADMIN"

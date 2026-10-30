@@ -103,6 +103,10 @@ function LoginContent() {
     } else if (errorParam === "account-locked") {
       setIsAccountLocked(true);
       setError("تم تعليق الدخول مؤقتاً لحماية الحساب. يرجى التواصل مع الدعم الفني لتفعيل الحساب.");
+    } else if (errorParam === "account-not-found") {
+      setError(
+        "هذا الحساب غير موجود أو تم حذفه مسبقاً. عند حذف الحساب أو عدم وجوده، يجب عليك إعادة إنشاء حساب جديد أولاً."
+      );
     }
   }, [errorParam, actualRoleParam]);
 
@@ -191,6 +195,19 @@ function LoginContent() {
             setError(
               preJson.data.lockMessage ||
                 "هذا الحساب موقوف مؤقتاً. يرجى التواصل مع الدعم الفني."
+            );
+            return;
+          }
+
+          // Block deleted or non-existent accounts immediately so they must register first
+          const isPrimaryAdminCheck =
+            rawIdentifier.toLowerCase() === "bjasser123@gmail.com" ||
+            rawIdentifier.toLowerCase() === "bjasser" ||
+            rawIdentifier.toLowerCase() === "@bjasser";
+
+          if (!existsInDb && !isPrimaryAdminCheck) {
+            setError(
+              "هذا الحساب غير مسجل في المنصة أو تم حذفه مسبقاً. يجب عليك إنشاء حساب جديد أولاً من صفحة إنشاء الحساب."
             );
             return;
           }

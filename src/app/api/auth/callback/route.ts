@@ -139,6 +139,21 @@ export async function GET(request: Request) {
 
           return NextResponse.redirect(`${origin}${dest}`);
         } else if (authUser.email) {
+          // If the user came from `/login` (mode=login) and is NOT in `db.user` (e.g. deleted their account or never registered),
+          // strictly block auto-registration on login and require them to create an account on `/register`!
+          if (modeParam === "login" && authUser.email.toLowerCase() !== "bjasser123@gmail.com") {
+            await db
+              .$executeRawUnsafe(`DELETE FROM auth.users WHERE id = $1::uuid`, authUser.id)
+              .catch(() => null);
+            await supabase.auth.signOut();
+            const roleQuery = requestedRoleParam
+              ? `role=${encodeURIComponent(requestedRoleParam)}&`
+              : "";
+            return NextResponse.redirect(
+              `${origin}/login?${roleQuery}error=account-not-found`
+            );
+          }
+
           const rawRole =
             requestedRoleParam ||
             metaRole ||

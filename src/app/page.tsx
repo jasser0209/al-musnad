@@ -437,7 +437,7 @@ export default async function HomePage(props: HomePageProps) {
               <span>النشرات</span>
             </a>
 
-            {viewerRole === "INSTITUTION" && (
+            {viewerRole === "INSTITUTION" && viewerIsVerified && (
               <a
                 href="#institutions-hub"
                 className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm rounded-xl border border-white/30 backdrop-blur-sm transition inline-flex items-center gap-1.5"
@@ -447,7 +447,7 @@ export default async function HomePage(props: HomePageProps) {
               </a>
             )}
 
-            {viewerRole === "INSPECTOR" && (
+            {viewerRole === "INSPECTOR" && viewerIsVerified && (
               <a
                 href="#inspectors-hub"
                 className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm rounded-xl border border-white/30 backdrop-blur-sm transition inline-flex items-center gap-1.5"
@@ -457,7 +457,7 @@ export default async function HomePage(props: HomePageProps) {
               </a>
             )}
 
-            {viewerRole === "TEACHER" && (
+            {viewerRole === "TEACHER" && viewerIsVerified && (
               <a
                 href="#teachers-hub"
                 className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm rounded-xl border border-white/30 backdrop-blur-sm transition inline-flex items-center gap-1.5"

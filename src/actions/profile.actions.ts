@@ -156,12 +156,20 @@ export async function deleteMyAccountAction() {
     where: { id: user.id },
   });
 
-  // 2. Delete auth user via Supabase Admin client if service role is configured
+  // 2. Delete auth user directly from Supabase PostgreSQL `auth.users` so credentials cannot be reused without re-registering
   try {
-    const adminSupabase = createSupabaseAdminClient();
-    await adminSupabase.auth.admin.deleteUser(user.id);
+    await db.$executeRawUnsafe(
+      `DELETE FROM auth.users WHERE id = $1::uuid`,
+      user.id
+    );
   } catch {
-    // Fallback sign out
+    // Fallback to Supabase Admin API if direct auth schema delete is restricted
+    try {
+      const adminSupabase = createSupabaseAdminClient();
+      await adminSupabase.auth.admin.deleteUser(user.id);
+    } catch {
+      // ignore
+    }
   }
 
   await supabase.auth.signOut();

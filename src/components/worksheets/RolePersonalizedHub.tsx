@@ -62,6 +62,10 @@ export default function RolePersonalizedHub({
     });
 
   useEffect(() => {
+    if (!isStaff) {
+      setActiveHub(initialHub);
+      return;
+    }
     const handleHash = () => {
       if (typeof window !== "undefined") {
         const hash = window.location.hash;
@@ -74,7 +78,7 @@ export default function RolePersonalizedHub({
     handleHash();
     window.addEventListener("hashchange", handleHash);
     return () => window.removeEventListener("hashchange", handleHash);
-  }, []);
+  }, [isStaff, initialHub]);
 
   // 1. Institution-specific publications
   const institutionWorksheets = useMemo(() => {
@@ -172,6 +176,9 @@ export default function RolePersonalizedHub({
         dir="rtl"
         className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 scroll-mt-24"
       >
+        <div id="inspectors-hub" />
+        <div id="institutions-hub" />
+        <div id="teachers-hub" />
         <div className="rounded-3xl border-2 border-amber-300 bg-gradient-to-l from-amber-50 via-white to-amber-50/40 p-6 sm:p-8 shadow-sm dark:border-amber-800/80 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/30">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
             <div className="space-y-2 max-w-3xl">

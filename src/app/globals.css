@@ -107,7 +107,7 @@ html.dark tbody td {
 }
 
 html.dark tbody tr:hover {
-  background-color: #1e293b/60 !important;
+  background-color: rgba(30, 41, 59, 0.6) !important;
 }
 
 /* Floating Modals, Dropdowns & Popovers */

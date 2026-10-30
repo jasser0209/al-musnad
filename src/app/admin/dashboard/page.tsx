@@ -283,7 +283,15 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* KPI Cards */}
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
+            <div className="rounded-2xl border-2 border-blue-300 bg-blue-50/70 p-4 dark:border-blue-800 dark:bg-blue-950/40">
+              <span className="text-[11px] font-extrabold text-blue-900 dark:text-blue-300">
+                إجمالي الحسابات في الموقع
+              </span>
+              <p className="mt-1 text-2xl font-black text-blue-700 dark:text-blue-200">
+                {data.stats.totalUsers}
+              </p>
+            </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
               <span className="text-[11px] font-bold text-slate-500">إجمالي المنشورات</span>
               <p className="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
@@ -372,7 +380,7 @@ export default function AdminDashboardPage() {
             }`}
           >
             <Users className="h-4 w-4" />
-            الأعضاء، تفعيل التوثيق، الأدوار والحظر ({data.teachers.length})
+            الأعضاء وتفعيل التوثيق ({data.stats.totalUsers})
           </button>
           <button
             type="button"

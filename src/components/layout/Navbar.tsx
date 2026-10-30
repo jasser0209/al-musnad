@@ -54,7 +54,7 @@ const LANGUAGES: { code: Locale; label: string; short: string }[] = [
   { code: "en", label: "English", short: "EN" },
 ];
 
-function getRoleUsernameBoxStyle(role?: string): {
+function getRoleUsernameBoxStyle(role?: string, isVerified?: boolean): {
   boxClass: string;
   avatarBgClass: string;
   roleLabel: string;
@@ -84,25 +84,47 @@ function getRoleUsernameBoxStyle(role?: string): {
     };
   }
   if (role === "INSPECTOR") {
+    if (isVerified) {
+      return {
+        boxClass:
+          "border-2 border-amber-500/80 bg-amber-50/70 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 hover:border-amber-600 shadow-sm",
+        avatarBgClass: "bg-gradient-to-br from-amber-500 to-orange-600 text-white",
+        roleLabel: "متفقد معتمد",
+        roleShortTag: "متفقد",
+        badgeClass:
+          "bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-200 border border-amber-300 dark:border-amber-700",
+      };
+    }
     return {
       boxClass:
-        "border-2 border-amber-500/80 bg-amber-50/70 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 hover:border-amber-600 shadow-sm",
-      avatarBgClass: "bg-gradient-to-br from-amber-500 to-orange-600 text-white",
-      roleLabel: "المتفقد التربوي",
-      roleShortTag: "متفقد",
+        "border-2 border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-200 hover:border-amber-400 shadow-sm",
+      avatarBgClass: "bg-gradient-to-br from-slate-600 to-slate-700 text-white",
+      roleLabel: "حساب قيد توثيق الهوية",
+      roleShortTag: "غير موثق",
       badgeClass:
-        "bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-200 border border-amber-300 dark:border-amber-700",
+        "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-700",
     };
   }
   if (role === "INSTITUTION") {
+    if (isVerified) {
+      return {
+        boxClass:
+          "border-2 border-violet-500/80 bg-violet-50/70 dark:bg-violet-950/40 text-violet-950 dark:text-violet-200 hover:border-violet-600 shadow-sm",
+        avatarBgClass: "bg-gradient-to-br from-violet-600 to-indigo-600 text-white",
+        roleLabel: "مؤسسة معتمدة",
+        roleShortTag: "مؤسسة",
+        badgeClass:
+          "bg-violet-100 text-violet-800 dark:bg-violet-900/60 dark:text-violet-200 border border-violet-300 dark:border-violet-700",
+      };
+    }
     return {
       boxClass:
-        "border-2 border-violet-500/80 bg-violet-50/70 dark:bg-violet-950/40 text-violet-950 dark:text-violet-200 hover:border-violet-600 shadow-sm",
-      avatarBgClass: "bg-gradient-to-br from-violet-600 to-indigo-600 text-white",
-      roleLabel: "المؤسسة التربوية",
-      roleShortTag: "مؤسسة",
+        "border-2 border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-200 hover:border-violet-400 shadow-sm",
+      avatarBgClass: "bg-gradient-to-br from-slate-600 to-slate-700 text-white",
+      roleLabel: "حساب قيد توثيق الهوية",
+      roleShortTag: "غير موثق",
       badgeClass:
-        "bg-violet-100 text-violet-800 dark:bg-violet-900/60 dark:text-violet-200 border border-violet-300 dark:border-violet-700",
+        "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-700",
     };
   }
   if (role === "STUDENT") {
@@ -110,7 +132,7 @@ function getRoleUsernameBoxStyle(role?: string): {
       boxClass:
         "border-2 border-emerald-500/80 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-950 dark:text-emerald-200 hover:border-emerald-600 shadow-sm",
       avatarBgClass: "bg-gradient-to-br from-emerald-600 to-teal-600 text-white",
-      roleLabel: "التلميذ",
+      roleLabel: "تلميذ",
       roleShortTag: "تلميذ",
       badgeClass:
         "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700",
@@ -120,7 +142,7 @@ function getRoleUsernameBoxStyle(role?: string): {
     boxClass:
       "border-2 border-blue-500/80 bg-blue-50/70 dark:bg-blue-950/40 text-blue-950 dark:text-blue-200 hover:border-blue-600 shadow-sm",
     avatarBgClass: "bg-gradient-to-br from-blue-600 to-cyan-600 text-white",
-    roleLabel: "المعلم / الأستاذ",
+    roleLabel: isVerified ? "معلم موثق" : "معلم",
     roleShortTag: "معلم",
     badgeClass:
       "bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-200 border border-blue-300 dark:border-blue-700",
@@ -131,7 +153,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createSupabaseBrowserClient();
-  const { locale, setLocale, theme, toggleTheme, t, openAuthModal } =
+  const { locale, setLocale, theme, toggleTheme, t, openAuthModal, closeAuthModal } =
     useAppPreferences();
 
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -371,15 +393,28 @@ export default function Navbar() {
 
   const handleSignOut = async () => {
     setProfileMenuOpen(false);
-    await fetch("/api/me/presence", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ presenceStatus: "OFFLINE" }),
-    }).catch(() => null);
-    await supabase.auth.signOut();
+    setNotifMenuOpen(false);
+    setMobileMenuOpen(false);
+    closeAuthModal();
     setUser(null);
-    router.push("/login");
-    router.refresh();
+
+    try {
+      void fetch("/api/me/presence", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ presenceStatus: "OFFLINE" }),
+        keepalive: true,
+      }).catch(() => null);
+      await supabase.auth.signOut();
+    } catch {
+      // ignore
+    }
+
+    if (typeof window !== "undefined") {
+      window.location.replace("/login");
+    } else {
+      router.push("/login");
+    }
   };
 
   const getNavLinks = () => {
@@ -392,7 +427,9 @@ export default function Navbar() {
     if (user?.role === "INSPECTOR") {
       return [
         ...base,
-        { label: "للمتفقدين", href: "/#inspectors-hub" },
+        user.isVerified
+          ? { label: "للمتفقدين", href: "/#inspectors-hub" }
+          : { label: "توثيق حساب المتفقد", href: "/profile?tab=verification" },
         { label: "اعرف المزيد", href: "/#learn-more" },
       ];
     }
@@ -400,7 +437,9 @@ export default function Navbar() {
     if (user?.role === "TEACHER") {
       return [
         ...base,
-        { label: "للمعلمين", href: "/#teachers-hub" },
+        user.isVerified
+          ? { label: "للمعلمين", href: "/#teachers-hub" }
+          : { label: "توثيق الحساب", href: "/profile?tab=verification" },
         { label: "اعرف المزيد", href: "/#learn-more" },
       ];
     }
@@ -408,7 +447,9 @@ export default function Navbar() {
     if (user?.role === "INSTITUTION") {
       return [
         ...base,
-        { label: "للمؤسسات", href: "/#institutions-hub" },
+        user.isVerified
+          ? { label: "للمؤسسات", href: "/#institutions-hub" }
+          : { label: "توثيق المؤسسة", href: "/profile?tab=verification" },
         { label: "اعرف المزيد", href: "/#learn-more" },
       ];
     }
@@ -442,7 +483,7 @@ export default function Navbar() {
     user?.role === "MODERATOR" ||
     user?.role === "INSPECTOR";
 
-  const roleBoxStyle = getRoleUsernameBoxStyle(user?.role);
+  const roleBoxStyle = getRoleUsernameBoxStyle(user?.role, user?.isVerified);
   const currentPresenceInfo = getPublicPresenceState(
     {
       presenceStatus: user?.presenceStatus,
