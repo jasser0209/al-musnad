@@ -29,4 +29,4 @@ export async function toggleFavoriteAction(worksheetId: string) {
   revalidatePath("/browse");
 
   return { success: true, data: result };
-}
+}

@@ -169,4 +169,4 @@ CREATE POLICY "Admins can view audit logs"
 DROP POLICY IF EXISTS "Service role full access to audit_logs" ON audit_logs;
 CREATE POLICY "Service role full access to audit_logs"
   ON audit_logs FOR ALL
-  USING (auth.role() = 'service_role');
+  USING (auth.role() = 'service_role');

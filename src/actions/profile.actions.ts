@@ -175,4 +175,4 @@ export async function deleteMyAccountAction() {
   await supabase.auth.signOut();
   revalidatePath("/");
   return { deleted: true };
-}
+}

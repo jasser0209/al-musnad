@@ -113,4 +113,4 @@ export async function GET(request: NextRequest, context: RouteContext) {
   } catch (error) {
     return errorResponse(error);
   }
-}
+}

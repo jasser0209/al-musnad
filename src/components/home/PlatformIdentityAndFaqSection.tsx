@@ -401,4 +401,4 @@ export default function PlatformIdentityAndFaqSection() {
       )}
     </div>
   );
-}
+}

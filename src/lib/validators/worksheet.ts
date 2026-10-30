@@ -56,4 +56,4 @@ export const worksheetFilterSchema = paginationSchema.extend({
 
 export type CreateWorksheetInput = z.infer<typeof createWorksheetSchema>;
 export type UpdateWorksheetInput = z.infer<typeof updateWorksheetSchema>;
-export type WorksheetFilterInput = z.infer<typeof worksheetFilterSchema>;
+export type WorksheetFilterInput = z.infer<typeof worksheetFilterSchema>;

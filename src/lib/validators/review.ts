@@ -16,4 +16,4 @@ export const upsertReviewSchema = z.object({
   isPrivateToPublisher: z.boolean().optional(),
 });
 
-export type UpsertReviewInput = z.infer<typeof upsertReviewSchema>;
+export type UpsertReviewInput = z.infer<typeof upsertReviewSchema>;

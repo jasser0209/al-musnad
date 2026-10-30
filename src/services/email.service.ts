@@ -186,8 +186,8 @@ function createEmailTemplate({
     <div class="footer">
       <p style="margin: 0 0 8px 0;">
         هذه الرسالة تم إرسالها تلقائياً من خوادم <strong>منصة المسند</strong>.<br>
-        للدعم الفني والاستفسار، تواصل معنا عبر واتساب: 
-        <a href="https://wa.me/21627764985">27764985</a> أو 
+        للدعم الفني والاستفسار، تواصل معنا عبر واتساب:
+        <a href="https://wa.me/21627764985">27764985</a> أو
         <a href="https://wa.me/21646907101">46907101</a>
       </p>
       <p style="margin: 0; color: #94a3b8;">
@@ -304,4 +304,4 @@ export async function sendEndorsementNotification(
   });
 
   return sendEmail({ to, subject, html });
-}
+}

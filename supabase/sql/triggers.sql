@@ -108,4 +108,4 @@ DROP TRIGGER IF EXISTS set_updated_at_worksheets ON worksheets;
 CREATE TRIGGER set_updated_at_worksheets
   BEFORE UPDATE ON worksheets
   FOR EACH ROW
-  EXECUTE FUNCTION public.update_updated_at();
+  EXECUTE FUNCTION public.update_updated_at();

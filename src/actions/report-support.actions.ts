@@ -202,4 +202,4 @@ export async function replySupportTicketAdminAction(
   revalidatePath("/moderator/dashboard");
   revalidatePath("/support");
   return ticket;
-}
+}

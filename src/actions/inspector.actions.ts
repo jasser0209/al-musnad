@@ -587,4 +587,4 @@ export async function toggleWorksheetEndorsementAction(worksheetId: string) {
   revalidatePath("/admin/dashboard");
 
   return updated;
-}
+}

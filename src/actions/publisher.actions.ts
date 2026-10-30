@@ -301,4 +301,4 @@ export async function getMyFavoritePublishersAction() {
   });
 
   return records.map((r) => r.publisher);
-}
+}

@@ -455,11 +455,7 @@ export default function SupportAndCustomerServicePage() {
                             : "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
                         }`}
                       >
-                        {t.status === "RESOLVED"
-                          ? "تم الحل ✓"
-                          : t.status === "IN_PROGRESS"
-                          ? "قيد المعالجة"
-                          : "جديدة"}
+                        {t.status === "ANSWERED" || t.status === "RESOLVED" ? "تم الرد ✓" : t.status === "CLOSED" ? "مغلقة" : "مفتوحة (قيد المراجعة)"}
                       </span>
                     </div>
 
@@ -467,10 +463,10 @@ export default function SupportAndCustomerServicePage() {
                       {t.message}
                     </p>
 
-                    {t.response && (
+                    {(t.adminReply || t.response) && (
                       <div className="pt-2 mt-2 border-t border-slate-200/60 dark:border-slate-700/60 text-[11px] text-blue-800 dark:text-blue-300 bg-blue-50/80 dark:bg-blue-950/40 p-2 rounded-xl">
                         <strong className="block mb-0.5">رد الإدارة:</strong>
-                        {t.response}
+                        {t.adminReply || t.response}
                       </div>
                     )}
                   </div>
@@ -520,4 +516,4 @@ export default function SupportAndCustomerServicePage() {
       </div>
     </main>
   );
-}
+}

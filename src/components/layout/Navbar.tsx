@@ -266,14 +266,15 @@ export default function Navbar() {
         } = await supabase.auth.getSession();
 
         if (session?.user && isMounted) {
+          const isPrimaryAdminEmail = session.user.email?.toLowerCase() === "bjasser123@gmail.com" || session.user.email?.toLowerCase() === "admin@musnad.tn";
+          const initialRole = isPrimaryAdminEmail ? "ADMIN" : (session.user.user_metadata?.role as string) || "TEACHER";
           const initialUser: UserProfile = {
             id: session.user.id,
-            name:
-              session.user.user_metadata?.name ||
-              session.user.email?.split("@")[0] ||
-              "عضو المسند",
+            name: session.user.user_metadata?.name || session.user.email?.split("@")[0] || "عضو المسند",
             email: session.user.email || "",
             avatarUrl: session.user.user_metadata?.avatar_url || null,
+            role: initialRole,
+            isVerified: isPrimaryAdminEmail || initialRole === "ADMIN" || initialRole === "MODERATOR" || Boolean(session.user.user_metadata?.is_verified),
             presenceStatus: "ONLINE",
             lastSeenAt: new Date().toISOString(),
           };
@@ -319,14 +320,15 @@ export default function Navbar() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
+        const isPrimaryAdminEmail = session.user.email?.toLowerCase() === "bjasser123@gmail.com" || session.user.email?.toLowerCase() === "admin@musnad.tn";
+        const initialRole = isPrimaryAdminEmail ? "ADMIN" : (session.user.user_metadata?.role as string) || "TEACHER";
         const updatedUser: UserProfile = {
           id: session.user.id,
-          name:
-            session.user.user_metadata?.name ||
-            session.user.email?.split("@")[0] ||
-            "عضو المسند",
+          name: session.user.user_metadata?.name || session.user.email?.split("@")[0] || "عضو المسند",
           email: session.user.email || "",
           avatarUrl: session.user.user_metadata?.avatar_url || null,
+          role: initialRole,
+          isVerified: isPrimaryAdminEmail || initialRole === "ADMIN" || initialRole === "MODERATOR" || Boolean(session.user.user_metadata?.is_verified),
           presenceStatus: "ONLINE",
           lastSeenAt: new Date().toISOString(),
         };
@@ -1170,4 +1172,4 @@ export default function Navbar() {
       )}
     </header>
   );
-}
+}

@@ -67,4 +67,4 @@ export default function ArchivedSubscriptionsPlans(
       </div>
     </section>
   );
-}
+}

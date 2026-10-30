@@ -1060,4 +1060,4 @@ export default function TeacherProfilePage() {
       <ProfileWorkspaceContent />
     </Suspense>
   );
-}
+}

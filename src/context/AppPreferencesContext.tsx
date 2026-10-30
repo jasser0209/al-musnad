@@ -441,4 +441,4 @@ export function useAppPreferences() {
     throw new Error("useAppPreferences must be used inside AppPreferencesProvider");
   }
   return ctx;
-}
+}

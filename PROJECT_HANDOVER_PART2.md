@@ -1,11 +1,11 @@
 # 🏛️ Project Handover & Master Technical Audit — Al-Musnad (v16.0) — الجزء الثاني: المكونات، الواجهات، مستودع المواد، ولوحات الإشراف الثلاث (Part 2 of 2)
-**Project:** Al-Musnad (المسند) — Integrated Educational & Pedagogical Platform  
-**Architecture:** Next.js 15 (App Router) + TypeScript + Prisma ORM + PostgreSQL (Supabase) + Cloudflare R2 + Tailwind CSS + Lucide Icons  
-**Version:** 16.0.0 (Master Production Handover — Complete Source Code, Security Configs & Commands)  
-**Date:** October 2026  
-**Primary Admin Account:** `bjasser123@gmail.com` (Password: `Jasserbes1M` — Role: `ADMIN`)  
-**Live Production URL:** [https://al-musnad.vercel.app](https://al-musnad.vercel.app)  
-**GitHub Repository:** [https://github.com/jasser0209/al-musnad.git](https://github.com/jasser0209/al-musnad.git)  
+**Project:** Al-Musnad (المسند) — Integrated Educational & Pedagogical Platform
+**Architecture:** Next.js 15 (App Router) + TypeScript + Prisma ORM + PostgreSQL (Supabase) + Cloudflare R2 + Tailwind CSS + Lucide Icons
+**Version:** 16.0.0 (Master Production Handover — Complete Source Code, Security Configs & Commands)
+**Date:** October 2026
+**Primary Admin Account:** `bjasser123@gmail.com` (Password: `Jasserbes1M` — Role: `ADMIN`)
+**Live Production URL:** [https://al-musnad.vercel.app](https://al-musnad.vercel.app)
+**GitHub Repository:** [https://github.com/jasser0209/al-musnad.git](https://github.com/jasser0209/al-musnad.git)
 
 ---
 
@@ -1504,14 +1504,15 @@ export default function Navbar() {
         } = await supabase.auth.getSession();
 
         if (session?.user && isMounted) {
+          const isPrimaryAdminEmail = session.user.email?.toLowerCase() === "bjasser123@gmail.com" || session.user.email?.toLowerCase() === "admin@musnad.tn";
+          const initialRole = isPrimaryAdminEmail ? "ADMIN" : (session.user.user_metadata?.role as string) || "TEACHER";
           const initialUser: UserProfile = {
             id: session.user.id,
-            name:
-              session.user.user_metadata?.name ||
-              session.user.email?.split("@")[0] ||
-              "عضو المسند",
+            name: session.user.user_metadata?.name || session.user.email?.split("@")[0] || "عضو المسند",
             email: session.user.email || "",
             avatarUrl: session.user.user_metadata?.avatar_url || null,
+            role: initialRole,
+            isVerified: isPrimaryAdminEmail || initialRole === "ADMIN" || initialRole === "MODERATOR" || Boolean(session.user.user_metadata?.is_verified),
             presenceStatus: "ONLINE",
             lastSeenAt: new Date().toISOString(),
           };
@@ -1557,14 +1558,15 @@ export default function Navbar() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
+        const isPrimaryAdminEmail = session.user.email?.toLowerCase() === "bjasser123@gmail.com" || session.user.email?.toLowerCase() === "admin@musnad.tn";
+        const initialRole = isPrimaryAdminEmail ? "ADMIN" : (session.user.user_metadata?.role as string) || "TEACHER";
         const updatedUser: UserProfile = {
           id: session.user.id,
-          name:
-            session.user.user_metadata?.name ||
-            session.user.email?.split("@")[0] ||
-            "عضو المسند",
+          name: session.user.user_metadata?.name || session.user.email?.split("@")[0] || "عضو المسند",
           email: session.user.email || "",
           avatarUrl: session.user.user_metadata?.avatar_url || null,
+          role: initialRole,
+          isVerified: isPrimaryAdminEmail || initialRole === "ADMIN" || initialRole === "MODERATOR" || Boolean(session.user.user_metadata?.is_verified),
           presenceStatus: "ONLINE",
           lastSeenAt: new Date().toISOString(),
         };
@@ -6063,7 +6065,9 @@ export default function ReviewSection({
         return;
       }
 
-      const savedReview: ReviewItem = json.data;
+      const savedReview: ReviewItem = json.data.review ?? json.data;
+      if (typeof json.data.ratingAvg === "number") setRatingAvg(json.data.ratingAvg);
+      if (typeof json.data.reviewCount === "number") setReviewCount(json.data.reviewCount);
       setReviews((prev) => {
         const combined = [savedReview, ...prev];
         return combined.sort((a, b) => {
@@ -6623,168 +6627,7 @@ const ROLE_LABELS_AR: Record<string, string> = {
   ADMIN: "حساب مشرف عام",
 };
 
-const DEMO_WORKSHEETS = [
-  {
-    id: "demo-fr-1",
-    title: "Leçon de lecture et vocabulaire — Français",
-    titleAr: "درس القراءة والمفردات الأساسية في اللغة الفرنسية",
-    description: "French lesson",
-    descriptionAr: "درس متكامل في اللغة الفرنسية للسنة الأولى ابتدائي.",
-    fileUrl: "/sample.pdf",
-    fileName: "francais-lecon1.pdf",
-    thumbnailUrl: null,
-    fileSize: 1024 * 640,
-    pageCount: 3,
-    status: "PUBLISHED" as const,
-    audience: "ALL" as const,
-    isEndorsed: true,
-    downloadCount: 210,
-    favoriteCount: 75,
-    ratingAvg: 4.9,
-    reviewCount: 14,
-    tags: ["فرنسية", "درس", "الثلاثي الأول"],
-    createdAt: new Date("2026-10-28"),
-    updatedAt: new Date("2026-10-28"),
-    gradeId: "g1",
-    subjectId: "s4",
-    categoryId: "c1",
-    uploadedBy: "u1",
-    grade: CURRICULUM_GRADES[0],
-    subject: CURRICULUM_SUBJECTS[3],
-    category: SUBJECT_SUBDIVISIONS[0],
-    uploader: {
-      id: "u1",
-      name: "معلم ناشر",
-      school: "مدرسة ابتدائية",
-      role: "TEACHER",
-      isVerified: true,
-      isBanned: false,
-      avatarUrl: null,
-    },
-  },
-  {
-    id: "demo-inst-1",
-    title: "Institutional Annual Project & Charter",
-    titleAr: "مشروع المؤسسة التربوية السنوي وميثاق العمل المشترك بين المدارس",
-    description: "Institution publication",
-    descriptionAr: "مبادرة تربوية ونموذج تنسيقي مخصص للتفاعل بين المؤسسات التربوية.",
-    fileUrl: "/sample.pdf",
-    fileName: "institution-project.pdf",
-    thumbnailUrl: null,
-    fileSize: 1024 * 820,
-    pageCount: 5,
-    status: "PUBLISHED" as const,
-    audience: "INSTITUTIONS_ONLY" as const,
-    isEndorsed: true,
-    downloadCount: 165,
-    favoriteCount: 52,
-    ratingAvg: 4.9,
-    reviewCount: 11,
-    tags: ["مؤسسات", "مشروع مؤسسة", "الثلاثي الأول"],
-    createdAt: new Date("2026-10-27"),
-    updatedAt: new Date("2026-10-27"),
-    gradeId: "g1",
-    subjectId: "s3",
-    categoryId: "c6",
-    uploadedBy: "u2",
-    grade: CURRICULUM_GRADES[0],
-    subject: CURRICULUM_SUBJECTS[2],
-    category: SUBJECT_SUBDIVISIONS[5],
-    uploader: {
-      id: "u2",
-      name: "مؤسسة تربوية نموذجية",
-      school: "مدرسة ابتدائية",
-      role: "INSTITUTION",
-      isVerified: true,
-      isBanned: false,
-      avatarUrl: null,
-    },
-  },
-  {
-    id: "demo-fr-3",
-    title: "Fiche pédagogique — Français (للمعلمين فقط)",
-    titleAr: "جذاذة بيداغوجية وإصلاح تقييم اللغة الفرنسية",
-    description: "Teacher fiche",
-    descriptionAr: "جذاذة بيداغوجية مخصصة للمعلمين والمتفقدين فقط.",
-    fileUrl: "/sample.pdf",
-    fileName: "francais-fiche.pdf",
-    thumbnailUrl: null,
-    fileSize: 1024 * 750,
-    pageCount: 4,
-    status: "PUBLISHED" as const,
-    audience: "TEACHERS_ONLY" as const,
-    isEndorsed: true,
-    downloadCount: 185,
-    favoriteCount: 64,
-    ratingAvg: 5.0,
-    reviewCount: 15,
-    tags: ["فرنسية", "جذاذات", "إصلاح", "الثلاثي الثاني"],
-    createdAt: new Date("2026-10-27"),
-    updatedAt: new Date("2026-10-27"),
-    gradeId: "g1",
-    subjectId: "s4",
-    categoryId: "c4",
-    uploadedBy: "u1",
-    grade: CURRICULUM_GRADES[0],
-    subject: CURRICULUM_SUBJECTS[3],
-    category: SUBJECT_SUBDIVISIONS[3],
-    uploader: {
-      id: "u1",
-      name: "متفقد تربوي",
-      school: "دائرة التفقد التربوي",
-      role: "INSPECTOR",
-      isVerified: true,
-      isBanned: false,
-      avatarUrl: null,
-    },
-  },
-  {
-    id: "demo-admin-1",
-    title: "Teacher Administrative Schedule & Annual Plan",
-    titleAr: "نموذج جدول الأوقات والتوزيع السنوي ومحضر الجلسة البيداغوجية",
-    description: "Administrative document for teachers",
-    descriptionAr: "وثيقة إدارية تنظيمية خاصة بالمعلم والمؤسسة التربوية.",
-    fileUrl: "/sample.pdf",
-    fileName: "admin-schedule-doc.pdf",
-    thumbnailUrl: null,
-    fileSize: 1024 * 540,
-    pageCount: 2,
-    status: "PUBLISHED" as const,
-    audience: "ALL" as const,
-    isEndorsed: true,
-    downloadCount: 310,
-    favoriteCount: 95,
-    ratingAvg: 4.9,
-    reviewCount: 22,
-    tags: ["وثائق إدارية", "جداول الأوقات", "مذكرات ومراسلات", "الثلاثي الثالث"],
-    createdAt: new Date("2026-10-26"),
-    updatedAt: new Date("2026-10-26"),
-    gradeId: "g1",
-    subjectId: "s10",
-    categoryId: "c7",
-    uploadedBy: "u1",
-    grade: CURRICULUM_GRADES[0],
-    subject: {
-      id: "s10",
-      name: "Administration",
-      nameAr: "المعاملات والوثائق الإدارية",
-      slug: "administration",
-      color: "#334155",
-      icon: "briefcase",
-      sortOrder: 10,
-    },
-    category: ADMINISTRATIVE_CATEGORY,
-    uploader: {
-      id: "u1",
-      name: "إدارة المسند",
-      school: "الدائرة التربوية",
-      role: "INSPECTOR",
-      isVerified: true,
-      isBanned: false,
-      avatarUrl: null,
-    },
-  },
-];
+const DEMO_WORKSHEETS: any[] = [];
 
 export default async function HomePage(props: HomePageProps) {
   const resolvedParams = await props.searchParams;
@@ -6911,34 +6754,10 @@ export default async function HomePage(props: HomePageProps) {
     meta = fetchedCatalog.meta;
   } catch {
     isDbConnected = false;
-    let visibleDemo = isAuthenticated
-      ? DEMO_WORKSHEETS.filter((w) =>
-          canUserAccessWorksheet(w, viewerRole, viewerUserId)
-        )
-      : DEMO_WORKSHEETS.filter((w) => w.audience === "ALL");
-
-    if (trimester) {
-      const rawTrim = trimester.toLowerCase();
-      const targetTerm =
-        rawTrim === "trimester-1" || rawTrim.includes("أول") || rawTrim.includes("اول")
-          ? "الثلاثي الأول"
-          : rawTrim === "trimester-2" || rawTrim.includes("ثاني")
-          ? "الثلاثي الثاني"
-          : rawTrim === "trimester-3" || rawTrim.includes("ثالث")
-          ? "الثلاثي الثالث"
-          : trimester;
-      visibleDemo = visibleDemo.filter(
-        (w) =>
-          w.tags.includes(targetTerm) ||
-          w.title.includes(targetTerm) ||
-          (w.titleAr && w.titleAr.includes(targetTerm))
-      );
-    }
-
-    worksheets = visibleDemo;
-    explorerWorksheets = visibleDemo;
+    worksheets = [];
+    explorerWorksheets = [];
     meta = {
-      total: visibleDemo.length,
+      total: 0,
       page: 1,
       limit: 12,
       totalPages: 1,
@@ -11280,11 +11099,7 @@ export default function SupportAndCustomerServicePage() {
                             : "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
                         }`}
                       >
-                        {t.status === "RESOLVED"
-                          ? "تم الحل ✓"
-                          : t.status === "IN_PROGRESS"
-                          ? "قيد المعالجة"
-                          : "جديدة"}
+                        {t.status === "ANSWERED" || t.status === "RESOLVED" ? "تم الرد ✓" : t.status === "CLOSED" ? "مغلقة" : "مفتوحة (قيد المراجعة)"}
                       </span>
                     </div>
 
@@ -11292,10 +11107,10 @@ export default function SupportAndCustomerServicePage() {
                       {t.message}
                     </p>
 
-                    {t.response && (
+                    {(t.adminReply || t.response) && (
                       <div className="pt-2 mt-2 border-t border-slate-200/60 dark:border-slate-700/60 text-[11px] text-blue-800 dark:text-blue-300 bg-blue-50/80 dark:bg-blue-950/40 p-2 rounded-xl">
                         <strong className="block mb-0.5">رد الإدارة:</strong>
-                        {t.response}
+                        {t.adminReply || t.response}
                       </div>
                     )}
                   </div>
@@ -11706,7 +11521,7 @@ function LoginContent() {
 
       // Step 2: Attempt Supabase Auth login
       const supabase = createSupabaseBrowserClient();
-      const { error: authError } = await supabase.auth.signInWithPassword({
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: loginEmail,
         password: parsed.data.password,
       });
@@ -11717,10 +11532,7 @@ function LoginContent() {
             const failRes = await fetch("/api/auth/login-guard", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                action: "FAILED_ATTEMPT",
-                identifier: loginEmail,
-              }),
+              body: JSON.stringify({ action: "FAILED_ATTEMPT", identifier: loginEmail }),
             });
             const failJson = await failRes.json();
             if (failJson.success && failJson.data) {
@@ -11728,28 +11540,25 @@ function LoginContent() {
               if (typeof failJson.data.remainingAttempts === "number") {
                 setRemainingAttempts(failJson.data.remainingAttempts);
               }
-              setError(
-                failJson.data.message ||
-                  "كلمة المرور غير صحيحة، يرجى المحاولة مرة أخرى."
-              );
+              setError(failJson.data.message || "كلمة المرور غير صحيحة، يرجى المحاولة مرة أخرى.");
               return;
             }
           } catch {
             // fallback
           }
-          setError(
-            "كلمة المرور المدخلة غير صحيحة، يرجى المحاولة مرة أخرى."
-          );
+          setError("كلمة المرور المدخلة غير صحيحة، يرجى المحاولة مرة أخرى.");
           return;
         }
-
-        setError(
-          "هذا البريد الإلكتروني أو المعرف غير مسجل في المنصة، أو أن البيانات غير صحيحة."
-        );
+        setError("هذا البريد الإلكتروني أو المعرف غير مسجل في المنصة، أو أن البيانات غير صحيحة.");
         return;
       }
 
-      // Step 3: Verify synced profile role from /api/auth/me (catches accounts that were not in DB before login)
+      // Step 3: Strict Portal Isolation Check from session metadata AND /api/auth/me
+      const sessionMetaRole = String(authData?.user?.user_metadata?.role || "").trim().toUpperCase();
+      if (sessionMetaRole) {
+        resolvedRole = sessionMetaRole;
+      }
+
       try {
         const meRes = await fetch("/api/auth/me", { cache: "no-store" });
         if (meRes.ok) {
@@ -11757,42 +11566,35 @@ function LoginContent() {
           if (meJson.success && meJson.data) {
             resolvedRole = meJson.data.role || resolvedRole;
             resolvedVerified = Boolean(meJson.data.isVerified);
-
-            const isStaff =
-              resolvedRole === "ADMIN" ||
-              resolvedRole === "MODERATOR" ||
-              loginEmail.toLowerCase() === "bjasser123@gmail.com";
-
-            if (
-              !isStaff &&
-              ["INSTITUTION", "INSPECTOR", "TEACHER", "STUDENT"].includes(portalRole) &&
-              resolvedRole !== portalRole
-            ) {
-              await supabase.auth.signOut();
-              setSuggestedPortalRole(resolvedRole);
-              setError(
-                `عذراً، هذا الحساب مسجل في «${
-                  PORTAL_NAMES_AR[resolvedRole] || resolvedRole
-                }» ولا يمكنه تسجيل الدخول من «${
-                  PORTAL_NAMES_AR[portalRole] || portalRole
-                }». يجب على كل حساب تسجيل الدخول من الفضاء المخصص لفئته فقط.`
-              );
-              return;
-            }
           }
         }
       } catch {
-        // ignore
+        // fallback to sessionMetaRole
       }
 
-      // Step 4: Reset failed attempts counter on successful login
-      await fetch("/api/auth/login-guard", {
+      const isAdminOrModerator =
+        resolvedRole === "ADMIN" ||
+        resolvedRole === "MODERATOR" ||
+        loginEmail.toLowerCase() === "bjasser123@gmail.com" ||
+        loginEmail.toLowerCase() === "admin@musnad.tn";
+
+      if (
+        !isAdminOrModerator &&
+        ["INSTITUTION", "INSPECTOR", "TEACHER", "STUDENT"].includes(portalRole) &&
+        resolvedRole !== portalRole
+      ) {
+        await supabase.auth.signOut();
+        setSuggestedPortalRole(resolvedRole);
+        setError(
+          `عذراً، هذا الحساب مسجل في «${PORTAL_NAMES_AR[resolvedRole] || resolvedRole}» ولا يمكنه تسجيل الدخول من «${PORTAL_NAMES_AR[portalRole] || portalRole}». المشرف العام والمسؤول الإداري فقط يملكان صلاحية الدخول من أي فضاء.`
+        );
+        return;
+      }
+
+      void fetch("/api/auth/login-guard", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "RESET_SUCCESS",
-          identifier: loginEmail,
-        }),
+        body: JSON.stringify({ action: "RESET_SUCCESS", identifier: loginEmail }),
       }).catch(() => null);
 
       const isAdminAccount =

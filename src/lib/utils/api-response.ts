@@ -134,4 +134,4 @@ export function errorResponse(
   };
 
   return NextResponse.json(fallbackBody, { status: fallbackStatus });
-}
+}

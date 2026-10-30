@@ -161,13 +161,13 @@ function getLanguage(filePath) {
 }
 
 const strictHeader = (titleSuffix = "") => `# 🏛️ Project Handover & Master Technical Audit — Al-Musnad (v16.0) ${titleSuffix}
-**Project:** Al-Musnad (المسند) — Integrated Educational & Pedagogical Platform  
-**Architecture:** Next.js 15 (App Router) + TypeScript + Prisma ORM + PostgreSQL (Supabase) + Cloudflare R2 + Tailwind CSS + Lucide Icons  
-**Version:** 16.0.0 (Master Production Handover — Complete Source Code, Security Configs & Commands)  
-**Date:** October 2026  
-**Primary Admin Account:** \`bjasser123@gmail.com\` (Password: \`Jasserbes1M\` — Role: \`ADMIN\`)  
-**Live Production URL:** [https://al-musnad.vercel.app](https://al-musnad.vercel.app)  
-**GitHub Repository:** [https://github.com/jasser0209/al-musnad.git](https://github.com/jasser0209/al-musnad.git)  
+**Project:** Al-Musnad (المسند) — Integrated Educational & Pedagogical Platform
+**Architecture:** Next.js 15 (App Router) + TypeScript + Prisma ORM + PostgreSQL (Supabase) + Cloudflare R2 + Tailwind CSS + Lucide Icons
+**Version:** 16.0.0 (Master Production Handover — Complete Source Code, Security Configs & Commands)
+**Date:** October 2026
+**Primary Admin Account:** \`bjasser123@gmail.com\` (Password: \`Jasserbes1M\` — Role: \`ADMIN\`)
+**Live Production URL:** [https://al-musnad.vercel.app](https://al-musnad.vercel.app)
+**GitHub Repository:** [https://github.com/jasser0209/al-musnad.git](https://github.com/jasser0209/al-musnad.git)
 
 ---
 
@@ -306,4 +306,4 @@ fs.writeFileSync(outputPart2, part2Md, "utf-8");
 
 console.log(`✅ PROJECT_HANDOVER.md (Complete): ${(Buffer.byteLength(fullMd, "utf8") / 1024).toFixed(1)} KB`);
 console.log(`✅ PROJECT_HANDOVER_PART1.md (Backend/Core): ${(Buffer.byteLength(part1Md, "utf8") / 1024).toFixed(1)} KB`);
-console.log(`✅ PROJECT_HANDOVER_PART2.md (Frontend/UI): ${(Buffer.byteLength(part2Md, "utf8") / 1024).toFixed(1)} KB`);
+console.log(`✅ PROJECT_HANDOVER_PART2.md (Frontend/UI): ${(Buffer.byteLength(part2Md, "utf8") / 1024).toFixed(1)} KB`);

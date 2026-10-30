@@ -256,5 +256,4 @@ export interface SchoolTrimester {
   slug: string;
   tag: string;
   sortOrder: number;
-}
-
+}

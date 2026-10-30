@@ -16,4 +16,4 @@ export async function GET() {
   } catch (error) {
     return errorResponse(error);
   }
-}
+}
