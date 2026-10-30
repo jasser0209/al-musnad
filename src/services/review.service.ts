@@ -1,3 +1,12 @@
+/**
+ * Review & Rating Service — Al-Musnad v8.0
+ *
+ * Implements:
+ * 1. Pinned official directives for inspectors/admins (`isOfficialDirective`).
+ * 2. Private direct comments for worksheet publishers (`isPrivateToPublisher`).
+ * 3. Automatic `@username` mention detection and notifications (`dispatchMentionNotifications`).
+ */
+
 import { db } from "@/lib/db";
 import {
   NotFoundError,
@@ -31,6 +40,9 @@ export const publicReviewSelect = {
   },
 } as const;
 
+/**
+ * Sends notifications to users mentioned with `@username`
+ */
 export async function dispatchMentionNotifications(
   content: string,
   senderId: string,
@@ -88,12 +100,21 @@ export async function listWorksheetReviews(
     throw new NotFoundError("Worksheet");
   }
 
-  // Can view private comments only if creator, admin, moderator, or inspector
+  let viewerVerified = false;
+  if (viewerUserId && viewerRole === Role.INSPECTOR) {
+    const vUser = await db.user.findUnique({
+      where: { id: viewerUserId },
+      select: { isVerified: true },
+    }).catch(() => null);
+    viewerVerified = Boolean(vUser?.isVerified);
+  }
+
+  // Can view private comments only if creator, admin, moderator, or VERIFIED inspector
   const canSeePrivate =
     Boolean(viewerUserId && viewerUserId === worksheet.uploadedBy) ||
     viewerRole === Role.ADMIN ||
     viewerRole === Role.MODERATOR ||
-    viewerRole === Role.INSPECTOR;
+    (viewerRole === Role.INSPECTOR && viewerVerified);
 
   const whereCondition: Prisma.ReviewWhereInput = {
     worksheetId,
@@ -150,9 +171,9 @@ export async function upsertWorksheetReview(
     select: { id: true, name: true, username: true, role: true, isVerified: true },
   });
 
-  if (!canUserAccessWorksheet(worksheet, actor?.role || userRole, userId, actor?.isVerified)) {
+  if (!canUserAccessWorksheet(worksheet, userRole, userId, actor?.isVerified)) {
     throw new ForbiddenError(
-      "غير مصرح لك بإضافة تعليق على هذه النشرة قبل إثبات هوية حسابك أو وفق شروط الجمهور المحدد لها"
+      "غير مصرح لك بإضافة تعليق على هذه النشرة قبل إثبات الهوية وتوثيق الحساب"
     );
   }
 

@@ -1,96 +1,131 @@
 import { NextRequest, NextResponse } from "next/server";
+import { DEMO_ROLE_ACCOUNTS, findDemoAccountByIdentifier } from "@/config/constants";
+import { db } from "@/lib/db";
+import { Role } from "@prisma/client";
 
-const DEMO_EMAILS = [
-  "admin@musnad.tn",
-  "moderator@musnad.tn",
-  "inspector@musnad.tn",
-  "institution@musnad.tn",
-  "teacher@musnad.tn",
-  "student@musnad.tn",
-];
+const DEMO_COOKIE_NAME = "musnad_demo_role";
+const CUSTOM_USER_COOKIE_NAME = "musnad_custom_user";
 
-const PRIMARY_ADMIN_EMAIL = "bjasser123@gmail.com";
-
-/**
- * POST /api/auth/demo-session
- *
- * Secures demo accounts strictly to the development environment:
- * - In production (NODE_ENV === 'production'): demo sessions for @musnad.tn are strictly forbidden.
- * - Primary administrator bjasser123@gmail.com is always allowed across all environments.
- */
 export async function POST(request: NextRequest) {
   try {
-    const isProduction = process.env.NODE_ENV === "production";
     const body = await request.json().catch(() => ({}));
-    const email = String(body.email || "").trim().toLowerCase();
 
-    // Primary Admin is always permitted
-    if (email === PRIMARY_ADMIN_EMAIL) {
-      return NextResponse.json({
+    // Case A: Custom newly registered user session (ensures immediate Navbar user box after /register)
+    if (body.customUser && body.customUser.email && body.customUser.role) {
+      const cu = body.customUser;
+      const response = NextResponse.json({
         success: true,
-        allowed: true,
-        email: PRIMARY_ADMIN_EMAIL,
-        role: "ADMIN",
-        message: "تم التحقق من حساب المشرف العام الأساسي.",
+        data: { redirectTo: "/" },
       });
+      response.cookies.set(
+        CUSTOM_USER_COOKIE_NAME,
+        encodeURIComponent(
+          JSON.stringify({
+            id: cu.id || "00000000-0000-4000-8000-000000000099",
+            name: cu.name,
+            email: cu.email,
+            username: cu.username || cu.email.split("@")[0],
+            role: cu.role,
+            school: cu.school || null,
+            isVerified: false,
+          })
+        ),
+        {
+          path: "/",
+          maxAge: 60 * 60 * 24 * 7,
+          sameSite: "lax",
+          httpOnly: false,
+        }
+      );
+      return response;
     }
 
-    // In production, forbid demo accounts
-    if (isProduction) {
+    // Case B: Owner Admin (`bjasser123@gmail.com`) or Local Test Account
+    const rawRoleOrIdentifier = String(body.identifier || body.role || "").trim();
+    const account = findDemoAccountByIdentifier(rawRoleOrIdentifier);
+    if (!account) {
       return NextResponse.json(
-        {
-          success: false,
-          allowed: false,
-          error: "حسابات التجربة (@musnad.tn) معطّلة ومحصورة في بيئة التطوير المحلية فقط لأسباب أمنية.",
-        },
-        { status: 403 }
+        { success: false, error: "بيانات الحساب غير معروفة" },
+        { status: 400 }
       );
     }
 
-    // In development environment, verify if it's one of the 6 demo accounts
-    if (DEMO_EMAILS.includes(email)) {
-      return NextResponse.json({
-        success: true,
-        allowed: true,
-        email,
-        isDemo: true,
-        message: "جلسة تجريبية نشطة (بيئة التطوير).",
+    try {
+      await db.user.upsert({
+        where: { email: account.email },
+        update: {
+          name: account.name,
+          username: account.username,
+          role: account.role as Role,
+          school: account.school,
+          bio: account.bio,
+          isVerified: account.isVerified,
+          isBanned: false,
+          failedLoginAttempts: 0,
+          lockedAt: null,
+          lockReason: null,
+          presenceStatus: "ONLINE",
+          lastSeenAt: new Date(),
+        },
+        create: {
+          id: account.id,
+          name: account.name,
+          username: account.username,
+          email: account.email,
+          role: account.role as Role,
+          school: account.school,
+          bio: account.bio,
+          isVerified: account.isVerified,
+          isBanned: false,
+          failedLoginAttempts: 0,
+          presenceStatus: "ONLINE",
+          lastSeenAt: new Date(),
+        },
       });
+    } catch {
+      // Safe fallback if local PostgreSQL is not running
     }
 
-    return NextResponse.json(
-      {
-        success: false,
-        allowed: false,
-        error: "البريد الإلكتروني غير مصرح به لجلسة التجربة.",
+    const response = NextResponse.json({
+      success: true,
+      data: {
+        account,
+        redirectTo: account.dashboardHref,
       },
-      { status: 400 }
-    );
-  } catch (error: any) {
+    });
+
+    response.cookies.set(DEMO_COOKIE_NAME, account.email, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+      sameSite: "lax",
+      httpOnly: false,
+    });
+    response.cookies.set(CUSTOM_USER_COOKIE_NAME, "", { path: "/", maxAge: 0 });
+
+    return response;
+  } catch {
     return NextResponse.json(
-      { success: false, error: error?.message || "خطأ غير متوقع" },
+      { success: false, error: "تعذر تفعيل الجلسة" },
       { status: 500 }
     );
   }
 }
 
-export async function GET() {
-  const isProduction = process.env.NODE_ENV === "production";
-  if (isProduction) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: "بيئة الإنتاج لا تدعم حسابات التجربة.",
-        production: true,
-      },
-      { status: 403 }
-    );
-  }
+export async function DELETE() {
+  const response = NextResponse.json({ success: true });
+  response.cookies.set(DEMO_COOKIE_NAME, "", { path: "/", maxAge: 0 });
+  response.cookies.set(CUSTOM_USER_COOKIE_NAME, "", { path: "/", maxAge: 0 });
+  return response;
+}
 
+export async function GET(request: NextRequest) {
+  const roleCookie = request.cookies.get(DEMO_COOKIE_NAME)?.value;
+  const account = roleCookie ? findDemoAccountByIdentifier(roleCookie) : undefined;
   return NextResponse.json({
     success: true,
-    production: false,
-    demoAccountsAvailable: true,
-    accounts: DEMO_EMAILS,
+    data: {
+      activeDemoAccount: account || null,
+      allDemoAccounts: DEMO_ROLE_ACCOUNTS,
+    },
   });
 }

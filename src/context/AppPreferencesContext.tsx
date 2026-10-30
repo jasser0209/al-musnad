@@ -1,5 +1,15 @@
 "use client";
 
+/**
+ * Global Theme & Trilingual Context — Al-Musnad (المسند) v4.0
+ *
+ * Updates:
+ * - Renamed "بنك المنشورات" to "النشرات".
+ * - Added "التوثيق" (`verification`) right under "الاشتراكات" (`subscriptions`).
+ * - Added "الدعم الفني وخدمة العملاء" (`support`).
+ * - Removed all example names of people, schools, or institutions from placeholders!
+ */
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import type { AccountRoleOption } from "@/types/api";
 

@@ -1,3 +1,22 @@
+/**
+ * Al-Musnad (المسند) — Main Landing, Role-Personalized Workspace & Discovery Page (v12.0)
+ *
+ * Implements all v12.0 User Directives:
+ * 1. Complete Main Navigation Bar for Visitors & Members:
+ *    - القائمة الرئيسية (`/`)
+ *    - مستودع المواد والمستويات (`/levels`)
+ *    - قائمة النشرات (`/#catalog`)
+ *    - قسم الإدارة (`/#administration-section` — hidden for `STUDENT`, shown for Teachers, Inspectors & Institutions)
+ *    - قسم من نحن وتعريف الهوية (`/#about-us`)
+ *    - تفسير مزايا كل فئة من المشتركين (`/#roles-guide`)
+ *    - قسم الأسئلة الشائعة (`/#faq-section`)
+ * 2. Role-Personalized Top Workspace (`RolePersonalizedHub`):
+ *    - Institutions see the exclusive Institution Publications Hub at the top.
+ *    - Inspectors see the exclusive Inspector Publications Hub at the top.
+ *    - Teachers see the exclusive Teacher Publications Hub at the top.
+ *    - Students see their distraction-free Student Study Hub (with Administration removed).
+ */
+
 import React, { Suspense } from "react";
 import Link from "next/link";
 import {
@@ -66,7 +85,7 @@ const DEMO_WORKSHEETS = [
     favoriteCount: 75,
     ratingAvg: 4.9,
     reviewCount: 14,
-    tags: ["فرنسية", "درس", "الثلاثي الأول"],
+    tags: ["فرنسية", "درس"],
     createdAt: new Date("2026-10-28"),
     updatedAt: new Date("2026-10-28"),
     gradeId: "g1",
@@ -104,7 +123,7 @@ const DEMO_WORKSHEETS = [
     favoriteCount: 52,
     ratingAvg: 4.9,
     reviewCount: 11,
-    tags: ["مؤسسات", "مشروع مؤسسة", "الثلاثي الأول"],
+    tags: ["مؤسسات", "مشروع مؤسسة"],
     createdAt: new Date("2026-10-27"),
     updatedAt: new Date("2026-10-27"),
     gradeId: "g1",
@@ -142,7 +161,7 @@ const DEMO_WORKSHEETS = [
     favoriteCount: 64,
     ratingAvg: 5.0,
     reviewCount: 15,
-    tags: ["فرنسية", "جذاذات", "إصلاح", "الثلاثي الثاني"],
+    tags: ["فرنسية", "جذاذات", "إصلاح"],
     createdAt: new Date("2026-10-27"),
     updatedAt: new Date("2026-10-27"),
     gradeId: "g1",
@@ -180,7 +199,7 @@ const DEMO_WORKSHEETS = [
     favoriteCount: 95,
     ratingAvg: 4.9,
     reviewCount: 22,
-    tags: ["وثائق إدارية", "جداول الأوقات", "مذكرات ومراسلات", "الثلاثي الثالث"],
+    tags: ["وثائق إدارية", "جداول الأوقات", "مذكرات ومراسلات"],
     createdAt: new Date("2026-10-26"),
     updatedAt: new Date("2026-10-26"),
     gradeId: "g1",
@@ -273,7 +292,11 @@ export default async function HomePage(props: HomePageProps) {
           dbUser?.studentGrade ||
           (user.user_metadata?.student_grade as string | undefined) ||
           null;
-        viewerIsVerified = Boolean(dbUser?.isVerified);
+        viewerIsVerified = Boolean(
+          dbUser?.isVerified ||
+            viewerRole === "ADMIN" ||
+            viewerRole === "MODERATOR"
+        );
       } catch {
         viewerRole =
           (user.user_metadata?.role as string | undefined) || "TEACHER";
@@ -331,29 +354,11 @@ export default async function HomePage(props: HomePageProps) {
     meta = fetchedCatalog.meta;
   } catch {
     isDbConnected = false;
-    let visibleDemo = isAuthenticated
+    const visibleDemo = isAuthenticated
       ? DEMO_WORKSHEETS.filter((w) =>
-          canUserAccessWorksheet(w, viewerRole, viewerUserId, viewerIsVerified)
+          canUserAccessWorksheet(w, viewerRole, viewerUserId)
         )
       : DEMO_WORKSHEETS.filter((w) => w.audience === "ALL");
-
-    if (trimester) {
-      const rawTrim = trimester.toLowerCase();
-      const targetTerm =
-        rawTrim === "trimester-1" || rawTrim.includes("أول") || rawTrim.includes("اول")
-          ? "الثلاثي الأول"
-          : rawTrim === "trimester-2" || rawTrim.includes("ثاني")
-          ? "الثلاثي الثاني"
-          : rawTrim === "trimester-3" || rawTrim.includes("ثالث")
-          ? "الثلاثي الثالث"
-          : trimester;
-      visibleDemo = visibleDemo.filter(
-        (w) =>
-          w.tags.includes(targetTerm) ||
-          w.title.includes(targetTerm) ||
-          (w.titleAr && w.titleAr.includes(targetTerm))
-      );
-    }
 
     worksheets = visibleDemo;
     explorerWorksheets = visibleDemo;
@@ -381,6 +386,7 @@ export default async function HomePage(props: HomePageProps) {
     if (grade) params.set("grade", grade);
     if (subject) params.set("subject", subject);
     if (category) params.set("category", category);
+    if (trimester) params.set("trimester", trimester);
     if (sort && sort !== "newest") params.set("sort", sort);
     params.set("page", String(targetPage));
     return `/?${params.toString()}`;
@@ -400,6 +406,7 @@ export default async function HomePage(props: HomePageProps) {
         </div>
       )}
 
+      {/* Hero Section: المسند */}
       <section className="relative overflow-hidden bg-gradient-to-b from-blue-700 via-indigo-800 to-slate-900 text-white pt-14 pb-16 px-4 sm:px-6 lg:px-8">
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
@@ -421,40 +428,39 @@ export default async function HomePage(props: HomePageProps) {
               : "تصفح المستويات الدراسية المعتمدة، المواد التعليمية، الجذاذات، التمارين، الامتحانات، وقسم المعاملات الإدارية."}
           </p>
 
+          {/* Main Quick Navigation Menu Bar inside Hero (Well-spaced & Role-Aware) */}
           <div
             dir="rtl"
-            className="pt-2 flex flex-wrap justify-center items-center gap-2.5"
+            className="pt-4 flex flex-wrap justify-center items-center gap-3.5 sm:gap-5"
           >
+            <Link
+              href="/"
+              className="px-5 py-3 bg-white/15 hover:bg-white/25 text-white font-extrabold text-xs sm:text-sm rounded-xl border border-white/30 backdrop-blur-sm transition inline-flex items-center gap-2"
+            >
+              <Compass className="w-4 h-4 text-amber-300" />
+              <span>الرئيسية</span>
+            </Link>
+
             <Link
               href="/levels"
               className="px-5 py-3 bg-amber-400 hover:bg-amber-300 text-slate-900 font-extrabold text-xs sm:text-sm rounded-xl shadow-lg shadow-amber-400/20 transition transform hover:-translate-y-0.5 inline-flex items-center gap-2"
             >
               <Library className="w-4 h-4" />
-              <span>مستودع المواد والمستويات ←</span>
+              <span>{isAuthenticated ? "مستودع المواد" : "مستودع المواد والمستويات"}</span>
             </Link>
 
             <a
               href="#catalog"
-              className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm rounded-xl border border-white/30 backdrop-blur-sm transition inline-flex items-center gap-1.5"
+              className="px-5 py-3 bg-white/15 hover:bg-white/25 text-white font-extrabold text-xs sm:text-sm rounded-xl border border-white/30 backdrop-blur-sm transition inline-flex items-center gap-2"
             >
               <FileText className="w-4 h-4 text-amber-300" />
               <span>النشرات</span>
             </a>
 
-            {viewerRole === "INSTITUTION" && (
-              <a
-                href="#institutions-hub"
-                className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm rounded-xl border border-white/30 backdrop-blur-sm transition inline-flex items-center gap-1.5"
-              >
-                <Briefcase className="w-4 h-4 text-amber-300" />
-                <span>للمؤسسات</span>
-              </a>
-            )}
-
             {viewerRole === "INSPECTOR" && (
               <a
-                href="#inspectors-hub"
-                className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm rounded-xl border border-white/30 backdrop-blur-sm transition inline-flex items-center gap-1.5"
+                href="#role-personalized-hub"
+                className="px-5 py-3 bg-amber-500/30 hover:bg-amber-500/45 text-amber-200 font-extrabold text-xs sm:text-sm rounded-xl border border-amber-300/40 backdrop-blur-sm transition inline-flex items-center gap-2"
               >
                 <Award className="w-4 h-4 text-amber-300" />
                 <span>للمتفقدين</span>
@@ -463,32 +469,44 @@ export default async function HomePage(props: HomePageProps) {
 
             {viewerRole === "TEACHER" && (
               <a
-                href="#teachers-hub"
-                className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm rounded-xl border border-white/30 backdrop-blur-sm transition inline-flex items-center gap-1.5"
+                href="#role-personalized-hub"
+                className="px-5 py-3 bg-blue-500/30 hover:bg-blue-500/45 text-white font-extrabold text-xs sm:text-sm rounded-xl border border-blue-300/40 backdrop-blur-sm transition inline-flex items-center gap-2"
               >
                 <Users className="w-4 h-4 text-amber-300" />
                 <span>للمعلمين</span>
               </a>
             )}
 
+            {viewerRole === "INSTITUTION" && (
+              <a
+                href="#role-personalized-hub"
+                className="px-5 py-3 bg-indigo-500/30 hover:bg-indigo-500/45 text-white font-extrabold text-xs sm:text-sm rounded-xl border border-indigo-300/40 backdrop-blur-sm transition inline-flex items-center gap-2"
+              >
+                <Layers className="w-4 h-4 text-amber-300" />
+                <span>للمؤسسات</span>
+              </a>
+            )}
+
+            {(viewerRole === "ADMIN" || viewerRole === "MODERATOR") && (
+              <a
+                href="#role-personalized-hub"
+                className="px-5 py-3 bg-purple-500/30 hover:bg-purple-500/45 text-white font-extrabold text-xs sm:text-sm rounded-xl border border-purple-300/40 backdrop-blur-sm transition inline-flex items-center gap-2"
+              >
+                <ShieldCheck className="w-4 h-4 text-amber-300" />
+                <span>فضاءات الفئات</span>
+              </a>
+            )}
+
             <a
               href="#learn-more"
-              className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm rounded-xl border border-white/30 backdrop-blur-sm transition inline-flex items-center gap-1.5"
+              className="px-5 py-3 bg-white/15 hover:bg-white/25 text-white font-extrabold text-xs sm:text-sm rounded-xl border border-white/30 backdrop-blur-sm transition inline-flex items-center gap-2"
             >
-              <Compass className="w-4 h-4 text-amber-300" />
+              <Sparkles className="w-4 h-4 text-amber-300" />
               <span>اعرف المزيد</span>
             </a>
-
-            {isAuthenticated && viewerRole !== "STUDENT" && (
-              <Link
-                href="/upload"
-                className="px-5 py-3 bg-blue-500/40 hover:bg-blue-500/60 text-white font-extrabold text-xs sm:text-sm rounded-xl border border-blue-300/40 backdrop-blur-sm transition"
-              >
-                + نشر ملف جديد
-              </Link>
-            )}
           </div>
 
+          {/* Approved 4 Value Pillars */}
           <div className="pt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto border-t border-white/10 text-xs text-blue-100">
             <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 flex flex-col items-center gap-2">
               <BookCheck className="w-6 h-6 text-amber-300" />
@@ -518,6 +536,9 @@ export default async function HomePage(props: HomePageProps) {
         </div>
       </section>
 
+      {/* =================================================================== */}
+      {/* 1. الفضاء المخصص حسب فئة المستخدم في أعلى الصفحة (للمؤسسات / المتفقدين / المعلمين / التلاميذ) */}
+      {/* =================================================================== */}
       {isAuthenticated && (
         <RolePersonalizedHub
           worksheets={explorerWorksheets as any}
@@ -528,12 +549,18 @@ export default async function HomePage(props: HomePageProps) {
         />
       )}
 
+      {/* =================================================================== */}
+      {/* 2. مستودع المستويات المعتمدة + قسم الإدارة (مخفي عن التلاميذ)           */}
+      {/* =================================================================== */}
       <CurriculumAndAdminExplorer
         worksheets={explorerWorksheets as any}
         isAuthenticated={isAuthenticated}
         viewerRole={viewerRole}
       />
 
+      {/* =================================================================== */}
+      {/* 3. قائمة النشرات العامة (#catalog)                                   */}
+      {/* =================================================================== */}
       <section
         id="catalog"
         className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 scroll-mt-24"
@@ -646,6 +673,9 @@ export default async function HomePage(props: HomePageProps) {
         )}
       </section>
 
+      {/* =================================================================== */}
+      {/* 4. قسم من نحن + دليل فئات المشتركين والميزات + الأسئلة الشائعة        */}
+      {/* =================================================================== */}
       <PlatformIdentityAndFaqSection />
     </div>
   );

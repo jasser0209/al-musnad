@@ -1,5 +1,17 @@
 "use client";
 
+/**
+ * Technical Support & Customer Service Center — Al-Musnad (المسند) v12.0
+ *
+ * Route: /support
+ * Includes:
+ * 1. One-Click Quick Support Topic Cards (توثيق الحساب، فك قفل الحساب بعد 6 محاولات، مشكلة تقنية، استفسار عام)
+ *    that automatically configure and pre-fill the ticket category & subject.
+ * 2. Direct Support Ticket Submission Form.
+ * 3. Live Ticket History & Official Replies Tracker.
+ * 4. Instant Self-Service Help & Troubleshooting Guide.
+ */
+
 import React, { useState, useEffect, FormEvent } from "react";
 import Link from "next/link";
 import {
@@ -18,8 +30,10 @@ import {
   ChevronDown,
   PhoneCall,
   Building2,
+  GraduationCap,
   ExternalLink,
 } from "lucide-react";
+import { WHATSAPP_SUPPORT_CHANNELS } from "@/config/constants";
 import {
   submitSupportTicketAction,
   getMySupportTicketsAction,
@@ -82,7 +96,6 @@ const SUPPORT_INSTANT_ANSWERS = [
 export default function SupportAndCustomerServicePage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [userRole, setUserRole] = useState<string | null>(null);
   const [category, setCategory] = useState("TECHNICAL");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
@@ -107,12 +120,9 @@ export default function SupportAndCustomerServicePage() {
           if (json.success && json.data) {
             setName(json.data.name || "");
             setEmail(json.data.email || "");
-            setUserRole(json.data.role || null);
           }
         }
         setMyTickets(tickets);
-      } catch {
-        // ignore
       } finally {
         setLoadingTickets(false);
       }
@@ -120,7 +130,7 @@ export default function SupportAndCustomerServicePage() {
     loadUserAndTickets();
   }, []);
 
-  const handleSelectQuickCard = (card: typeof QUICK_SUPPORT_CARDS[0]) => {
+  const handleSelectQuickCard = (card: (typeof QUICK_SUPPORT_CARDS)[number]) => {
     setCategory(card.category);
     setSubject(card.defaultSubject);
     setSubmittedSuccess(false);
@@ -161,98 +171,11 @@ export default function SupportAndCustomerServicePage() {
           مركز الدعم الفني وخدمة الأعضاء — المسند
         </h1>
         <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-          تواصل معنا مباشرة عبر قنوات الواتساب الرسمية المخصصة أو أرسل تذكرة دعم مباشر لفريق الإشراف.
+          اختر نوع الخدمة السريعة أدناه أو أرسل تذكرة مباشرة لفريق الإشراف والمسؤولين، وتابع الردود الفورية على طلباتك.
         </p>
       </div>
 
-      {(() => {
-        const isStaff = userRole === "ADMIN" || userRole === "MODERATOR";
-        const isInstitutionOrInspector =
-          userRole === "INSTITUTION" || userRole === "INSPECTOR";
-        const showTeacherStudent = !isInstitutionOrInspector || isStaff;
-        const showInstitution = isInstitutionOrInspector || isStaff;
-
-        return (
-          <section
-            className={`grid gap-5 ${
-              showTeacherStudent && showInstitution
-                ? "grid-cols-1 md:grid-cols-2"
-                : "grid-cols-1 max-w-2xl mx-auto w-full"
-            }`}
-          >
-            {showTeacherStudent && (
-              <a
-                href="https://wa.me/21627764985?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%20%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9%20%D9%85%D9%86%D8%B5%D8%A9%20%D8%A7%D9%84%D9%85%D8%B3%D9%86%D8%AF%D8%8C%20%D8%A3%D8%AA%D9%88%D8%A7%D8%B5%D9%84%20%D9%85%D8%B9%D9%83%D9%85%20%D8%B9%D8%A8%D8%B1%20%D8%AE%D8%B7%20%D8%A7%D9%84%D9%85%D8%B9%D9%84%D9%85%D9%8A%D9%86%20%D9%88%D8%A7%D9%84%D8%AA%D9%84%D8%A7%D9%85%D9%8A%D8%B0%3A"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group relative overflow-hidden rounded-3xl border-2 border-emerald-300 dark:border-emerald-800/80 bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/40 dark:via-slate-900 dark:to-teal-950/20 p-6 shadow-sm hover:shadow-md hover:border-emerald-500 transition flex items-start gap-4"
-              >
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg shadow-emerald-600/25 group-hover:scale-105 transition">
-                  <PhoneCall className="h-7 w-7" />
-                </div>
-                <div className="space-y-1.5 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-700">
-                      خط المعلمين والتلاميذ
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 dark:text-emerald-400">
-                      واتساب فوري <ExternalLink className="w-3.5 h-3.5" />
-                    </span>
-                  </div>
-                  <h3 className="text-base font-black text-slate-900 dark:text-white">
-                    الرقم العام للمعلمين والتلاميذ
-                  </h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                    للاستفسارات العامة، التوجيه البيداغوجي، المساعدة في رفع وتحميل المذكرات، ودعم التلاميذ.
-                  </p>
-                  <div className="pt-2 flex items-center gap-2 text-sm font-black text-emerald-700 dark:text-emerald-300" dir="ltr">
-                    <span>+216 27 764 985</span>
-                    <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
-                      WhatsApp: 27764985
-                    </span>
-                  </div>
-                </div>
-              </a>
-            )}
-
-            {showInstitution && (
-              <a
-                href="https://wa.me/21676907101?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%20%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9%20%D9%85%D9%86%D8%B5%D8%A9%20%D8%A7%D9%84%D9%85%D8%B3%D9%86%D8%AF%D8%8C%20%D8%A3%D8%AA%D9%88%D8%A7%D8%B5%D9%84%20%D9%85%D8%B9%D9%83%D9%85%20%D8%B9%D8%A8%D8%B1%20%D8%AE%D8%B7%20%D8%A7%D9%84%D9%85%D8%A4%D8%B3%D8%B3%D8%A7%D8%AA%20%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%88%D9%8A%D8%A9%20%D9%88%D8%A7%D9%84%D9%85%D8%AA%D9%81%D9%82%D8%AF%D9%8A%D9%86%3A"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group relative overflow-hidden rounded-3xl border-2 border-indigo-300 dark:border-indigo-800/80 bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-indigo-950/40 dark:via-slate-900 dark:to-purple-950/20 p-6 shadow-sm hover:shadow-md hover:border-indigo-500 transition flex items-start gap-4"
-              >
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 group-hover:scale-105 transition">
-                  <Building2 className="h-7 w-7" />
-                </div>
-                <div className="space-y-1.5 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-700">
-                      خط المؤسسات والمتفقدين
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-xs font-bold text-indigo-700 dark:text-indigo-400">
-                      واتساب فوري <ExternalLink className="w-3.5 h-3.5" />
-                    </span>
-                  </div>
-                  <h3 className="text-base font-black text-slate-900 dark:text-white">
-                    الرقم المخصص للمؤسسات التربوية والمتفقدين
-                  </h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                    للتنسيق الإداري والمؤسساتي، توثيق اعتماد المتفقدين والمدارس، واستلام أكواد التوثيق.
-                  </p>
-                  <div className="pt-2 flex items-center gap-2 text-sm font-black text-indigo-700 dark:text-indigo-300" dir="ltr">
-                    <span>+216 46 907 101</span>
-                    <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-950 text-indigo-800 dark:text-indigo-300">
-                      WhatsApp: 76907101
-                    </span>
-                  </div>
-                </div>
-              </a>
-            )}
-          </section>
-        );
-      })()}
-
+      {/* Quick Service Selection Cards (خيارات الدعم السريعة بخلاف إرسال رسالة عادية) */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {QUICK_SUPPORT_CARDS.map((card) => {
           const Icon = card.icon;
@@ -289,6 +212,7 @@ export default function SupportAndCustomerServicePage() {
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Submit Ticket Form */}
         <section className="lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm space-y-5">
           <h2 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
             <MessageSquare className="w-5 h-5 text-blue-600" />
@@ -298,12 +222,14 @@ export default function SupportAndCustomerServicePage() {
           {submittedSuccess && (
             <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs font-bold flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
-              <span>تم إرسال تذكرتك بنجاح! سيتم مراجعتها والرد عليها من قِبل الإدارة في أقرب وقت.</span>
+              <span>
+                تم استلام تذكرتك بنجاح! سيقوم المشرف العام أو المسؤول الإداري بالرد عليك في أقرب وقت.
+              </span>
             </div>
           )}
 
           {error && (
-            <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs font-bold">
+            <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 text-xs font-bold">
               {error}
             </div>
           )}
@@ -311,203 +237,191 @@ export default function SupportAndCustomerServicePage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  الاسم الكامل
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                  الاسم الكامل *
                 </label>
                 <div className="relative">
-                  <UserIcon className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5" />
+                  <UserIcon className="w-4 h-4 text-slate-400 absolute start-3.5 top-3" />
                   <input
                     type="text"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="اسمك الثلاثي أو صفة الحساب"
-                    className="w-full pr-10 pl-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="أدخل الاسم الكامل"
+                    className="w-full ps-10 pe-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  البريد الإلكتروني للرد
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                  البريد الإلكتروني *
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5" />
+                  <Mail className="w-4 h-4 text-slate-400 absolute start-3.5 top-3" />
                   <input
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="email@example.com"
-                    className="w-full pr-10 pl-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="أدخل البريد الإلكتروني"
+                    className="w-full ps-10 pe-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  تصنيف الطلب
-                </label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="TECHNICAL">مشكلة تقنية / فك قفل الحساب</option>
-                  <option value="VERIFICATION">طلب توثيق رسمي أو كود متفقد</option>
-                  <option value="INAPPROPRIATE_CONTENT">إبلاغ عن محتوى أو انتهاك حقوق</option>
-                  <option value="CUSTOMER_SERVICE">استفسار عام أو اقتراح تطوير</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  موضوع الطلب
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  placeholder="عنوان مختصر للطلب"
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                نوع الطلب / القسم المختص *
+              </label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold"
+              >
+                <option value="TECHNICAL">دعم فني وتقني / فك قفل الحساب</option>
+                <option value="VERIFICATION">توثيق الحسابات والشارات الرسمية</option>
+                <option value="SUBSCRIPTIONS">الاشتراكات والباقات</option>
+                <option value="CUSTOMER_SERVICE">خدمة الأعضاء واستفسارات عامة</option>
+              </select>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                تفاصيل الرسالة أو المشكلة
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                عنوان التذكرة *
+              </label>
+              <input
+                type="text"
+                required
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="أدخل عنوان الطلب باختصار"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                تفاصيل الرسالة *
               </label>
               <textarea
+                rows={4}
                 required
-                rows={5}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="اكتب تفاصيل طلبك بدقة، مع ذكر المعرف @username أو رقم الهاتف إن لزم..."
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="اشرح استفسارك أو المشكلة التقنية بالتفصيل..."
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm"
               />
             </div>
 
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs flex items-center justify-center gap-2 shadow-sm transition disabled:opacity-50 cursor-pointer"
+              className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm flex items-center justify-center gap-2 transition cursor-pointer shadow-sm"
             >
               {submitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>جاري إرسال التذكرة...</span>
-                </>
+                <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <>
-                  <Send className="w-4 h-4" />
-                  <span>إرسال التذكرة إلى إدارة المنصة</span>
-                </>
+                <Send className="w-4 h-4" />
               )}
+              <span>إرسال التذكرة إلى فريق الدعم</span>
             </button>
           </form>
         </section>
 
-        <div className="lg:col-span-5 space-y-6">
-          <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
-            <h2 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-              <BadgeCheck className="w-4 h-4 text-emerald-600" />
-              <span>سجل تذاكري وردود الإدارة</span>
-            </h2>
+        {/* My Previous Tickets & Self-Service Instant Answers */}
+        <aside className="lg:col-span-5 space-y-6">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
+            <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-blue-600" />
+              <span>تذاكري السابقة والردود المباشرة</span>
+            </h3>
 
             {loadingTickets ? (
-              <div className="py-6 flex items-center justify-center text-xs text-slate-400 gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>جاري تحميل التذاكر...</span>
+              <div className="py-8 flex justify-center">
+                <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
               </div>
             ) : myTickets.length === 0 ? (
-              <p className="text-xs text-slate-500 dark:text-slate-400 text-center py-4">
-                لا توجد تذاكر سابقة مسجلة بهذا البريد الإلكتروني.
+              <p className="text-xs text-slate-500 dark:text-slate-400 py-6 text-center">
+                لا توجد تذاكر دعم سابقة مسجلة على حسابك.
               </p>
             ) : (
-              <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+              <div className="space-y-3 max-h-80 overflow-y-auto">
                 {myTickets.map((t) => (
                   <div
                     key={t.id}
-                    className="p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 space-y-2 text-xs"
+                    className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 space-y-2"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-extrabold text-slate-900 dark:text-white truncate">
+                      <span className="font-bold text-xs text-slate-900 dark:text-white">
                         {t.subject}
                       </span>
                       <span
-                        className={`px-2 py-0.5 rounded-md text-[10px] font-black ${
-                          t.status === "RESOLVED"
-                            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                            : t.status === "IN_PROGRESS"
-                            ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
-                            : "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
+                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                          t.status === "ANSWERED"
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-amber-100 text-amber-800"
                         }`}
                       >
-                        {t.status === "RESOLVED"
-                          ? "تم الحل ✓"
-                          : t.status === "IN_PROGRESS"
-                          ? "قيد المعالجة"
-                          : "جديدة"}
+                        {t.status === "ANSWERED" ? "تم الرد ✓" : "قيد المعالجة"}
                       </span>
                     </div>
-
-                    <p className="text-slate-600 dark:text-slate-400 text-[11px] line-clamp-2">
+                    <p className="text-xs text-slate-600 dark:text-slate-300">
                       {t.message}
                     </p>
-
-                    {t.response && (
-                      <div className="pt-2 mt-2 border-t border-slate-200/60 dark:border-slate-700/60 text-[11px] text-blue-800 dark:text-blue-300 bg-blue-50/80 dark:bg-blue-950/40 p-2 rounded-xl">
-                        <strong className="block mb-0.5">رد الإدارة:</strong>
-                        {t.response}
+                    {t.adminReply && (
+                      <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 text-xs text-blue-900 dark:text-blue-200 mt-2">
+                        <strong>رد الإدارة:</strong> {t.adminReply}
                       </div>
                     )}
                   </div>
                 ))}
               </div>
             )}
-          </section>
+          </div>
 
-          <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
-            <h2 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-              <HelpCircle className="w-4 h-4 text-amber-600" />
-              <span>إجابات فورية لأكثر الاستفسارات تكراراً</span>
-            </h2>
-
-            <div className="space-y-2">
+          {/* Instant Self-Service Answers */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-3">
+            <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">
+              💡 حلول وإجابات فورية سريعة
+            </h3>
+            <div className="divide-y divide-slate-100 dark:divide-slate-800">
               {SUPPORT_INSTANT_ANSWERS.map((item, idx) => {
                 const isOpen = openHelpIdx === idx;
                 return (
-                  <div
-                    key={idx}
-                    className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden"
-                  >
+                  <div key={idx} className="py-2.5">
                     <button
                       type="button"
                       onClick={() => setOpenHelpIdx(isOpen ? null : idx)}
-                      className="w-full p-3 text-right text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between gap-2 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition cursor-pointer"
+                      className="w-full flex items-center justify-between gap-2 text-right text-xs font-bold text-slate-800 dark:text-slate-200 cursor-pointer"
                     >
                       <span>{item.q}</span>
                       <ChevronDown
-                        className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${
+                        className={`w-3.5 h-3.5 shrink-0 text-blue-600 transition-transform ${
                           isOpen ? "rotate-180" : ""
                         }`}
                       />
                     </button>
                     {isOpen && (
-                      <div className="p-3 pt-0 text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed bg-slate-50/50 dark:bg-slate-800/30">
+                      <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
                         {item.a}
-                      </div>
+                      </p>
                     )}
                   </div>
                 );
               })}
             </div>
-          </section>
-        </div>
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-center">
+              <Link
+                href="/#faq-section"
+                className="text-xs font-bold text-blue-600 hover:underline dark:text-blue-400"
+              >
+                عرض قسم الأسئلة الشائعة الكامل ←
+              </Link>
+            </div>
+          </div>
+        </aside>
       </div>
     </main>
   );

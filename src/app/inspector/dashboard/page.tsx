@@ -1,5 +1,15 @@
 "use client";
 
+/**
+ * Inspector Dedicated Dashboard (لوحة تحكم المتفقد التربوي) — Al-Musnad v10.0
+ *
+ * المستوى الأول في سلم الأولوية الرقابية والبيداغوجية (القاعدة):
+ * - إذا دخل المشرف العام (`ADMIN`) إلى هذه اللوحة، يظهر له شريط التنقل العلوي `SupervisoryHierarchyBar`
+ *   الذي يمكّنه بضغطة زر من الرجوع فوراً إلى «لوحة المشرف العام» أو الانتقال إلى «لوحة المسؤول».
+ * - إذا دخل المتفقد التربوي (`INSPECTOR`)، يكتفي بالصلاحيات البيداغوجية الموجودة له فقط في هذه اللوحة الحصرية له
+ *   دون أي قدرة على الانتقال إلى لوحة المسؤول أو لوحة المشرف العام.
+ */
+
 import React, { useEffect, useState, useMemo, FormEvent } from "react";
 import Link from "next/link";
 import {
@@ -196,11 +206,13 @@ export default function InspectorDashboardPage() {
   return (
     <div dir="rtl" className="min-h-screen bg-slate-50/70 pb-16 pt-8 dark:bg-slate-950">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Supervisory Hierarchy Bar: Shows Admin Switcher + "Return to Admin Dashboard" ONLY if viewerRole === "ADMIN", otherwise shows Exclusive Inspector Scope Notice */}
         <SupervisoryHierarchyBar
           viewerRole={data.inspector.role}
           currentDashboard="INSPECTOR"
         />
 
+        {/* Header & Priority Hierarchy Indicator */}
         <div className="mb-8 rounded-3xl border border-amber-200/80 bg-gradient-to-l from-amber-50 via-white to-amber-50/40 p-6 shadow-sm dark:border-amber-900/40 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/20">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -218,6 +230,7 @@ export default function InspectorDashboardPage() {
             </button>
           </div>
 
+          {/* KPI Stats */}
           <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
             <div className="rounded-2xl border border-slate-200/80 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
               <span className="text-[11px] font-bold text-slate-500">إجمالي المنشورات للرقابة</span>
@@ -252,6 +265,7 @@ export default function InspectorDashboardPage() {
           </div>
         </div>
 
+        {/* Dedicated Top Section for Inspector-Only Publications (للتفاعل بين المتفقدين) */}
         <div className="mb-8 rounded-3xl border-2 border-amber-300/90 bg-white p-6 shadow-sm dark:border-amber-800/70 dark:bg-slate-900">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-amber-100 pb-4 dark:border-slate-800">
             <div>
@@ -313,6 +327,7 @@ export default function InspectorDashboardPage() {
           </div>
         )}
 
+        {/* Tabs */}
         <div className="mb-6 flex flex-wrap gap-2 border-b border-slate-200 pb-3 dark:border-slate-800">
           <button
             type="button"
@@ -352,6 +367,7 @@ export default function InspectorDashboardPage() {
           </button>
         </div>
 
+        {/* TAB 1: WORKSHEETS ENDORSEMENT & COMMENTS */}
         {activeTab === "worksheets" && (
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
@@ -456,6 +472,7 @@ export default function InspectorDashboardPage() {
                           </td>
                           <td className="px-5 py-4">
                             <div className="flex flex-wrap items-center justify-end gap-1.5">
+                              {/* 1. Endorse Toggle */}
                               <button
                                 type="button"
                                 disabled={actionLoadingId === ws.id}
@@ -470,6 +487,7 @@ export default function InspectorDashboardPage() {
                                 {ws.isEndorsed ? "إلغاء التوثيق" : "توثيق المنشور"}
                               </button>
 
+                              {/* 2. Pinned Top Comment */}
                               <button
                                 type="button"
                                 onClick={() => {
@@ -483,6 +501,7 @@ export default function InspectorDashboardPage() {
                                 تعليق في الصدارة
                               </button>
 
+                              {/* 3. Private Comment Directly to Publisher */}
                               <button
                                 type="button"
                                 onClick={() => {
@@ -496,6 +515,7 @@ export default function InspectorDashboardPage() {
                                 تعليق خاص للناشر
                               </button>
 
+                              {/* 4. Direct Report to Admin */}
                               <button
                                 type="button"
                                 onClick={() => {
@@ -519,6 +539,7 @@ export default function InspectorDashboardPage() {
           </div>
         )}
 
+        {/* TAB 2: MY PINNED & PRIVATE COMMENTS */}
         {activeTab === "my_comments" && (
           <div className="space-y-3">
             {data.myComments.length === 0 ? (
@@ -564,6 +585,7 @@ export default function InspectorDashboardPage() {
           </div>
         )}
 
+        {/* TAB 3: DIRECT REPORTS TO ADMIN */}
         {activeTab === "direct_reports" && (
           <div className="space-y-3">
             {data.myReports.length === 0 ? (
@@ -599,6 +621,7 @@ export default function InspectorDashboardPage() {
         )}
       </div>
 
+      {/* Modal: Add Pinned Comment OR Private Comment to Publisher */}
       {selectedWorksheet && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
@@ -681,6 +704,7 @@ export default function InspectorDashboardPage() {
         </div>
       )}
 
+      {/* Modal: Direct Report to Top Admin */}
       {reportTargetWs && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">

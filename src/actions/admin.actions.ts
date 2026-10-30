@@ -1,5 +1,15 @@
 "use server";
 
+/**
+ * Top-Tier Admin Actions (المستوى الرقابي الثالث في القمة: المشرف) — Al-Musnad v9.0
+ *
+ * Admin Exclusive Powers (in addition to all Inspector & Moderator powers):
+ * 1. إمكانية تفعيل التوثيق المباشر للحسابات (`toggleVerifyUserAdminAction`) — مقتصرة حصرياً على المشرف!
+ * 2. إمكانية إنشاء وتوليد أكواد التوثيق في الداشبورد للمشرف (`createVerificationCodeAdminAction`, `deleteVerificationCodeAdminAction`).
+ * 3. التحكم الكامل في الموقع والأدوار (بما في ذلك تعيين المسؤولين `MODERATOR` والمتفقدين `INSPECTOR`).
+ * 4. متابعة سجلات النشاطات والأمن الشاملة (`AuditLog`).
+ */
+
 import { revalidatePath } from "next/cache";
 import crypto from "crypto";
 import { db } from "@/lib/db";
@@ -13,6 +23,7 @@ import {
   ValidationError,
 } from "@/lib/utils/errors";
 import { Role, WorksheetStatus, ProfileEditStatus, Prisma } from "@prisma/client";
+import { findDemoAccountByIdentifier } from "@/config/constants";
 
 async function requireAdmin() {
   const supabase = await createSupabaseServerClient();
@@ -216,6 +227,10 @@ export async function getAuditLogsAdminAction(action?: string, limit = 100) {
   });
 }
 
+/**
+ * ميزة حصرية للمشرف العام (`ADMIN`) في قمة الهرم:
+ * تفعيل أو إلغاء التوثيق المباشر (`isVerified`) لأي حساب في الموقع بضغطة زر
+ */
 export async function toggleVerifyUserAdminAction(targetUserId: string) {
   const admin = await requireAdmin();
 
@@ -265,6 +280,10 @@ export async function toggleVerifyUserAdminAction(targetUserId: string) {
   return updated;
 }
 
+/**
+ * ميزة حصرية للمشرف العام (`ADMIN`):
+ * إنشاء وتوليد أكواد التوثيق في الداشبورد للمشرف (سواء عامة قابلة للتوزيع أو مخصصة لمستخدم)
+ */
 export async function createVerificationCodeAdminAction(input: {
   targetRole: Role;
   note?: string;
@@ -635,6 +654,9 @@ export async function rejectProfileEditAdminAction(targetUserId: string) {
   return updated;
 }
 
+/**
+ * فك غلق الحساب المقفل بسبب تجاوز 6 محاولات خاطئة لكلمة المرور (متاح للمشرف العام)
+ */
 export async function unlockUserAccountAdminAction(targetUserId: string) {
   const admin = await requireAdmin();
 

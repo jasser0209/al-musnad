@@ -1,5 +1,15 @@
 "use client";
 
+/**
+ * Moderator Dedicated Dashboard (لوحة تحكم المسؤول) — Al-Musnad v10.0
+ *
+ * المستوى الثاني في سلم الأولوية الرقابية والإدارية (المسؤول - الوسط):
+ * - إذا دخل المشرف العام (`ADMIN`) إلى هذه اللوحة، يظهر له شريط التنقل العلوي `SupervisoryHierarchyBar`
+ *   الذي يمكّنه بضغطة زر من الرجوع فوراً إلى «لوحة المشرف العام» أو الانتقال إلى «لوحة المتفقد».
+ * - إذا دخل المسؤول الإداري (`MODERATOR`)، يكتفي بالصلاحيات الموجودة له فقط في هذه اللوحة الحصرية له
+ *   دون أي قدرة على الانتقال إلى لوحة المشرف العام أو لوحة المتفقد.
+ */
+
 import React, { useEffect, useState, useMemo, FormEvent } from "react";
 import Link from "next/link";
 import {
@@ -206,11 +216,13 @@ export default function ModeratorDashboardPage() {
   return (
     <div dir="rtl" className="min-h-screen bg-slate-50/70 pb-16 pt-8 dark:bg-slate-950">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Supervisory Hierarchy Bar: Shows Admin Switcher + "Return to Admin Dashboard" ONLY if viewerRole === "ADMIN", otherwise shows Exclusive Moderator Scope Notice */}
         <SupervisoryHierarchyBar
           viewerRole={data.moderator.role}
           currentDashboard="MODERATOR"
         />
 
+        {/* Header */}
         <div className="mb-8 rounded-3xl border border-indigo-200/80 bg-gradient-to-l from-indigo-50 via-white to-indigo-50/40 p-6 shadow-sm dark:border-indigo-900/40 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950/20">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -269,6 +281,7 @@ export default function ModeratorDashboardPage() {
           </div>
         )}
 
+        {/* Navigation Tabs */}
         <div className="mb-6 flex flex-wrap gap-2 border-b border-slate-200 pb-3 dark:border-slate-800">
           <button
             type="button"
@@ -320,6 +333,7 @@ export default function ModeratorDashboardPage() {
           </button>
         </div>
 
+        {/* Search Bar for Worksheets & Users */}
         {(activeTab === "worksheets" || activeTab === "users") && (
           <div className="mb-4">
             <input
@@ -332,6 +346,7 @@ export default function ModeratorDashboardPage() {
           </div>
         )}
 
+        {/* TAB 1: DELETE & MANAGE WORKSHEETS */}
         {activeTab === "worksheets" && (
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className="overflow-x-auto">
@@ -439,6 +454,7 @@ export default function ModeratorDashboardPage() {
           </div>
         )}
 
+        {/* TAB 2: BAN USERS & DIRECT COMMUNICATION WITH PUBLISHERS */}
         {activeTab === "users" && (
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className="overflow-x-auto">
@@ -563,6 +579,7 @@ export default function ModeratorDashboardPage() {
           </div>
         )}
 
+        {/* TAB 3: TECHNICAL SUPPORT MANAGEMENT */}
         {activeTab === "support" && (
           <div className="space-y-4">
             {data.supportTickets.map((t) => (
@@ -621,6 +638,7 @@ export default function ModeratorDashboardPage() {
           </div>
         )}
 
+        {/* TAB 4: REPORTS */}
         {activeTab === "reports" && (
           <div className="space-y-4">
             {data.reports.map((rep) => (
@@ -679,6 +697,7 @@ export default function ModeratorDashboardPage() {
         )}
       </div>
 
+      {/* Modal: Direct Communication with Publisher */}
       {dmTargetUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">

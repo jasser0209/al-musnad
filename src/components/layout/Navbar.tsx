@@ -1,6 +1,26 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+/**
+ * Upgraded Navigation Bar — Al-Musnad (المسند) v11.0
+ *
+ * Implements all v11.0 User Directives:
+ * 1. Role-Distinguished Username Box in Top Bar:
+ *    - Surrounds the username & avatar box with a distinctive colored frame (`border-2` + `ring-2`)
+ *      according to the user's supervisory rank:
+ *      • `ADMIN` (المشرف العام): Royal Purple/Blue frame (`border-purple-500 ring-purple-400/40`)
+ *      • `MODERATOR` (المسؤول الإداري): Indigo frame (`border-indigo-500 ring-indigo-400/40`)
+ *      • `INSPECTOR` (المتفقد التربوي): Amber/Gold frame (`border-amber-500 ring-amber-400/40`)
+ * 2. Merged Supervisory Badge + Dashboard Control Panel Inside the User Dropdown Menu:
+ *    - When clicking the username box, directly below «ملفي الشخصي» (`/profile`) and
+ *      «صفحتي العامة كناشر» (`/publisher/${user.id}`), we place the unified Supervisory Badge +
+ *      Control Panel button for `ADMIN`, `MODERATOR`, and `INSPECTOR`.
+ * 3. Live Online / Offline / Ghost Mode (`وضع الشبح`) Presence System:
+ *    - Displays the small green dot below the user picture when connected (`ONLINE`)
+ *      and gray dot when disconnected (`OFFLINE` / `GHOST`), with elapsed offline duration,
+ *      plus one-click switching between `متصل`، `غير متصل`، and `👻 وضع الشبح`.
+ */
+
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -27,6 +47,7 @@ import {
   Library,
   Ghost,
 } from "lucide-react";
+import InspectorBadge from "@/components/ui/InspectorBadge";
 import {
   UserAvatarWithPresence,
   getPublicPresenceState,
@@ -54,76 +75,72 @@ const LANGUAGES: { code: Locale; label: string; short: string }[] = [
   { code: "en", label: "English", short: "EN" },
 ];
 
+function cleanDisplayName(rawName?: string | null): string {
+  if (!rawName) return "عضو المسند";
+  const cleaned = rawName
+    .replace(/\(\s*(المشرف العام|مشرف عام|مشرف|مسؤول إداري|مسؤول|متفقد تربوي|متفقد|معلم|تلميذ|مؤسسة تربوية|مؤسسة)\s*\)/g, "")
+    .replace(/^(المشرف العام|مشرف عام|المسؤول الإداري|المتفقد التربوي|المتفقد|التلميذ)\s+/g, "")
+    .trim();
+  return cleaned || rawName;
+}
+
 function getRoleUsernameBoxStyle(role?: string): {
   boxClass: string;
   avatarBgClass: string;
-  roleLabel: string;
-  roleShortTag: string;
-  badgeClass: string;
+  rankTagAr: string | null;
+  rankTagClass: string;
 } {
   if (role === "ADMIN") {
     return {
       boxClass:
-        "border-2 border-purple-500/80 bg-purple-50/70 dark:bg-purple-950/40 text-purple-950 dark:text-purple-200 hover:border-purple-600 shadow-sm",
-      avatarBgClass: "bg-gradient-to-br from-purple-600 to-indigo-700 text-white",
-      roleLabel: "المشرف العام",
-      roleShortTag: "مشرف عام",
-      badgeClass:
-        "bg-purple-100 text-purple-800 dark:bg-purple-900/60 dark:text-purple-200 border border-purple-300 dark:border-purple-700",
+        "border-2 border-purple-500 ring-2 ring-purple-400/35 bg-gradient-to-l from-purple-50/90 via-blue-50/60 to-white dark:from-purple-950/60 dark:via-slate-900 dark:to-slate-900 hover:border-purple-600 shadow-sm",
+      avatarBgClass: "bg-gradient-to-br from-purple-600 to-blue-700 text-white",
+      rankTagAr: null,
+      rankTagClass: "",
     };
   }
   if (role === "MODERATOR") {
     return {
       boxClass:
-        "border-2 border-indigo-500/80 bg-indigo-50/70 dark:bg-indigo-950/40 text-indigo-950 dark:text-indigo-200 hover:border-indigo-600 shadow-sm",
+        "border-2 border-indigo-500 ring-2 ring-indigo-400/35 bg-gradient-to-l from-indigo-50/90 via-white to-white dark:from-indigo-950/60 dark:to-slate-900 hover:border-indigo-600 shadow-sm",
       avatarBgClass: "bg-gradient-to-br from-indigo-600 to-purple-600 text-white",
-      roleLabel: "المسؤول الإداري",
-      roleShortTag: "مسؤول",
-      badgeClass:
-        "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-200 border border-indigo-300 dark:border-indigo-700",
+      rankTagAr: null,
+      rankTagClass: "",
     };
   }
   if (role === "INSPECTOR") {
     return {
       boxClass:
-        "border-2 border-amber-500/80 bg-amber-50/70 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 hover:border-amber-600 shadow-sm",
+        "border-2 border-amber-500 ring-2 ring-amber-400/35 bg-gradient-to-l from-amber-50/90 via-white to-white dark:from-amber-950/60 dark:to-slate-900 hover:border-amber-600 shadow-sm",
       avatarBgClass: "bg-gradient-to-br from-amber-500 to-orange-600 text-white",
-      roleLabel: "المتفقد التربوي",
-      roleShortTag: "متفقد",
-      badgeClass:
-        "bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-200 border border-amber-300 dark:border-amber-700",
+      rankTagAr: null,
+      rankTagClass: "",
     };
   }
   if (role === "INSTITUTION") {
     return {
       boxClass:
-        "border-2 border-violet-500/80 bg-violet-50/70 dark:bg-violet-950/40 text-violet-950 dark:text-violet-200 hover:border-violet-600 shadow-sm",
-      avatarBgClass: "bg-gradient-to-br from-violet-600 to-indigo-600 text-white",
-      roleLabel: "المؤسسة التربوية",
-      roleShortTag: "مؤسسة",
-      badgeClass:
-        "bg-violet-100 text-violet-800 dark:bg-violet-900/60 dark:text-violet-200 border border-violet-300 dark:border-violet-700",
+        "border-2 border-violet-500 ring-2 ring-violet-400/35 bg-gradient-to-l from-violet-50/90 via-white to-white dark:from-violet-950/60 dark:to-slate-900 hover:border-violet-600 shadow-sm",
+      avatarBgClass: "bg-gradient-to-br from-violet-600 to-indigo-700 text-white",
+      rankTagAr: null,
+      rankTagClass: "",
     };
   }
   if (role === "STUDENT") {
     return {
       boxClass:
-        "border-2 border-emerald-500/80 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-950 dark:text-emerald-200 hover:border-emerald-600 shadow-sm",
+        "border-2 border-emerald-500 ring-2 ring-emerald-400/35 bg-gradient-to-l from-emerald-50/90 via-white to-white dark:from-emerald-950/60 dark:to-slate-900 hover:border-emerald-600 shadow-sm",
       avatarBgClass: "bg-gradient-to-br from-emerald-600 to-teal-600 text-white",
-      roleLabel: "التلميذ",
-      roleShortTag: "تلميذ",
-      badgeClass:
-        "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700",
+      rankTagAr: null,
+      rankTagClass: "",
     };
   }
   return {
     boxClass:
-      "border-2 border-blue-500/80 bg-blue-50/70 dark:bg-blue-950/40 text-blue-950 dark:text-blue-200 hover:border-blue-600 shadow-sm",
+      "border-2 border-blue-500 ring-2 ring-blue-400/35 bg-gradient-to-l from-blue-50/90 via-white to-white dark:from-blue-950/60 dark:to-slate-900 hover:border-blue-600 shadow-sm",
     avatarBgClass: "bg-gradient-to-br from-blue-600 to-cyan-600 text-white",
-    roleLabel: "المعلم / الأستاذ",
-    roleShortTag: "معلم",
-    badgeClass:
-      "bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-200 border border-blue-300 dark:border-blue-700",
+    rankTagAr: null,
+    rankTagClass: "",
   };
 }
 
@@ -140,52 +157,6 @@ export default function Navbar() {
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [notifMenuOpen, setNotifMenuOpen] = useState(false);
-
-  const profileMenuRef = useRef<HTMLDivElement>(null);
-  const notifMenuRef = useRef<HTMLDivElement>(null);
-  const langMenuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleOutsideMouseDown = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (
-        profileMenuOpen &&
-        profileMenuRef.current &&
-        !profileMenuRef.current.contains(target)
-      ) {
-        setProfileMenuOpen(false);
-      }
-      if (
-        notifMenuOpen &&
-        notifMenuRef.current &&
-        !notifMenuRef.current.contains(target)
-      ) {
-        setNotifMenuOpen(false);
-      }
-      if (
-        langMenuOpen &&
-        langMenuRef.current &&
-        !langMenuRef.current.contains(target)
-      ) {
-        setLangMenuOpen(false);
-      }
-    };
-
-    const handleEscapeKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setProfileMenuOpen(false);
-        setNotifMenuOpen(false);
-        setLangMenuOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleOutsideMouseDown);
-    document.addEventListener("keydown", handleEscapeKey);
-    return () => {
-      document.removeEventListener("mousedown", handleOutsideMouseDown);
-      document.removeEventListener("keydown", handleEscapeKey);
-    };
-  }, [profileMenuOpen, notifMenuOpen, langMenuOpen]);
   const [updatingPresence, setUpdatingPresence] = useState(false);
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -252,6 +223,10 @@ export default function Navbar() {
               "عضو المسند",
             email: session.user.email || "",
             avatarUrl: session.user.user_metadata?.avatar_url || null,
+            role:
+              session.user.email?.toLowerCase() === "bjasser123@gmail.com"
+                ? "ADMIN"
+                : (session.user.user_metadata?.role as string) || "TEACHER",
             presenceStatus: "ONLINE",
             lastSeenAt: new Date().toISOString(),
           };
@@ -353,7 +328,7 @@ export default function Navbar() {
       subscription.unsubscribe();
       clearInterval(heartbeatTimer);
     };
-  }, []);
+  }, [pathname]);
 
   const handleMarkAllNotificationsRead = async () => {
     try {
@@ -382,60 +357,27 @@ export default function Navbar() {
     router.refresh();
   };
 
-  const getNavLinks = () => {
-    const base = [
-      { label: t.nav.home, href: "/" },
-      { label: "مستودع المواد والمستويات", href: "/levels" },
-      { label: "النشرات", href: "/#catalog" },
-    ];
+  const roleSectionLink =
+    user?.role === "INSPECTOR"
+      ? [{ label: "للمتفقدين", href: "/#role-personalized-hub" }]
+      : user?.role === "TEACHER"
+      ? [{ label: "للمعلمين", href: "/#role-personalized-hub" }]
+      : user?.role === "INSTITUTION"
+      ? [{ label: "للمؤسسات", href: "/#role-personalized-hub" }]
+      : user?.role === "ADMIN" || user?.role === "MODERATOR"
+      ? [{ label: "فضاءات الفئات", href: "/#role-personalized-hub" }]
+      : [];
 
-    if (user?.role === "INSPECTOR") {
-      return [
-        ...base,
-        { label: "للمتفقدين", href: "/#inspectors-hub" },
-        { label: "اعرف المزيد", href: "/#learn-more" },
-      ];
-    }
-
-    if (user?.role === "TEACHER") {
-      return [
-        ...base,
-        { label: "للمعلمين", href: "/#teachers-hub" },
-        { label: "اعرف المزيد", href: "/#learn-more" },
-      ];
-    }
-
-    if (user?.role === "INSTITUTION") {
-      return [
-        ...base,
-        { label: "للمؤسسات", href: "/#institutions-hub" },
-        { label: "اعرف المزيد", href: "/#learn-more" },
-      ];
-    }
-
-    if (user?.role === "ADMIN") {
-      return [
-        ...base,
-        { label: "لوحة المشرف", href: "/admin/dashboard" },
-        { label: "اعرف المزيد", href: "/#learn-more" },
-      ];
-    }
-
-    if (user?.role === "MODERATOR") {
-      return [
-        ...base,
-        { label: "لوحة المسؤول", href: "/moderator/dashboard" },
-        { label: "اعرف المزيد", href: "/#learn-more" },
-      ];
-    }
-
-    return [
-      ...base,
-      { label: "اعرف المزيد", href: "/#learn-more" },
-    ];
-  };
-
-  const navLinks = getNavLinks();
+  const navLinks = [
+    { label: "الرئيسية", href: "/" },
+    {
+      label: user ? "مستودع المواد" : "مستودع المواد والمستويات",
+      href: "/levels",
+    },
+    { label: "النشرات", href: "/#catalog" },
+    ...roleSectionLink,
+    { label: "اعرف المزيد", href: "/#learn-more" },
+  ];
 
   const isSupervisoryRole =
     user?.role === "ADMIN" ||
@@ -455,6 +397,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-18 py-3 gap-4">
+          {/* Brand Logo: المسند */}
           <div className="flex items-center gap-6">
             <Link href="/" className="flex items-center gap-2.5 group shrink-0">
               <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center font-black text-xl shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
@@ -470,7 +413,7 @@ export default function Navbar() {
               </div>
             </Link>
 
-            <nav className="hidden lg:flex items-center gap-1">
+            <nav className="hidden lg:flex items-center gap-2.5 xl:gap-4 ms-2">
               {navLinks.map((link) => {
                 const isActive =
                   pathname === link.href ||
@@ -479,7 +422,7 @@ export default function Navbar() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`px-3.5 py-2 rounded-xl text-sm font-bold transition ${
+                    className={`px-4 py-2 rounded-xl text-sm font-extrabold tracking-wide transition ${
                       isActive
                         ? "text-blue-600 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-950/50"
                         : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/60"
@@ -492,8 +435,10 @@ export default function Navbar() {
             </nav>
           </div>
 
+          {/* Action Area */}
           <div className="hidden md:flex items-center gap-2.5">
-            <div className="relative" ref={langMenuRef}>
+            {/* Language Switcher */}
+            <div className="relative">
               <button
                 type="button"
                 onClick={() => setLangMenuOpen((prev) => !prev)}
@@ -536,6 +481,7 @@ export default function Navbar() {
               )}
             </div>
 
+            {/* Theme Toggle */}
             <button
               type="button"
               onClick={toggleTheme}
@@ -552,8 +498,11 @@ export default function Navbar() {
 
             <div className="h-5 w-px bg-slate-200 dark:bg-slate-700 mx-0.5" />
 
+            {/* Authenticated vs Unauthenticated */}
             {!loading && user ? (
               <div className="flex items-center gap-2.5">
+                {/* Role is displayed inside the colored Username Box on the top-left, never beside the Upload button */}
+
                 {user.role !== "STUDENT" && !user.isBanned && (
                   <Link
                     href="/upload"
@@ -564,7 +513,8 @@ export default function Navbar() {
                   </Link>
                 )}
 
-                <div className="relative" ref={notifMenuRef}>
+                {/* Notification Bell Icon */}
+                <div className="relative">
                   <button
                     type="button"
                     onClick={() => {
@@ -646,18 +596,19 @@ export default function Navbar() {
                   )}
                 </div>
 
-                <div className="relative" ref={profileMenuRef}>
+                {/* Role-Distinguished Username Box & Rich Dropdown Menu */}
+                <div className="relative">
                   <button
                     type="button"
                     onClick={() => {
                       setProfileMenuOpen((prev) => !prev);
                       setNotifMenuOpen(false);
                     }}
-                    className={`flex items-center gap-2.5 px-3.5 py-1.5 rounded-2xl transition cursor-pointer shrink-0 ${roleBoxStyle.boxClass}`}
-                    title={user.name}
+                    className={`flex items-center gap-2.5 px-3 py-1.5 rounded-2xl transition cursor-pointer ${roleBoxStyle.boxClass}`}
+                    title={cleanDisplayName(user.name)}
                   >
                     <UserAvatarWithPresence
-                      name={user.name}
+                      name={cleanDisplayName(user.name)}
                       avatarUrl={user.avatarUrl}
                       presenceStatus={user.presenceStatus}
                       lastSeenAt={user.lastSeenAt}
@@ -665,14 +616,22 @@ export default function Navbar() {
                       size="md"
                       avatarBgClass={roleBoxStyle.avatarBgClass}
                     />
-                    <span className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white whitespace-nowrap">
-                      {user.name}
-                    </span>
-                    <ChevronDown
-                      className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${
-                        profileMenuOpen ? "rotate-180" : ""
-                      }`}
-                    />
+                    <div className="flex flex-col items-start text-start">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white whitespace-nowrap">
+                          {cleanDisplayName(user.name)}
+                        </span>
+
+                      </div>
+                      <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+                        {currentPresenceInfo.isGhostSelf
+                          ? "👻 وضع الشبح"
+                          : currentPresenceInfo.isOnlinePublicly
+                          ? "🟢 متصل الآن"
+                          : `⚪ غير متصل (${currentPresenceInfo.durationLabelAr || ""})`}
+                      </span>
+                    </div>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   </button>
 
                   {profileMenuOpen && (
@@ -682,22 +641,15 @@ export default function Navbar() {
                         onClick={() => setProfileMenuOpen(false)}
                       />
                       <div className="absolute top-full mt-2 end-0 z-20 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-2.5 space-y-1">
+                        {/* User Summary & Presence Switcher (متصل / غير متصل / وضع الشبح) */}
                         <div className="px-3 py-2.5 border-b border-slate-100 dark:border-slate-800 mb-1 space-y-2.5">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="truncate">
-                              <p className="text-xs font-extrabold text-slate-900 dark:text-white truncate">
-                                {user.name}
-                              </p>
-                              <p className="text-[11px] text-slate-400 truncate">
-                                {user.email}
-                              </p>
-                            </div>
-                            <span
-                              className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black shrink-0 ${roleBoxStyle.badgeClass}`}
-                              title={`فئة الحساب: ${roleBoxStyle.roleLabel}`}
-                            >
-                              {roleBoxStyle.roleLabel}
-                            </span>
+                          <div>
+                            <p className="text-xs font-extrabold text-slate-900 dark:text-white truncate">
+                              {cleanDisplayName(user.name)}
+                            </p>
+                            <p className="text-[11px] text-slate-400 truncate">
+                              {user.email}
+                            </p>
                           </div>
 
                           <div className="rounded-xl bg-slate-50 dark:bg-slate-800/80 p-2 border border-slate-200/70 dark:border-slate-700">
@@ -751,6 +703,7 @@ export default function Navbar() {
                           </div>
                         </div>
 
+                        {/* 1. ملفي الشخصي */}
                         <Link
                           href="/profile"
                           onClick={() => setProfileMenuOpen(false)}
@@ -760,6 +713,7 @@ export default function Navbar() {
                           <span>{t.nav.profile}</span>
                         </Link>
 
+                        {/* 2. صفحتي العامة كناشر */}
                         <Link
                           href={`/publisher/${user.id}`}
                           onClick={() => setProfileMenuOpen(false)}
@@ -769,6 +723,7 @@ export default function Navbar() {
                           <span>صفحتي العامة كناشر</span>
                         </Link>
 
+                        {/* 3. شارة الرتبة المدمجة مع لوحة التحكم مباشرة أسفل الملف الشخصي وصفحتي العامة كناشر */}
                         {user.role === "ADMIN" && (
                           <div className="my-1.5 p-2 rounded-2xl bg-gradient-to-l from-purple-50 via-blue-50 to-indigo-50 dark:from-purple-950/50 dark:via-slate-800 dark:to-indigo-950/40 border border-purple-200 dark:border-purple-800/70 space-y-1.5">
                             <Link
@@ -833,7 +788,7 @@ export default function Navbar() {
                               >
                                 <span className="flex items-center gap-2">
                                   <BadgeCheck className="w-4 h-4 shrink-0" />
-                                  <span>متفقد معتمد • لوحة التحكم</span>
+                                  <span>متفقد تربوي • لوحة التحكم</span>
                                 </span>
                                 <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-md">
                                   دخول
@@ -841,31 +796,71 @@ export default function Navbar() {
                               </Link>
                             ) : (
                               <Link
-                                href="/inspector/activate"
+                                href="/profile?tab=verification"
                                 onClick={() => setProfileMenuOpen(false)}
-                                className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-black shadow-sm transition"
+                                className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-extrabold transition"
                               >
-                                <span className="flex items-center gap-2">
-                                  <ShieldAlert className="w-4 h-4 shrink-0" />
-                                  <span>إثبات هوية المتفقد لتفعيل الميزات</span>
-                                </span>
-                                <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-md">
-                                  تفعيل 🔒
+                                <span>🔒 لوحة المتفقد (تُفعل بعد إثبات الهوية)</span>
+                                <span className="text-[10px] bg-amber-500 text-slate-950 px-2 py-0.5 rounded-md font-black">
+                                  توثيق
                                 </span>
                               </Link>
                             )}
                           </div>
                         )}
 
-                        {(user.role === "TEACHER" || user.role === "INSTITUTION") && !user.isVerified && (
-                          <Link
-                            href="/profile?tab=verification"
-                            onClick={() => setProfileMenuOpen(false)}
-                            className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-300 text-[11px] font-extrabold transition"
-                          >
-                            <span>🔒 إثبات الهوية لفتح الملفات الخاصة بفئتك</span>
-                            <span className="underline">توثيق</span>
-                          </Link>
+                        {user.role === "INSTITUTION" && (
+                          <div className="my-1.5 p-1.5 rounded-2xl bg-violet-50/80 dark:bg-violet-950/40 border border-violet-200 dark:border-violet-800/70">
+                            <Link
+                              href="/#role-personalized-hub"
+                              onClick={() => setProfileMenuOpen(false)}
+                              className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-700 hover:from-violet-700 hover:to-indigo-800 text-white text-xs font-black shadow-sm transition"
+                            >
+                              <span className="flex items-center gap-2">
+                                <BadgeCheck className="w-4 h-4 shrink-0" />
+                                <span>حساب مؤسسة تربوية • للمؤسسات</span>
+                              </span>
+                              <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-md">
+                                فتح
+                              </span>
+                            </Link>
+                          </div>
+                        )}
+
+                        {user.role === "TEACHER" && (
+                          <div className="my-1.5 p-1.5 rounded-2xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/70">
+                            <Link
+                              href="/#role-personalized-hub"
+                              onClick={() => setProfileMenuOpen(false)}
+                              className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-xs font-black shadow-sm transition"
+                            >
+                              <span className="flex items-center gap-2">
+                                <BadgeCheck className="w-4 h-4 shrink-0" />
+                                <span>حساب معلم • للمعلمين</span>
+                              </span>
+                              <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-md">
+                                فتح
+                              </span>
+                            </Link>
+                          </div>
+                        )}
+
+                        {user.role === "STUDENT" && (
+                          <div className="my-1.5 p-1.5 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/70">
+                            <Link
+                              href="/levels"
+                              onClick={() => setProfileMenuOpen(false)}
+                              className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-black shadow-sm transition"
+                            >
+                              <span className="flex items-center gap-2">
+                                <BadgeCheck className="w-4 h-4 shrink-0" />
+                                <span>حساب تلميذ • فضاء المراجعة</span>
+                              </span>
+                              <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-md">
+                                فتح
+                              </span>
+                            </Link>
+                          </div>
                         )}
 
                         <Link
@@ -956,6 +951,7 @@ export default function Navbar() {
             ) : null}
           </div>
 
+          {/* Mobile Controls */}
           <div className="flex items-center gap-2 md:hidden">
             <button
               type="button"
@@ -997,6 +993,7 @@ export default function Navbar() {
         </div>
       </div>
 
+      {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 pt-3 pb-6 space-y-3">
           <nav className="flex flex-col gap-1">
@@ -1019,7 +1016,7 @@ export default function Navbar() {
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2.5">
                       <UserAvatarWithPresence
-                        name={user.name}
+                        name={cleanDisplayName(user.name)}
                         avatarUrl={user.avatarUrl}
                         presenceStatus={user.presenceStatus}
                         lastSeenAt={user.lastSeenAt}
@@ -1029,16 +1026,14 @@ export default function Navbar() {
                       />
                       <div>
                         <p className="text-xs font-extrabold text-slate-900 dark:text-white">
-                          {user.name}
+                          {cleanDisplayName(user.name)}
                         </p>
                         <p className="text-[10px] text-slate-500">
                           {currentPresenceInfo.statusLabelAr}
                         </p>
                       </div>
                     </div>
-                    <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black ${roleBoxStyle.badgeClass}`}>
-                      {roleBoxStyle.roleLabel}
-                    </span>
+
                   </div>
                 </div>
 
@@ -1057,6 +1052,7 @@ export default function Navbar() {
                   صفحتي العامة كناشر
                 </Link>
 
+                {/* Merged Supervisory Badge + Control Panel right below Profile & Public Publisher Page */}
                 {user.role === "ADMIN" && (
                   <Link
                     href="/admin/dashboard"
@@ -1078,25 +1074,14 @@ export default function Navbar() {
                   </Link>
                 )}
                 {user.role === "INSPECTOR" && (
-                  user.isVerified ? (
-                    <Link
-                      href="/inspector/dashboard"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white text-xs font-extrabold shadow-sm"
-                    >
-                      <BadgeCheck className="w-4 h-4" />
-                      <span>متفقد معتمد • لوحة التحكم</span>
-                    </Link>
-                  ) : (
-                    <Link
-                      href="/inspector/activate"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-amber-600 text-white text-xs font-extrabold shadow-sm"
-                    >
-                      <ShieldAlert className="w-4 h-4" />
-                      <span>🔒 إثبات هوية المتفقد لتفعيل الميزات</span>
-                    </Link>
-                  )
+                  <Link
+                    href="/inspector/dashboard"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white text-xs font-extrabold shadow-sm"
+                  >
+                    <BadgeCheck className="w-4 h-4" />
+                    <span>متفقد معتمد • لوحة التحكم</span>
+                  </Link>
                 )}
 
                 <Link

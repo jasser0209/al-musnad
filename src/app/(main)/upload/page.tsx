@@ -1,5 +1,18 @@
 "use client";
 
+/**
+ * Upload New Publication Page — Al-Musnad (المسند) v6.0
+ *
+ * Updates per Project Manager v6.0 Directives:
+ * 1. Accepts PDF (`.pdf`), Microsoft Word (`.doc`, `.docx`), and Images (`.png`, `.jpg`, `.jpeg`, `.webp`).
+ * 2. When the user uploads a file that is NOT a PDF (Word or Image), the system accepts the file,
+ *    saves it for review, and displays a warm Thank You screen informing the user:
+ *    "شكراً لك على مساهمتك! هذا المحتوى الذي أرسلته سيتم مراجعته من عند المشرف والمتفقد
+ *     وإعادة صياغته لملف PDF ليكون الوصول إليه أفضل من عند المستخدمين."
+ * 3. Supports publishing either to a Curriculum Subject Sub-division (درس، تمارين، امتحانات،
+ *    جذاذات، أنشطة تفاعلية) OR directly to «قسم الإدارة (وثائق ومعاملات إدارية للمعلم)».
+ */
+
 import React, { useState, useEffect, DragEvent, ChangeEvent, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -18,7 +31,6 @@ import {
   Briefcase,
   BookOpen,
   Sparkles,
-  Calendar,
 } from "lucide-react";
 import {
   MAX_FILE_SIZE_BYTES,
@@ -80,44 +92,6 @@ export default function UploadWorksheetPage() {
   const [audience, setAudience] = useState<TargetAudience>("ALL");
   const [tagInput, setTagInput] = useState<string>("");
   const [tags, setTags] = useState<string[]>([]);
-  const [selectedTrimester, setSelectedTrimester] = useState<string>("");
-  const [selectedSemester, setSelectedSemester] = useState<string>("");
-
-  function handleToggleSemester(semTag: string) {
-    if (selectedSemester === semTag) {
-      setSelectedSemester("");
-      setTags((prev) =>
-        prev.filter((t) => !SCHOOL_SEMESTERS.some((s) => s.tag === t))
-      );
-    } else {
-      setSelectedSemester(semTag);
-      setTags((prev) => {
-        const withoutSem = prev.filter(
-          (t) => !SCHOOL_SEMESTERS.some((s) => s.tag === t)
-        );
-        return [...withoutSem, semTag];
-      });
-    }
-  }
-
-  function handleToggleTrimester(trimesterTag: string) {
-    if (selectedTrimester === trimesterTag) {
-      setSelectedTrimester("");
-      setTags((prev) =>
-        prev.filter(
-          (t) => !SCHOOL_TRIMESTERS.some((st) => st.tag === t)
-        )
-      );
-    } else {
-      setSelectedTrimester(trimesterTag);
-      setTags((prev) => {
-        const withoutTrimesters = prev.filter(
-          (t) => !SCHOOL_TRIMESTERS.some((st) => st.tag === t)
-        );
-        return [...withoutTrimesters, trimesterTag];
-      });
-    }
-  }
 
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -466,6 +440,7 @@ export default function UploadWorksheetPage() {
           </p>
         </div>
 
+        {/* اختيار القسم: دروس ومواد تعليمية أم وثيقة في قسم الإدارة */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button
             type="button"
@@ -694,97 +669,7 @@ export default function UploadWorksheetPage() {
             </div>
           )}
 
-          {/* السداسي الدراسي */}
-          <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-xs sm:text-sm font-bold text-amber-950 dark:text-amber-200">
-                <Calendar className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                <span>وسم السداسي الدراسي (تجميع دروس المادة)</span>
-              </label>
-              {(selectedSemester || tags.some((t) => SCHOOL_SEMESTERS.some((ss) => ss.tag === t))) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedSemester("");
-                    setTags((prev) =>
-                      prev.filter((t) => !SCHOOL_SEMESTERS.some((ss) => ss.tag === t))
-                    );
-                  }}
-                  className="text-[11px] font-bold text-rose-600 hover:underline cursor-pointer"
-                >
-                  إلغاء وسم السداسي ✕
-                </button>
-              )}
-            </div>
-            <p className="text-xs text-amber-800/80 dark:text-amber-300/80">
-              اختر السداسي الدراسي لتجميع منشورات نفس الدرس مع بقية المعلمين بترتيب تفاضلي:
-            </p>
-            <div className="grid grid-cols-2 gap-2 pt-1">
-              {SCHOOL_SEMESTERS.map((sem) => {
-                const isSelected = selectedSemester === sem.tag || tags.includes(sem.tag);
-                return (
-                  <button
-                    key={sem.id}
-                    type="button"
-                    onClick={() => handleToggleSemester(sem.tag)}
-                    className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold border-2 transition-all cursor-pointer text-center ${
-                      isSelected
-                        ? "bg-amber-600 text-white border-amber-600 shadow-sm ring-2 ring-amber-600/20"
-                        : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-amber-200 dark:border-amber-800/60 hover:border-amber-500"
-                    }`}
-                  >
-                    {sem.nameAr}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
-                <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                <span>وسم الثلاثي المدرسي (اختيار سريع بضغطة زر)</span>
-              </label>
-              {(selectedTrimester || tags.some((t) => SCHOOL_TRIMESTERS.some((st) => st.tag === t))) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedTrimester("");
-                    setTags((prev) =>
-                      prev.filter((t) => !SCHOOL_TRIMESTERS.some((st) => st.tag === t))
-                    );
-                  }}
-                  className="text-[11px] font-bold text-rose-600 hover:underline cursor-pointer"
-                >
-                  إلغاء وسم الثلاثي ✕
-                </button>
-              )}
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              اختر الثلاثي لوسم الملف بيداغوجياً وتيسير عثور المعلمين والتلاميذ عليه في الفلترة والبحث:
-            </p>
-            <div className="grid grid-cols-3 gap-2 pt-1">
-              {SCHOOL_TRIMESTERS.map((trim) => {
-                const isSelected = selectedTrimester === trim.tag || tags.includes(trim.tag);
-                return (
-                  <button
-                    key={trim.id}
-                    type="button"
-                    onClick={() => handleToggleTrimester(trim.tag)}
-                    className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold border-2 transition-all cursor-pointer text-center ${
-                      isSelected
-                        ? "bg-blue-600 text-white border-blue-600 shadow-sm ring-2 ring-blue-600/20"
-                        : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-blue-400"
-                    }`}
-                  >
-                    {trim.nameAr}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
+          {/* Target Audience Control */}
           <div className="p-4 rounded-2xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 space-y-2">
             <label className="flex items-center gap-2 text-sm font-bold text-blue-950 dark:text-blue-200">
               <Users className="w-4 h-4 text-blue-600" />
@@ -827,9 +712,77 @@ export default function UploadWorksheetPage() {
             />
           </div>
 
+          <div className="p-4 rounded-2xl bg-amber-50/60 dark:bg-amber-950/25 border border-amber-200 dark:border-amber-800/70 space-y-4">
+            <div>
+              <label className="block text-sm font-bold text-slate-800 dark:text-slate-100 mb-2">
+                تحديد السداسي الدراسي للمادة (لتنظيم الدرس داخل السداسي المخصص له)
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {SCHOOL_SEMESTERS.map((sem) => {
+                  const isSelected = tags.includes(sem.nameAr);
+                  return (
+                    <button
+                      key={sem.slug}
+                      type="button"
+                      onClick={() => {
+                        const otherSemNames = SCHOOL_SEMESTERS.map((s) => s.nameAr);
+                        const cleaned = tags.filter((t) => !otherSemNames.includes(t));
+                        if (isSelected) {
+                          setTags(cleaned);
+                        } else {
+                          setTags([...cleaned, sem.nameAr]);
+                        }
+                      }}
+                      className={`px-4 py-2 rounded-xl text-xs font-extrabold border transition cursor-pointer ${
+                        isSelected
+                          ? "bg-amber-500 text-slate-950 border-amber-500 shadow-sm"
+                          : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-amber-400"
+                      }`}
+                    >
+                      {sem.labelAr}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">
+                تحديد الثلاثي الدراسي (اختيار سريع لمساعدة المعلمين والتلاميذ في الفلترة)
+              </label>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {SCHOOL_TRIMESTERS.map((tri) => {
+                const isSelected = tags.includes(tri.nameAr);
+                return (
+                  <button
+                    key={tri.slug}
+                    type="button"
+                    onClick={() => {
+                      const otherTriNames = SCHOOL_TRIMESTERS.map((t) => t.nameAr);
+                      const cleaned = tags.filter((t) => !otherTriNames.includes(t));
+                      if (isSelected) {
+                        setTags(cleaned);
+                      } else {
+                        setTags([...cleaned, tri.nameAr]);
+                      }
+                    }}
+                    className={`px-4 py-2 rounded-xl text-xs font-extrabold border transition cursor-pointer ${
+                      isSelected
+                        ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                        : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-blue-400"
+                    }`}
+                  >
+                    {tri.labelAr}
+                  </button>
+                );
+              })}
+            </div>
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">
-              الكلمات المفتاحية (اختياري)
+              الكلمات المفتاحية أو اسم المحور/الدرس الموحد (مثال: الدرس: الجمع بالاحتفاظ)
             </label>
             <div className="flex gap-2 mb-2">
               <input
@@ -864,10 +817,7 @@ export default function UploadWorksheetPage() {
                     {t}
                     <button
                       type="button"
-                      onClick={() => {
-                        if (t === selectedTrimester) setSelectedTrimester("");
-                        setTags(tags.filter((item) => item !== t));
-                      }}
+                      onClick={() => setTags(tags.filter((item) => item !== t))}
                       className="hover:text-red-600"
                     >
                       <X className="w-3.5 h-3.5" />

@@ -1,3 +1,16 @@
+/**
+ * Subject Publications Page (`/levels/[gradeSlug]/subjects/[subjectSlug]`) — Al-Musnad v16.0
+ *
+ * Implements:
+ * 1. Semester Tabs (`كل السداسيات` | `السداسي الأول` | `السداسي الثاني`) inside every Subject.
+ * 2. Anti-Chaos Lesson Grouping (`تجميع الدروس المتشابهة في قسم واحد داخل المادة والسداسي`):
+ *    - When multiple teachers publish the same lesson for the same Grade and Subject,
+ *      their publications are grouped inside a dedicated Lesson Section (`قسم الدرس: ...`).
+ * 3. Differential Pedagogical Ranking (`الترتيب التفاضلي`):
+ *    - Inside every Lesson Section and Category, Endorsed publications (`isEndorsed === true`)
+ *      rise to the top and are distinguished with a Gold Frame (`إطار ذهبي`).
+ */
+
 import React from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -7,6 +20,9 @@ import {
   Plus,
   FileText,
   FolderOpen,
+  Calendar,
+  Award,
+  Layers,
 } from "lucide-react";
 import {
   CURRICULUM_GRADES,
@@ -24,7 +40,12 @@ import SubjectIcon from "@/components/ui/SubjectIcon";
 
 interface SubjectPublicationsPageProps {
   params: Promise<{ gradeSlug: string; subjectSlug: string }>;
-  searchParams: Promise<{ category?: string; semester?: string; search?: string }>;
+  searchParams: Promise<{
+    category?: string;
+    semester?: string;
+    lesson?: string;
+    search?: string;
+  }>;
 }
 
 export default async function SubjectPublicationsPage(
@@ -33,7 +54,8 @@ export default async function SubjectPublicationsPage(
   const { gradeSlug, subjectSlug } = await props.params;
   const sp = await props.searchParams;
   const activeCategorySlug = sp.category || "ALL";
-  const activeSemester = sp.semester || "ALL";
+  const activeSemesterSlug = sp.semester || "ALL";
+  const activeLessonKey = sp.lesson || "ALL";
   const searchQuery = sp.search || "";
 
   const gradeInfo = CURRICULUM_GRADES.find((g) => g.slug === gradeSlug);
@@ -49,17 +71,19 @@ export default async function SubjectPublicationsPage(
   } = await supabase.auth.getUser();
 
   let viewerRole: string | null = null;
-  let viewerIsVerified: boolean = false;
+  let viewerIsVerified = false;
   if (user) {
     try {
       const dbUser = await db.user.findUnique({
         where: { id: user.id },
         select: { role: true, isVerified: true },
       });
-      viewerRole = dbUser?.role || "TEACHER";
-      viewerIsVerified = Boolean(dbUser?.isVerified);
+      viewerRole = dbUser?.role || (user.user_metadata?.role as string) || "TEACHER";
+      viewerIsVerified = Boolean(
+        dbUser?.isVerified || viewerRole === "ADMIN" || viewerRole === "MODERATOR"
+      );
     } catch {
-      viewerRole = "TEACHER";
+      viewerRole = (user.user_metadata?.role as string) || "TEACHER";
     }
   }
 
@@ -70,7 +94,7 @@ export default async function SubjectPublicationsPage(
     const result = await listWorksheets(
       {
         page: 1,
-        limit: 50,
+        limit: 100,
         grade: gradeSlug,
         subject: subjectSlug,
         search: searchQuery || undefined,
@@ -80,19 +104,28 @@ export default async function SubjectPublicationsPage(
       user?.id,
       viewerIsVerified
     );
-    allSubjectWorksheets = result.data;
+    allSubjectWorksheets = sortWorksheetsDifferentially(result.data);
   } catch {
     allSubjectWorksheets = [];
   }
 
-  // Filter by semester if chosen
-  const semesterFilteredWorksheets = allSubjectWorksheets.filter((ws) => {
-    if (activeSemester === "ALL") return true;
-    const { semester } = extractLessonTopicAndSemester(ws);
-    return semester === activeSemester || semester === "unassigned";
-  });
+  // Enrich each worksheet with its detected Semester and Normalized Lesson Topic
+  const enrichedWorksheets = allSubjectWorksheets.map((ws) => ({
+    ...ws,
+    _meta: extractLessonTopicAndSemester(ws),
+  }));
 
-  // Group files into their exact pedagogical section (درس، تمرين، امتحان، جذاذة، نشاط تفاعلي، أخرى)
+  // Filter by selected Semester if active
+  const semesterFilteredWorksheets =
+    activeSemesterSlug === "ALL"
+      ? enrichedWorksheets
+      : enrichedWorksheets.filter(
+          (ws) =>
+            ws._meta.semesterSlug === activeSemesterSlug ||
+            ws._meta.semesterSlug === "general"
+        );
+
+  // Group files into their pedagogical section (درس، تمرين، امتحان، جذاذة، نشاط تفاعلي، أخرى)
   const validSlugs = new Set(SUBJECT_SUBDIVISIONS.map((s) => s.slug));
   const groupedBySection: Record<string, any[]> = {};
   for (const sub of SUBJECT_SUBDIVISIONS) {
@@ -108,32 +141,77 @@ export default async function SubjectPublicationsPage(
     }
   }
 
-  const displayedWorksheets =
+  const categoryFilteredWorksheets =
     activeCategorySlug === "ALL"
       ? semesterFilteredWorksheets
       : groupedBySection[activeCategorySlug] || [];
 
-  // Group worksheets by unified lesson topic and sort differentially (endorsed gold on top)
-  const lessonGroupsMap = new Map<string, any[]>();
-  for (const ws of displayedWorksheets) {
-    const { lessonTopic } = extractLessonTopicAndSemester(ws);
-    if (!lessonGroupsMap.has(lessonTopic)) {
-      lessonGroupsMap.set(lessonTopic, []);
+  // Group publications by Lesson Topic (`قسم الدرس الموحد`) so multiple teachers' uploads
+  // of the same lesson are organized together and ranked differentially!
+  const lessonGroupsMap = new Map<
+    string,
+    {
+      key: string;
+      titleAr: string;
+      semesterLabelAr: string;
+      items: any[];
+      endorsedCount: number;
     }
-    lessonGroupsMap.get(lessonTopic)!.push(ws);
+  >();
+
+  for (const ws of categoryFilteredWorksheets) {
+    const key = ws._meta.lessonTopicKey;
+    const existing = lessonGroupsMap.get(key);
+    if (existing) {
+      existing.items.push(ws);
+      if (ws.isEndorsed) existing.endorsedCount += 1;
+    } else {
+      lessonGroupsMap.set(key, {
+        key,
+        titleAr: ws._meta.lessonTopicTitleAr,
+        semesterLabelAr: ws._meta.semesterLabelAr,
+        items: [ws],
+        endorsedCount: ws.isEndorsed ? 1 : 0,
+      });
+    }
   }
 
-  const lessonGroups = Array.from(lessonGroupsMap.entries()).map(
-    ([topic, items]) => ({
-      topic,
-      worksheets: sortWorksheetsDifferentially(items),
-    })
-  );
+  const lessonGroups = Array.from(lessonGroupsMap.values())
+    .map((grp) => ({
+      ...grp,
+      items: sortWorksheetsDifferentially(grp.items),
+    }))
+    .sort((a, b) => {
+      if (b.endorsedCount !== a.endorsedCount) return b.endorsedCount - a.endorsedCount;
+      return b.items.length - a.items.length;
+    });
+
+  const visibleLessonGroups =
+    activeLessonKey === "ALL"
+      ? lessonGroups
+      : lessonGroups.filter((g) => g.key === activeLessonKey);
+
+  const buildFilterHref = (next: {
+    category?: string;
+    semester?: string;
+    lesson?: string;
+  }) => {
+    const params = new URLSearchParams();
+    const cat = next.category ?? activeCategorySlug;
+    const sem = next.semester ?? activeSemesterSlug;
+    const les = next.lesson ?? activeLessonKey;
+    if (cat && cat !== "ALL") params.set("category", cat);
+    if (sem && sem !== "ALL") params.set("semester", sem);
+    if (les && les !== "ALL") params.set("lesson", les);
+    if (searchQuery) params.set("search", searchQuery);
+    const qs = params.toString();
+    return `/levels/${gradeInfo.slug}/subjects/${subjectInfo.slug}${qs ? `?${qs}` : ""}`;
+  };
 
   return (
     <div dir="rtl" className="min-h-screen bg-slate-50/60 py-10 dark:bg-slate-950">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-8">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <nav className="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400">
             <Link href="/" className="hover:text-blue-700">
               الرئيسية
@@ -143,16 +221,11 @@ export default async function SubjectPublicationsPage(
               المستويات الدراسية المعتمدة
             </Link>
             <span>/</span>
-            <Link
-              href={`/levels/${gradeInfo.slug}`}
-              className="hover:text-blue-700"
-            >
+            <Link href={`/levels/${gradeInfo.slug}`} className="hover:text-blue-700">
               {gradeInfo.nameAr}
             </Link>
             <span>/</span>
-            <span className="text-slate-900 dark:text-white">
-              {subjectInfo.nameAr}
-            </span>
+            <span className="text-slate-900 dark:text-white">{subjectInfo.nameAr}</span>
           </nav>
 
           {!isAuthenticated && (
@@ -173,7 +246,8 @@ export default async function SubjectPublicationsPage(
           )}
         </div>
 
-        <div className="mb-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 dark:border-slate-800 dark:bg-slate-900">
+        {/* Subject Header + Semester Tabs + Pedagogical Subdivision Tabs */}
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 dark:border-slate-800 dark:bg-slate-900 space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-6 dark:border-slate-800">
             <div className="flex items-start gap-4">
               <div
@@ -187,10 +261,10 @@ export default async function SubjectPublicationsPage(
                   {gradeInfo.nameAr} • {subjectInfo.nameAr}
                 </span>
                 <h1 className="mt-1.5 text-2xl font-extrabold text-slate-900 sm:text-3xl dark:text-white">
-                  ملفات وأقسام مادة «{subjectInfo.nameAr}»
+                  مستودع مادة «{subjectInfo.nameAr}» — السداسيات وأقسام الدروس الموحدة
                 </h1>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  كل ملف يحمل اسم المادة والسنة الدراسية ونوع الملف، ومرتب في القسم المناسب له (درس، تمرين، امتحان، جذاذة، نشاط تفاعلي، أو أخرى).
+                  يتم تجميع المنشورات المشتركة في نفس الدرس داخل قسم موحد، وترتيبها تفاضلياً بحيث ترتقي المنشورات المعتمدة بيداغوجياً في الأعلى بإطار ذهبي.
                 </p>
               </div>
             </div>
@@ -209,49 +283,52 @@ export default async function SubjectPublicationsPage(
                   className="inline-flex items-center gap-1.5 rounded-xl bg-blue-700 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-blue-800"
                 >
                   <Plus className="h-4 w-4" />
-                  إضافة ملف في هذه المادة
+                  نشر درس أو ملف في هذه المادة
                 </Link>
               )}
             </div>
           </div>
 
-          {/* تبويبات السداسي الدراسي */}
-          <div className="mt-5 flex flex-wrap items-center gap-2 border-b border-slate-100 pb-4 dark:border-slate-800">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">
-              السداسي الدراسي:
-            </span>
-            <Link
-              href={`/levels/${gradeInfo.slug}/subjects/${subjectInfo.slug}?category=${activeCategorySlug}&semester=ALL`}
-              className={`rounded-xl px-3.5 py-1.5 text-xs font-extrabold transition ${
-                activeSemester === "ALL"
-                  ? "bg-amber-600 text-white shadow-sm"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
-              }`}
-            >
-              كل السداسيات ({allSubjectWorksheets.length})
-            </Link>
-            {SCHOOL_SEMESTERS.map((sem) => {
-              const active = activeSemester === sem.slug;
-              return (
-                <Link
-                  key={sem.slug}
-                  href={`/levels/${gradeInfo.slug}/subjects/${subjectInfo.slug}?category=${activeCategorySlug}&semester=${sem.slug}`}
-                  className={`rounded-xl px-3.5 py-1.5 text-xs font-extrabold transition ${
-                    active
-                      ? "bg-amber-600 text-white shadow-sm"
-                      : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
-                  }`}
-                >
-                  {sem.nameAr}
-                </Link>
-              );
-            })}
+          {/* 1. Semester Tabs (`السداسي الأول` / `السداسي الثاني`) */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-2 text-xs font-extrabold text-slate-700 dark:text-slate-200">
+              <Calendar className="h-4 w-4 text-blue-600" />
+              <span>اختر السداسي الدراسي للمادة:</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href={buildFilterHref({ semester: "ALL", lesson: "ALL" })}
+                className={`rounded-xl px-4 py-2 text-xs font-extrabold transition ${
+                  activeSemesterSlug === "ALL"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                }`}
+              >
+                كل السداسيات ({enrichedWorksheets.length})
+              </Link>
+              {SCHOOL_SEMESTERS.map((sem) => {
+                const isAct = activeSemesterSlug === sem.slug;
+                return (
+                  <Link
+                    key={sem.slug}
+                    href={buildFilterHref({ semester: sem.slug, lesson: "ALL" })}
+                    className={`rounded-xl px-4 py-2 text-xs font-extrabold transition ${
+                      isAct
+                        ? "bg-blue-600 text-white shadow-sm"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                    }`}
+                  >
+                    {sem.labelAr}
+                  </Link>
+                );
+              })}
+            </div>
           </div>
 
-          {/* تبويبات الأقسام البيداغوجية */}
-          <div className="mt-4 flex flex-wrap items-center gap-2">
+          {/* 2. Pedagogical Sub-divisions Filter Tabs (درس، تمرين، امتحان، جذاذة، نشاط تفاعلي، أخرى) */}
+          <div className="flex flex-wrap items-center gap-2">
             <Link
-              href={`/levels/${gradeInfo.slug}/subjects/${subjectInfo.slug}?semester=${activeSemester}&category=ALL`}
+              href={buildFilterHref({ category: "ALL", lesson: "ALL" })}
               className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
                 activeCategorySlug === "ALL"
                   ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
@@ -266,7 +343,7 @@ export default async function SubjectPublicationsPage(
               return (
                 <Link
                   key={sub.slug}
-                  href={`/levels/${gradeInfo.slug}/subjects/${subjectInfo.slug}?semester=${activeSemester}&category=${sub.slug}`}
+                  href={buildFilterHref({ category: sub.slug, lesson: "ALL" })}
                   className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
                     active
                       ? "bg-blue-700 text-white shadow-sm"
@@ -278,41 +355,96 @@ export default async function SubjectPublicationsPage(
               );
             })}
           </div>
+
+          {/* 3. Quick Lesson Topic Index (فهرس أقسام الدروس المنشورة داخل المادة) */}
+          {lessonGroups.length > 1 && (
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-extrabold text-slate-600 dark:text-slate-300">
+                <Layers className="h-4 w-4 text-amber-500" />
+                <span>أقسام الدروس الموحدة داخل المادة (اضغط على الدرس لعرض جميع منشورات المعلمين الخاصة به):</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  href={buildFilterHref({ lesson: "ALL" })}
+                  className={`rounded-xl px-3.5 py-1.5 text-xs font-bold border transition ${
+                    activeLessonKey === "ALL"
+                      ? "bg-amber-500 text-slate-950 border-amber-500 font-black"
+                      : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700"
+                  }`}
+                >
+                  عرض كل الدروس ({lessonGroups.length})
+                </Link>
+                {lessonGroups.map((grp) => (
+                  <Link
+                    key={grp.key}
+                    href={buildFilterHref({
+                      lesson: activeLessonKey === grp.key ? "ALL" : grp.key,
+                    })}
+                    className={`rounded-xl px-3.5 py-1.5 text-xs font-bold border transition inline-flex items-center gap-1.5 ${
+                      activeLessonKey === grp.key
+                        ? "bg-amber-500 text-slate-950 border-amber-500 font-black shadow-sm"
+                        : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-amber-400"
+                    }`}
+                  >
+                    <FolderOpen className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                    <span>درس: {grp.titleAr}</span>
+                    <span className="rounded-full bg-slate-100 dark:bg-slate-700 px-2 py-0.5 text-[10px] font-black">
+                      {grp.items.length}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {lessonGroups.length === 0 ? (
+        {/* Organized Lesson Sections with Differential Ranking & Gold Frame */}
+        {visibleLessonGroups.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-14 text-center dark:border-slate-800 dark:bg-slate-900">
             <FileText className="mx-auto mb-3 h-10 w-10 text-slate-300" />
             <h3 className="text-base font-extrabold text-slate-800 dark:text-white">
-              لا توجد ملفات مرفوعة في هذا القسم أو السداسي حالياً
+              لا توجد ملفات مرفوعة في هذا القسم حالياً
             </h3>
             <p className="mt-1 text-xs text-slate-500">
-              كن أول من يثري مادة «{subjectInfo.nameAr}» ({gradeInfo.nameAr}) بنشر ملف تربوي جديد.
+              كن أول من يثري مادة «{subjectInfo.nameAr}» ({gradeInfo.nameAr}) بنشر درس أو ملف تربوي جديد.
             </p>
           </div>
         ) : (
           <div className="space-y-8">
-            {lessonGroups.map((group) => (
+            {visibleLessonGroups.map((grp) => (
               <section
-                key={group.topic}
-                className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                key={grp.key}
+                className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-5"
               >
-                <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3.5 dark:border-slate-800">
-                  <div className="flex items-center gap-2.5">
-                    <FolderOpen className="h-5 w-5 text-amber-500" />
-                    <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
-                      قسم الدرس: {group.topic}
-                    </h2>
-                    <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-extrabold text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
-                      {group.worksheets.length} مساهمات من المعلمين
-                    </span>
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4 dark:border-slate-800">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-950/70 dark:text-amber-300">
+                      <FolderOpen className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="text-lg font-black text-slate-900 dark:text-white">
+                          قسم الدرس: {grp.titleAr}
+                        </h2>
+                        <span className="rounded-full bg-blue-50 px-3 py-0.5 text-xs font-extrabold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
+                          {grp.items.length} {grp.items.length === 1 ? "منشور" : "منشورات من المعلمين"}
+                        </span>
+                        {grp.endorsedCount > 0 && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-0.5 text-xs font-black text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300">
+                            <Award className="h-3.5 w-3.5 text-amber-600" />
+                            <span>{grp.endorsedCount} معتمد في الصدارة بإطار ذهبي</span>
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        {grp.semesterLabelAr} • مرتبة تفاضلياً (المنشورات المعتمدة من المتفقد في الأعلى بإطار ذهبي ثم الأعلى تقييماً وتحميلاً)
+                      </p>
+                    </div>
                   </div>
-                  <span className="text-[11px] font-semibold text-slate-400">
-                    الترتيب التفاضلي: المعتمد بيداغوجياً بالإطار الذهبي في الصدارة
-                  </span>
                 </div>
+
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {group.worksheets.map((ws) => (
+                  {grp.items.map((ws) => (
                     <WorksheetCard
                       key={ws.id}
                       worksheet={ws}
