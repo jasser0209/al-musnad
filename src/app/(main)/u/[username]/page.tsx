@@ -1,11 +1,3 @@
-/**
- * Username Mention Resolver Route (`/u/[username]`) — Al-Musnad v8.0
- *
- * When a user clicks on `@username` in any comment or conversation,
- * this route looks up the user by their `username` (or fallback email prefix / ID)
- * and immediately navigates to their Publisher Profile Page (`/publisher/[id]`).
- */
-
 import { redirect, notFound } from "next/navigation";
 import { db } from "@/lib/db";
 

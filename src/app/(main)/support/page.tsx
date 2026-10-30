@@ -1,19 +1,5 @@
 "use client";
 
-/**
- * Technical Support & Customer Service Center — Al-Musnad (المسند) v13.0
- *
- * Route: /support
- * Implements:
- * 1. Two Role-Dedicated WhatsApp Direct Support Channels (معلمين وتلاميذ / مؤسسات ومتفقدين):
- *    - خط المعلمين والتلاميذ: 27764985 (https://wa.me/21627764985)
- *    - خط المؤسسات التربوية والمتفقدين: 76907101 (https://wa.me/21676907101)
- * 2. One-Click Quick Support Topic Cards (فك القفل بعد 6 محاولات، توثيق الهوية، استفسارات، مقترحات).
- * 3. Direct Support Ticket Submission Form.
- * 4. Live Ticket History & Official Replies Tracker.
- * 5. Instant Self-Service Help & Troubleshooting Guide.
- */
-
 import React, { useState, useEffect, FormEvent } from "react";
 import Link from "next/link";
 import {
@@ -232,10 +218,10 @@ export default function SupportAndCustomerServicePage() {
               </a>
             )}
 
-            {/* Channel 2: Institutions & Inspectors (46907101) */}
+            {/* Channel 2: Institutions & Inspectors (76907101) */}
             {showInstitution && (
               <a
-                href="https://wa.me/21646907101?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%20%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9%20%D9%85%D9%86%D8%B5%D8%A9%20%D8%A7%D9%84%D9%85%D8%B3%D9%86%D8%AF%D8%8C%20%D8%A3%D8%AA%D9%88%D8%A7%D8%B5%D9%84%20%D9%85%D8%B9%D9%83%D9%85%20%D8%B9%D8%A8%D8%B1%20%D8%AE%D8%B7%20%D8%A7%D9%84%D9%85%D8%A4%D8%B3%D8%B3%D8%A7%D8%AA%20%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%88%D9%8A%D8%A9%20%D9%88%D8%A7%D9%84%D9%85%D8%AA%D9%81%D9%82%D8%AF%D9%8A%D9%86%3A"
+                href="https://wa.me/21676907101?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%20%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9%20%D9%85%D9%86%D8%B5%D8%A9%20%D8%A7%D9%84%D9%85%D8%B3%D9%86%D8%AF%D8%8C%20%D8%A3%D8%AA%D9%88%D8%A7%D8%B5%D9%84%20%D9%85%D8%B9%D9%83%D9%85%20%D8%B9%D8%A8%D8%B1%20%D8%AE%D8%B7%20%D8%A7%D9%84%D9%85%D8%A4%D8%B3%D8%B3%D8%A7%D8%AA%20%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%88%D9%8A%D8%A9%20%D9%88%D8%A7%D9%84%D9%85%D8%AA%D9%81%D9%82%D8%AF%D9%8A%D9%86%3A"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group relative overflow-hidden rounded-3xl border-2 border-indigo-300 dark:border-indigo-800/80 bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-indigo-950/40 dark:via-slate-900 dark:to-purple-950/20 p-6 shadow-sm hover:shadow-md hover:border-indigo-500 transition flex items-start gap-4"
@@ -261,7 +247,7 @@ export default function SupportAndCustomerServicePage() {
                   <div className="pt-2 flex items-center gap-2 text-sm font-black text-indigo-700 dark:text-indigo-300" dir="ltr">
                     <span>+216 46 907 101</span>
                     <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-950 text-indigo-800 dark:text-indigo-300">
-                      WhatsApp: 46907101
+                      WhatsApp: 76907101
                     </span>
                   </div>
                 </div>

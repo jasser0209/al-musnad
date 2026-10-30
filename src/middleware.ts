@@ -1,10 +1,3 @@
-/**
- * Next.js Middleware
- *
- * Runs on every request to refresh the Supabase auth session.
- * Also handles route protection (redirects unauthenticated users).
- */
-
 import { type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 

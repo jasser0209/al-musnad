@@ -1,15 +1,5 @@
 "use client";
 
-/**
- * PlatformIdentityAndFaqSection — About Us, Role Benefits Guide & Interactive FAQ (Al-Musnad v13.0)
- *
- * Implements the Unified "اعرف المزيد" (Learn More) Section (`#learn-more`):
- * - Merges «من نحن» + «مزايا الفئات» + «الأسئلة الشائعة» under a single top-level section.
- * - Interactive tab switcher: [الكل المدمج | من نحن | مزايا الفئات | الأسئلة الشائعة].
- * - Preserves anchor scroll targets `#about-us`, `#roles-guide`, `#faq-section`.
- * - Replaces any "مجاني" claim with "حماية الخصوصية وأمان متقدم" for strict policy compliance.
- */
-
 import React, { useState } from "react";
 import Link from "next/link";
 import {

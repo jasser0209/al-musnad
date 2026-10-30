@@ -1,11 +1,5 @@
 "use client";
 
-/**
- * Full-Screen 4-Role Selection Overlay — Al-Musnad (المسند) v3.0
- *
- * Clean badges without "Option 1 / 2 / 3 / 4" wording, rebranded with "م" logo for Al-Musnad.
- */
-
 import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {

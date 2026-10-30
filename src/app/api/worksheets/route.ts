@@ -1,9 +1,3 @@
-/**
- * GET  /api/worksheets — Lists worksheets (Full for logged-in users per role; Title-Only `ALL` for guests)
- * POST /api/worksheets — Uploads PDF (instant publish) or Word/Image (queued for Admin & Inspector PDF conversion)
- * Protected by sliding-window rate limiting and activity audit logging.
- */
-
 import { NextRequest } from "next/server";
 import { successResponse, errorResponse } from "@/lib/utils/api-response";
 import {

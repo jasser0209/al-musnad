@@ -1,15 +1,5 @@
 "use client";
 
-/**
- * Curriculum & Administration Explorer on the Main Landing Page — Al-Musnad v10.0
- *
- * Updates in v10.0:
- * 1. Fixed administrative category slug check (`administrative` and `administrative-docs` and `administration`)
- *    so administrative documents always appear properly in «قسم الإدارة والمعاملات الإدارية».
- * 2. Added a prominent button to open the dedicated Materials & Levels Repository page (`/levels`)
- *    so clicking to browse Materials/Levels navigates directly to `/levels`.
- */
-
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import {

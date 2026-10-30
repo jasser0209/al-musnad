@@ -1,13 +1,3 @@
-/**
- * Step 2 of Curriculum Flow: Materials Repository Inside Selected Grade (`/levels/[gradeSlug]`) — Al-Musnad v12.0
- *
- * Updates in v12.0:
- * - Removed numeric numbering (1..9) inside Subject cards and replaced it with a descriptive
- *   visual icon (`<SubjectIcon />`) representing each Subject.
- * - Clicking any Subject opens its dedicated publications page organized into the 6 sections:
- *   (درس • تمرين • امتحان • جذاذة • نشاط تفاعلي • أخرى).
- */
-
 import React from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";

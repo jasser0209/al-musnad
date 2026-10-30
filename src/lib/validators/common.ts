@@ -1,9 +1,3 @@
-/**
- * Shared Common Zod Schemas — Al-Musnad v10.0
- *
- * Reusable validation building blocks for query parameters, identifiers, and sorting.
- */
-
 import { z } from "zod";
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from "@/config/constants";
 

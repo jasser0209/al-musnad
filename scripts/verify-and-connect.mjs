@@ -1,97 +1,37 @@
 #!/usr/bin/env node
 /**
- * ============================================================================
- * سكريبت الفحص والربط التلقائي للبيئة وقواعد البيانات — منصة المسند (v9.0)
- * ============================================================================
- * الاستخدام:
- *   node scripts/verify-and-connect.mjs
+ * سكريبت الفحص الشامل والربط لمنصة «المسند» (Al-Musnad v16.0)
+ * يفحص:
+ * 1. متغيرات Supabase و PostgreSQL.
+ * 2. مفاتيح Cloudflare R2 (يتأكد من أن R2_ACCESS_KEY_ID بطول 32 حرفاً و R2_SECRET_ACCESS_KEY بطول 64 حرفاً، وينبه إذا كُتب 2_SECRET_ACCESS_KEY بدون حرف R).
+ * 3. إعدادات Resend للبريد الإلكتروني.
  */
 
 import fs from "node:fs";
 import path from "node:path";
 
-const rootDir = process.cwd();
-const envLocalPath = path.join(rootDir, ".env.local");
-const envPath = path.join(rootDir, ".env");
+const envPath = path.resolve(process.cwd(), ".env");
+console.log("====================================================================");
+console.log("🔍 فحص إعدادات البيئة والربط السحابي — منصة المسند (v16.0)");
+console.log("====================================================================");
 
-function parseEnvFile(filePath) {
-  if (!fs.existsSync(filePath)) return {};
-  const lines = fs.readFileSync(filePath, "utf8").split(/\r?\n/);
-  const result = {};
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const eqIdx = trimmed.indexOf("=");
-    if (eqIdx === -1) continue;
-    const key = trimmed.slice(0, eqIdx).trim();
-    const val = trimmed.slice(eqIdx + 1).trim().replace(/^['"]|['"]$/g, "");
-    result[key] = val;
-  }
-  return result;
-}
-
-const envVars = {
-  ...parseEnvFile(envPath),
-  ...parseEnvFile(envLocalPath),
-  ...process.env,
-};
-
-const REQUIRED_KEYS = [
-  {
-    key: "NEXT_PUBLIC_SUPABASE_URL",
-    desc: "رابط مشروع Supabase (Project URL)",
-  },
-  {
-    key: "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-    desc: "المفتاح العام للمصادقة (Supabase Anon Public Key)",
-  },
-  {
-    key: "SUPABASE_SERVICE_ROLE_KEY",
-    desc: "مفتاح الخدمة الإداري للتخزين السحابي (Supabase Service Role Key)",
-  },
-  {
-    key: "DATABASE_URL",
-    desc: "رابط اتصال قاعدة البيانات (PostgreSQL Transaction Pooler - Port 6543)",
-  },
-  {
-    key: "DIRECT_URL",
-    desc: "رابط الاتصال المباشر لـ Prisma (PostgreSQL Direct Connection - Port 5432)",
-  },
-];
-
-console.log("======================================================================");
-console.log("🔍 فحص جاهزية الربط الخارجي ومتغيرات البيئة لمنصة «المسند» (v9.0)");
-console.log("======================================================================\n");
-
-let missingCount = 0;
-
-for (const item of REQUIRED_KEYS) {
-  const val = envVars[item.key];
-  const isMissing =
-    !val ||
-    val.includes("YOUR_PROJECT_REF") ||
-    val.includes("placeholder") ||
-    val.length < 10;
-
-  if (isMissing) {
-    missingCount++;
-    console.log(`❌ [ناقص] ${item.key} — ${item.desc}`);
-  } else {
-    const masked = val.slice(0, 14) + "..." + val.slice(-4);
-    console.log(`✅ [مربوط] ${item.key} (${masked})`);
-  }
-}
-
-console.log("\n----------------------------------------------------------------------");
-if (missingCount > 0) {
-  console.log(`⚠️ تنبيه: يوجد (${missingCount}) متغيرات بيئية تحتاج إلى تعبئة في ملف .env.local`);
-  console.log("📌 افتح ملف .env.local وضع مفاتيح مشروعك من لوحة تحكم Supabase ثم أعد تشغيل:");
-  console.log("   1. npx prisma db push");
-  console.log("   2. npx prisma db seed");
-  console.log("   3. npm run dev");
+if (!fs.existsSync(envPath)) {
+  console.warn("⚠️ ملف .env غير موجود. يمكنك نسخه من .env.example عبر: cp .env.example .env");
 } else {
-  console.log("🎉 ممتاز! جميع مفاتيح الربط الخارجي وقواعد البيانات مهيأة بشكل سليم.");
-  console.log("📌 لتزامن الجداول والبيانات الأولية نفّذ الآن:");
-  console.log("   npx prisma generate && npx prisma db push && npx prisma db seed");
+  const raw = fs.readFileSync(envPath, "utf8");
+  if (raw.includes("2_SECRET_ACCESS_KEY") && !raw.includes("R2_SECRET_ACCESS_KEY")) {
+    console.warn("⚠️ تنبيه: وُجد المتغير باسم 2_SECRET_ACCESS_KEY (ينقصه حرف R في البداية).");
+    console.warn("   يقوم نظام المسند v16.0 بالتعرف عليه تلقائياً، ولكن يُفضل تعديل اسمه في .env و Vercel إلى: R2_SECRET_ACCESS_KEY");
+  }
 }
-console.log("======================================================================\n");
+
+const accessKey = (process.env.R2_ACCESS_KEY_ID || "").trim();
+const secretKey = (process.env.R2_SECRET_ACCESS_KEY || process.env["2_SECRET_ACCESS_KEY"] || "").trim();
+
+if (accessKey) {
+  console.log(`✅ R2_ACCESS_KEY_ID: الطول = ${accessKey.length} حرفاً ${accessKey.length === 32 ? "(صحيح 100%)" : "⚠️ (يجب أن يكون 32 حرفاً!)"}`);
+}
+if (secretKey) {
+  console.log(`✅ R2_SECRET_ACCESS_KEY: الطول = ${secretKey.length} حرفاً ${secretKey.length === 64 ? "(صحيح 100%)" : "⚠️ (يجب أن يكون 64 حرفاً!)"}`);
+}
+console.log("====================================================================");

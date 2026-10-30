@@ -1,10 +1,3 @@
-/**
- * Server-Side Supabase Clients
- *
- * Utilizes @supabase/ssr to manage cookie-based session state
- * across Next.js 15 Server Components, Server Actions, and Route Handlers.
- */
-
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 

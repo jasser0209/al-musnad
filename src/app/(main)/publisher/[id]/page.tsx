@@ -1,15 +1,5 @@
 "use client";
 
-/**
- * Public Publisher Profile Page — Al-Musnad (المسند) v4.0
- *
- * Includes:
- * - Follow Publisher (`+ متابعة الناشر`)
- * - Favorite Publisher (`♥ إضافة الناشر للمفضلة`)
- * - Report Publisher (`🚩 إبلاغ عن الناشر`)
- * - Publisher Ban Badge (`🚫 ناشر محظور`) & Official Verified Badge (`InspectorBadge`)
- */
-
 import React, { useEffect, useState, FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";

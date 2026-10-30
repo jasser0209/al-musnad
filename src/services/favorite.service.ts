@@ -1,10 +1,3 @@
-/**
- * Favorite Service — Al-Musnad v5.0
- *
- * Enforces strict authentication AND publisher audience access checks
- * before toggling favorites or listing favorited worksheets.
- */
-
 import { db } from "@/lib/db";
 import {
   NotFoundError,

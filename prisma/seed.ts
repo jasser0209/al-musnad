@@ -1,16 +1,3 @@
-/**
- * Database Seed Script — Al-Musnad (المسند) v13.0
- *
- * Seeds:
- * 1. The 6 Primary Grade Levels: السنة الأولى ابتدائي .. السنة السادسة ابتدائي
- * 2. The 9 Academic Subjects + Administrative Section
- * 3. The 5 Subject Sub-divisions + Administrative Category
- * 4. The 6 Ready Demo Accounts (ADMIN, MODERATOR, INSPECTOR, INSTITUTION, TEACHER, STUDENT)
- *    with unified password: Musnad@2026
- *
- * Run with: npx prisma db seed
- */
-
 import { PrismaClient, Role } from "@prisma/client";
 import { createClient } from "@supabase/supabase-js";
 

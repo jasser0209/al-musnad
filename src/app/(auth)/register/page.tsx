@@ -1,19 +1,5 @@
 "use client";
 
-/**
- * Upgraded Multi-Role Registration Page — Al-Musnad (المسند) v6.0
- *
- * Implements all Project Manager v6.0 Directives:
- * 1. Removed all verification code alerts, banners, and code activation links
- *    from the registration form so the user creates their account normally.
- * 2. After registration succeeds, displays a dedicated Thank You screen thanking
- *    the user for registering and informing them that identity verification
- *    (which grants broader privileges and the official verification badge)
- *    takes place after communicating with the Administrator (`المشرف`).
- * 3. Preserves Show/Hide password toggle, mandatory Student Grade Level,
- *    mandatory Terms & Conditions checkbox, and zero example names in placeholders.
- */
-
 import React, { useState, useEffect, FormEvent, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";

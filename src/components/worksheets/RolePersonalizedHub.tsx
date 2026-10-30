@@ -1,26 +1,5 @@
 "use client";
 
-/**
- * RolePersonalizedHub — Tailored Top Workspace & Exclusive Role Feeds (Al-Musnad v12.0)
- *
- * Implements the User Directives for Role-Based Interface Personalization:
- * 1. `INSTITUTION` (المؤسسات التربوية):
- *    - Dedicated top section («قسم نشرات المؤسسات التربوية») displaying publications
- *      specifically for/by institutions (`INSTITUTIONS_ONLY`, `SAME_ROLE_ONLY` by institutions,
- *      or institutional publications) so institutions can interact and share purposeful content.
- * 2. `INSPECTOR` (المتفقدون التربويون):
- *    - Dedicated top section («قسم منشورات المتفقدين فقط») displaying publications
- *      exclusively for/by inspectors to facilitate pedagogical collaboration among inspectors.
- * 3. `TEACHER` (المعلمون):
- *    - Dedicated top section («قسم منشورات المعلمين») displaying all teacher-specific
- *      publications (`TEACHERS_ONLY`, fiches/lesson plans, exam keys, and peer resources).
- * 4. `STUDENT` (التلاميذ):
- *    - Dedicated distraction-free Student Study Hub («فضاء التلميذ للمراجعة والتفوق»)
- *      with zero administrative clutter, focused on lessons, exercises, exams, and activities.
- * 5. `ADMIN` / `MODERATOR`:
- *    - Can switch across all 4 role hubs to supervise and inspect each community space.
- */
-
 import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {

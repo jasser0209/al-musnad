@@ -1,22 +1,3 @@
-/**
- * Al-Musnad (المسند) — Main Landing, Role-Personalized Workspace & Discovery Page (v12.0)
- *
- * Implements all v12.0 User Directives:
- * 1. Complete Main Navigation Bar for Visitors & Members:
- *    - القائمة الرئيسية (`/`)
- *    - مستودع المواد والمستويات (`/levels`)
- *    - قائمة النشرات (`/#catalog`)
- *    - قسم الإدارة (`/#administration-section` — hidden for `STUDENT`, shown for Teachers, Inspectors & Institutions)
- *    - قسم من نحن وتعريف الهوية (`/#about-us`)
- *    - تفسير مزايا كل فئة من المشتركين (`/#roles-guide`)
- *    - قسم الأسئلة الشائعة (`/#faq-section`)
- * 2. Role-Personalized Top Workspace (`RolePersonalizedHub`):
- *    - Institutions see the exclusive Institution Publications Hub at the top.
- *    - Inspectors see the exclusive Inspector Publications Hub at the top.
- *    - Teachers see the exclusive Teacher Publications Hub at the top.
- *    - Students see their distraction-free Student Study Hub (with Administration removed).
- */
-
 import React, { Suspense } from "react";
 import Link from "next/link";
 import {

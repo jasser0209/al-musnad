@@ -1,19 +1,5 @@
 "use client";
 
-/**
- * SupervisoryHierarchyBar Component — Al-Musnad (المسند) v10.0
- *
- * Implements the 3-Tier Supervisory Navigation & Isolation System:
- * 1. When the logged-in user is the Top Administrator (`viewerRole === "ADMIN"`):
- *    - Displays an interactive 3-Tier Supervisory Switcher Bar at the top of all 3 dashboards
- *      (`/admin/dashboard` ↔ `/moderator/dashboard` ↔ `/inspector/dashboard`).
- *    - When the Admin is inside `/moderator/dashboard` or `/inspector/dashboard`, displays a prominent
- *      one-click button: «العودة إلى لوحة المشرف العام» (`Return to Admin Dashboard`) alongside the switcher.
- * 2. When the logged-in user is a Moderator (`viewerRole === "MODERATOR"`) or Inspector (`viewerRole === "INSPECTOR"`):
- *    - Displays an Exclusive Scope Notice confirming that this dashboard is strictly dedicated and exclusive
- *      to their role and permissions, with ZERO links or ability to switch to other supervisory levels.
- */
-
 import React from "react";
 import Link from "next/link";
 import {

@@ -1,9 +1,3 @@
-/**
- * Standardized API Response Helpers
- *
- * Implements the API contract defined in Section 6 of COMPLETE_BACKEND_ARCHITECTURE.md.
- */
-
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { Prisma } from "@prisma/client";

@@ -1,14 +1,3 @@
-/**
- * Supabase Auth Middleware Helper — Al-Musnad (المسند) v6.0
- *
- * Rules:
- * - Unauthenticated guests CAN visit `/` and `/browse` (to browse Grade Levels,
- *   Subjects, Sub-divisions, and see the titles of `audience === "ALL"` files)
- *   and `/support` (located at the bottom of the page).
- * - Unauthenticated guests CANNOT enter `/worksheet/*` (reading/downloading files),
- *   `/publisher/*`, `/upload`, `/profile`, `/admin/*`, or `/inspector/*`.
- */
-
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 

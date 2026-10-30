@@ -1,18 +1,3 @@
-/**
- * Step 3 of Curriculum Flow: Subject Publications Page (`/levels/[gradeSlug]/subjects/[subjectSlug]`) — Al-Musnad v11.0
- *
- * Implements:
- * 1. Full 6-Section Pedagogical Organization inside every Subject:
- *    - درس (`lesson`)
- *    - تمرين (`worksheet`)
- *    - امتحان (`exam`)
- *    - جذاذة (`lesson-plan`)
- *    - نشاط تفاعلي (`activity`)
- *    - أخرى (`other`)
- * 2. Ensures every file is placed in its appropriate section and carries badges for:
- *    Subject Name + Grade Level + File Category (Section) + File Format (PDF / Word / Image).
- */
-
 import React from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";

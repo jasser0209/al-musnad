@@ -1,16 +1,3 @@
-/**
- * Email Service — Al-Musnad (المسند)
- *
- * Powered by Resend for transactional, welcome, and notification emails.
- *
- * Implements:
- * 1. sendWelcomeEmail(to, name, roleTitle): Elegant welcome email upon registration.
- * 2. sendSupportReplyNotification(to, name, ticketSubject, replyText): Notification on support reply.
- * 3. sendEndorsementNotification(to, teacherName, worksheetTitle): Alert when inspector endorses a worksheet.
- * 4. Graceful fallback: If RESEND_API_KEY is missing or sending fails, logs error silently
- *    without crashing the user flow or halting registration.
- */
-
 import { Resend } from "resend";
 
 const apiKey = process.env.RESEND_API_KEY;
@@ -201,7 +188,7 @@ function createEmailTemplate({
         هذه الرسالة تم إرسالها تلقائياً من خوادم <strong>منصة المسند</strong>.<br>
         للدعم الفني والاستفسار، تواصل معنا عبر واتساب: 
         <a href="https://wa.me/21627764985">27764985</a> أو 
-        <a href="https://wa.me/21646907101">46907101</a>
+        <a href="https://wa.me/21676907101">76907101</a>
       </p>
       <p style="margin: 0; color: #94a3b8;">
         جميع الحقوق محفوظة © 2026 منصة المسند التربوية

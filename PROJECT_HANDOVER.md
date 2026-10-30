@@ -1,4 +1,4 @@
-# 🏛️ Project Handover & Master Technical Audit — Al-Musnad (v15.0) (Complete Single-File Edition < 1 MB)
+# 🏛️ Project Handover & Master Technical Audit — Al-Musnad (v16.0) (Complete Single-File Edition < 1 MB)
 **Project:** Al-Musnad (المسند) — Integrated Educational & Pedagogical Platform  
 **Architecture:** Next.js 15 (App Router) + TypeScript + Prisma ORM + PostgreSQL (Supabase) + Cloudflare R2 + Tailwind CSS + Lucide Icons  
 **Version:** 15.0.0 (Optimized Handover Archive — Complete Source Code, Security Configs & Commands)  
@@ -60,7 +60,7 @@
 
 - **1. تشغيل سكريبت ترقية الإصدار 15.0 الشامل:**
   ```bash
-  node apply-musnad-v15-upgrade.mjs
+  node apply-musnad-v16-upgrade.mjs
   ```
 - **2. فحص سلامة الأنواع البرمجية (TypeScript Check):**
   ```bash
@@ -83,7 +83,7 @@
 
 ---
 
-## 📂 Complete Source Code (113 Files)
+## 📂 Complete Source Code (114 Files)
 
 ### File: `package.json`
 
@@ -353,44 +353,40 @@ export default config;
 
 ```text
 # ============================================================================
-# منصة المسند (Al-Musnad Educational Platform — v12.0)
-# نموذج ملف المتغيرات البيئية والربط بالخدمات الخارجية المجانية 100% (.env.local / .env)
-# ============================================================================
-# جميع الخدمات المربوطة بالموقع مجانية بالكامل (Free Tier):
-# 1. Supabase Free Tier (PostgreSQL Database + Auth + Storage Bucket: 500MB DB / 1GB Storage مجاناً)
-# 2. Google Cloud Console OAuth 2.0 (مجاني 100% لتسجيل الدخول والمتابعة بحساب جوجل)
-# 3. Mozilla PDF.js CDN (مجاني 100% عبر Cloudflare لتوليد معاينات وصور مصغرة لملفات PDF)
+# منصة «المسند» (Al-Musnad Platform v16.0) — إعدادات البيئة الكاملة
 # ============================================================================
 
-# 1. إعدادات المشروع العامة
+# 1. إعدادات التطبيق العامة
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
-NEXT_PUBLIC_APP_VERSION="12.0.0"
+NEXT_PUBLIC_APP_NAME="المسند - الفضاء التربوي الشامل"
 
-# 2. ربط مصادقة المستخدمين والتخزين السحابي المجاني (Supabase Auth & Storage — Free Tier)
-# تحصل عليها من: Supabase Dashboard -> Project Settings -> API
-NEXT_PUBLIC_SUPABASE_URL="https://YOUR_PROJECT_REF.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-SUPABASE_SERVICE_ROLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+# 2. إعدادات المصادقة وقاعدة البيانات (Supabase Auth & PostgreSQL)
+NEXT_PUBLIC_SUPABASE_URL="https://kqlvckebqlhxghnjpbme.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="ضع_مفتاح_ANON_KEY_الخاص_بمشروعك_في_Supabase_هنا"
+SUPABASE_SERVICE_ROLE_KEY="ضع_مفتاح_SERVICE_ROLE_KEY_الخاص_بمشروعك_في_Supabase_هنا"
 
-# اسم حاوية ملفات المنشورات في Supabase Storage
-SUPABASE_STORAGE_BUCKET="worksheets"
+# روابط قاعدة البيانات PostgreSQL (Prisma ORM)
+DATABASE_URL="postgresql://postgres.kqlvckebqlhxghnjpbme:[YOUR-DB-PASSWORD]@aws-1-eu-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+DIRECT_URL="postgresql://postgres.kqlvckebqlhxghnjpbme:[YOUR-DB-PASSWORD]@aws-1-eu-west-1.pooler.supabase.com:5432/postgres"
 
-# 3. ربط قاعدة بيانات PostgreSQL السحابية المجانية (Supabase Database / Prisma)
-# تحصل عليها من: Supabase Dashboard -> Project Settings -> Database -> Connection string -> URI
-# ملاحظة: DATABASE_URL يستخدم المنفذ 6543 (Transaction Pooler) مع ?pgbouncer=true
-DATABASE_URL="postgresql://postgres.YOUR_PROJECT_REF:YOUR_DB_PASSWORD@aws-0-eu-central-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+# 3. إعدادات التخزين السحابي Cloudflare R2 (مساحة 10GB مجانية + 0$ رسوم تحميل)
+# ⚠️ تنبيه هام جداً:
+# - يجب أن يكون اسم المتغير الثاني `R2_SECRET_ACCESS_KEY` (يبدأ بحرف R وليس `2_SECRET_ACCESS_KEY`).
+# - طول `R2_ACCESS_KEY_ID` يجب أن يكون 32 حرفاً بالضبط.
+# - طول `R2_SECRET_ACCESS_KEY` يجب أن يكون 64 حرفاً بالضبط.
+R2_ACCOUNT_ID="ضع_معرف_حساب_Cloudflare_الخاص_بك_هنا"
+R2_ACCESS_KEY_ID="f272f5098c9f3eeb255a833defec2e89"
+R2_SECRET_ACCESS_KEY="6b5ca30a3de6c846aa585ddb963bc85a7a1e1e4155497fa50de39d7310e441ef"
+R2_BUCKET_NAME="musnad-worksheets"
+R2_PUBLIC_URL=""
 
-# ملاحظة: DIRECT_URL يستخدم المنفذ 5432 للاتصال المباشر عند تنفيذ `npx prisma db push`
-DIRECT_URL="postgresql://postgres.YOUR_PROJECT_REF:YOUR_DB_PASSWORD@aws-0-eu-central-1.pooler.supabase.com:5432/postgres"
+# 4. إعدادات البريد الإلكتروني الرسمي (Resend — مجاني 3000 رسالة شهرياً)
+RESEND_API_KEY="re_ضع_مفتاح_Resend_الخاص_بك_هنا"
+RESEND_FROM_EMAIL="منصة المسند <onboarding@resend.dev>"
 
-# 4. تفعيل الدخول والتسجيل بحساب جوجل (Google OAuth — مجاني 100%):
-# أ) ادخل إلى: https://console.cloud.google.com/apis/credentials (مجاني تماماً)
-# ب) أنشئ OAuth 2.0 Client ID وأضف رابط Callback الخاص بمشروعك في Supabase:
-#    https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback
-# ج) انسخ Client ID و Client Secret وضعهما في:
-#    Supabase Dashboard -> Authentication -> Providers -> Google -> Enable
-# د) أضف رابط موقعك في Supabase -> Authentication -> URL Configuration -> Redirect URLs:
-#    http://localhost:3000/api/auth/callback
+# 5. إعدادات حساب المشرف العام الرئيسي (Admin Seed Credentials)
+ADMIN_EMAIL="oussamamrz18@gmail.com"
+ADMIN_NAME="الأستاذ أسامة مرزوقي — المشرف العام"
 
 ```
 
@@ -450,148 +446,46 @@ DIRECT_URL="postgresql://postgres.YOUR_PROJECT_REF:YOUR_DB_PASSWORD@aws-0-eu-cen
 
 ---
 
-### File: `apply-musnad-v15-upgrade.mjs`
+### File: `apply-musnad-v16-upgrade.mjs`
 
 ```javascript
 #!/usr/bin/env node
 /**
- * ============================================================================
- * Upgrade Script — Al-Musnad (المسند) v15.0
- * ============================================================================
- * Execution: node apply-musnad-v15-upgrade.mjs
- * 
- * Directives Implemented in v15.0:
- * 1. Dedicated Terms of Use & Intellectual Property Page (/terms):
- *    - Notice of IP and author rights for teachers, inspectors, and institutions.
- *    - Commercial redistribution and resale strictly prohibited.
- *    - Educational and family usage 100% free.
- *    - Disclaimer & institutional independence compliant with Tunisian primary curriculum.
- *    - Publishing charter & automatic endorsement badge withdrawal upon file update.
- *    - Swift takedown policy upon copyright infringement reports.
- *    - Personal data protection according to Tunisian legislation.
- *    - Linked into the global footer in src/app/layout.tsx and sitemap.
- * 2. Tunisian School Trimesters Filter & Tagging (الثلاثيات المدرسية التونسية):
- *    - Added SCHOOL_TRIMESTERS constant (الثلاثي الأول، الثلاثي الثاني، الثلاثي الثالث).
- *    - Quick 1-click trimester filter buttons in FilterBar.tsx (?trimester=trimester-1).
- *    - Synced trimester dropdown selector in FilterBar.tsx.
- *    - Integrated trimester filtering in worksheet.service.ts and page.tsx.
- *    - Quick 1-click trimester tagging buttons in src/app/(main)/upload/page.tsx.
- * 3. Clean Username Box in Top Bar (Navbar.tsx):
- *    - Removed role note text beside username in the top-left box.
- *    - Preserved distinctive role color borders and backgrounds (Purple, Indigo, Amber, Violet, Blue, Emerald).
- * ============================================================================
+ * سكريبت الترقية والاستخراج والفحص الشامل — منصة «المسند» (Al-Musnad v16.0)
+ * Usage: node apply-musnad-v16-upgrade.mjs
  */
-
 import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
-import { createClient } from "@supabase/supabase-js";
-import { PrismaClient } from "@prisma/client";
 
 const rootDir = process.cwd();
-console.log("======================================================================");
-console.log("🚀 تشغيل سكريبت ترقية منصة «المسند» إلى الإصدار الخامس عشر (v15.0)");
-console.log("======================================================================\n");
+console.log("🚀 بدء تطبيق وفحص الإصدار v16.0 لمنصة «المسند»...");
 
-// 1. Verify Primary Admin Account & Credentials
-console.log("👤 [1/4] التحقق من حساب المشرف العام الأساسي (bjasser123@gmail.com)...");
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://fzokicsiqbdmwsdcuojz.supabase.co";
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// 1. If PROJECT_HANDOVER.md exists, extract all files automatically
+if (fs.existsSync(path.join(rootDir, "scripts/extract-handover.mjs")) && fs.existsSync(path.join(rootDir, "PROJECT_HANDOVER.md"))) {
+  execSync("node scripts/extract-handover.mjs PROJECT_HANDOVER.md", { stdio: "inherit" });
+}
 
-if (serviceRoleKey) {
-  try {
-    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-
-    const { data: usersData } = await supabaseAdmin.auth.admin.listUsers();
-    const adminUser = usersData?.users?.find(
-      (u) => u.email?.toLowerCase() === "bjasser123@gmail.com"
-    );
-
-    if (adminUser) {
-      await supabaseAdmin.auth.admin.updateUserById(adminUser.id, {
-        password: "Jasserbes1M",
-        email_confirm: true,
-        user_metadata: {
-          name: "Jasser (المشرف العام)",
-          role: "ADMIN",
-        },
-      });
-      console.log("  ✅ تم تأكيد كلمة مرور المشرف العام (Jasserbes1M) وصلاحية ADMIN بنجاح.");
-    }
-  } catch (err) {
-    console.warn("  ⚠️ ملاحظة أثناء فحص حساب المشرف في Supabase:", err.message);
+// 2. Check and auto-fix 2_SECRET_ACCESS_KEY typo in .env
+const envPath = path.join(rootDir, ".env");
+if (fs.existsSync(envPath)) {
+  let envContent = fs.readFileSync(envPath, "utf8");
+  if (envContent.includes("2_SECRET_ACCESS_KEY") && !envContent.includes("R2_SECRET_ACCESS_KEY")) {
+    envContent = envContent.replace(/\b2_SECRET_ACCESS_KEY\b/g, "R2_SECRET_ACCESS_KEY");
+    fs.writeFileSync(envPath, envContent, "utf8");
+    console.log("🔧 تم تصحيح اسم المتغير في .env تلقائياً من 2_SECRET_ACCESS_KEY إلى R2_SECRET_ACCESS_KEY");
   }
 }
 
-// 2. Ensure Database User table has ADMIN role for bjasser123@gmail.com
+// 3. Run verification & TypeScript check
 try {
-  const prisma = new PrismaClient();
-  const dbUser = await prisma.user.findFirst({
-    where: { email: { equals: "bjasser123@gmail.com", mode: "insensitive" } },
-  });
-
-  if (dbUser) {
-    await prisma.user.update({
-      where: { id: dbUser.id },
-      data: {
-        role: "ADMIN",
-        isVerified: true,
-        isBanned: false,
-        failedLoginAttempts: 0,
-        lockedAt: null,
-      },
-    });
-    console.log("  ✅ تم تأكيد رتبة المشرف العام وتصفير عداد المحاولات في قاعدة البيانات.");
-  }
-  await prisma.$disconnect();
+  execSync("node scripts/verify-and-connect.mjs", { stdio: "inherit" });
+  execSync("npx prisma generate", { stdio: "inherit" });
+  execSync("npx tsc --noEmit", { stdio: "inherit" });
+  console.log("✅ اكتملت ترقية وفحص منصة «المسند» v16.0 بنجاح 100%!");
 } catch (err) {
-  console.warn("  ⚠️ ملاحظة أثناء تحديث قاعدة البيانات:", err.message);
+  console.warn("⚠️ يرجى التأكد من اتصال قاعدة البيانات وتشغيل `npx prisma generate` و `npm run build`.");
 }
-
-// 3. Run Prisma Generate
-console.log("\n📦 [2/4] توليد عميل بريزما (npx prisma generate)...");
-try {
-  execSync("npx prisma generate", { stdio: "inherit", cwd: rootDir });
-  console.log("  ✅ تم توليد عميل Prisma بنجاح.");
-} catch (err) {
-  console.warn("  ⚠️ تنبيه أثناء توليد Prisma (قد يكون السيرفر قيد التشغيل):", err.message);
-}
-
-// 4. Verify TypeScript Compilation (npx tsc --noEmit)
-console.log("\n🔍 [3/4] التحقق من توافق الأنواع البرمجية (npx tsc --noEmit)...");
-try {
-  execSync("npx tsc --noEmit", { stdio: "inherit", cwd: rootDir });
-  console.log("  ✅ فحص الأنواع سليم 100% بدون أي أخطاء (0 errors).");
-} catch (err) {
-  console.error("  ❌ تم العثور على أخطاء في فحص الأنواع!");
-  process.exit(1);
-}
-
-// 5. Generate Updated PROJECT_HANDOVER.md
-console.log("\n📋 [4/4] تحديث وثيقة تسليم المشروع المحدثة (PROJECT_HANDOVER.md)...");
-try {
-  execSync("node scripts/generate-handover.mjs", { stdio: "inherit", cwd: rootDir });
-  const handoverPath = path.join(rootDir, "PROJECT_HANDOVER.md");
-  if (fs.existsSync(handoverPath)) {
-    const stats = fs.statSync(handoverPath);
-    const sizeKb = Math.round(stats.size / 1024);
-    console.log(`  ✅ تم تحديث PROJECT_HANDOVER.md بنجاح (الحجم: ${sizeKb} كيلوبايت).`);
-  }
-} catch (err) {
-  console.warn("  ⚠️ ملاحظة أثناء توليد وثيقة التسليم:", err.message);
-}
-
-console.log("\n======================================================================");
-console.log("🎉 اكتمل تطبيق جميع ترقيات وإصلاحات الإصدار الخامس عشر (v15.0) بنجاح!");
-console.log("📌 الميزات الجديدة المضافة:");
-console.log("   1. صفحة شروط الاستخدام والملكية الفكرية وحماية المؤلف (/terms)");
-console.log("   2. رابط الشروط والملكية مدمج بتذييل الموقع وفي خريطة الموقع sitemap.xml");
-console.log("   3. أزرار وقوائم فلترة الثلاثيات المدرسية التونسية الثلاثة في شريط البحث");
-console.log("   4. أزرار الوسم السريع للثلاثيات المدرسية بضغطة زر في صفحة رفع الملفات (/upload)");
-console.log("   5. إزالة ملاحظة نوع الحساب من بجانب اسم المستخدم في المربع العلوي مع الحفاظ على تمييز الألوان لكل فئة");
-console.log("======================================================================\n");
 
 ```
 
@@ -659,7 +553,7 @@ const part1Files = [
   "postcss.config.mjs",
   ".env.example",
   "README.md",
-  "apply-musnad-v15-upgrade.mjs",
+  "apply-musnad-v16-upgrade.mjs",
   "scripts/extract-handover.mjs",
   "scripts/generate-handover.mjs",
   "scripts/verify-and-connect.mjs",
@@ -716,6 +610,7 @@ const part1Files = [
   "src/app/api/worksheets/route.ts",
   "src/app/api/worksheets/[id]/route.ts",
   "src/app/api/worksheets/[id]/download/route.ts",
+  "src/app/api/worksheets/[id]/file/route.ts",
   "src/app/api/worksheets/[id]/favorite/route.ts",
   "src/app/api/worksheets/[id]/review/route.ts",
   "src/app/api/worksheets/[id]/reviews/route.ts",
@@ -801,7 +696,7 @@ function getLanguage(filePath) {
   return "text";
 }
 
-const strictHeader = (titleSuffix = "") => `# 🏛️ Project Handover & Master Technical Audit — Al-Musnad (v15.0) ${titleSuffix}
+const strictHeader = (titleSuffix = "") => `# 🏛️ Project Handover & Master Technical Audit — Al-Musnad (v16.0) ${titleSuffix}
 **Project:** Al-Musnad (المسند) — Integrated Educational & Pedagogical Platform  
 **Architecture:** Next.js 15 (App Router) + TypeScript + Prisma ORM + PostgreSQL (Supabase) + Cloudflare R2 + Tailwind CSS + Lucide Icons  
 **Version:** 15.0.0 (Optimized Handover Archive — Complete Source Code, Security Configs & Commands)  
@@ -863,7 +758,7 @@ const strictHeader = (titleSuffix = "") => `# 🏛️ Project Handover & Master 
 
 - **1. تشغيل سكريبت ترقية الإصدار 15.0 الشامل:**
   \`\`\`bash
-  node apply-musnad-v15-upgrade.mjs
+  node apply-musnad-v16-upgrade.mjs
   \`\`\`
 - **2. فحص سلامة الأنواع البرمجية (TypeScript Check):**
   \`\`\`bash
@@ -897,7 +792,12 @@ function buildMarkdownForFiles(fileList, titleSuffix, footerNote) {
       console.warn(`File not found: ${fullPath}`);
       continue;
     }
-    const fileContent = fs.readFileSync(fullPath, "utf-8");
+    let fileContent = fs.readFileSync(fullPath, "utf-8");
+    if (relPath.endsWith(".ts") || relPath.endsWith(".tsx")) {
+      fileContent = fileContent
+        .replace(/^\/\*\*[\s\S]*?\*\/\s*/, "")
+        .replace(/^("use client";\s*)\/\*\*[\s\S]*?\*\/\s*/, "$1");
+    }
     const lang = getLanguage(relPath);
     md += `\n### File: \`${relPath}\`\n\n\`\`\`${lang}\n${fileContent}\n\`\`\`\n\n---\n`;
     count++;
@@ -939,101 +839,41 @@ console.log(`✅ PROJECT_HANDOVER_PART2.md (Frontend/UI): ${(Buffer.byteLength(p
 ```javascript
 #!/usr/bin/env node
 /**
- * ============================================================================
- * سكريبت الفحص والربط التلقائي للبيئة وقواعد البيانات — منصة المسند (v9.0)
- * ============================================================================
- * الاستخدام:
- *   node scripts/verify-and-connect.mjs
+ * سكريبت الفحص الشامل والربط لمنصة «المسند» (Al-Musnad v16.0)
+ * يفحص:
+ * 1. متغيرات Supabase و PostgreSQL.
+ * 2. مفاتيح Cloudflare R2 (يتأكد من أن R2_ACCESS_KEY_ID بطول 32 حرفاً و R2_SECRET_ACCESS_KEY بطول 64 حرفاً، وينبه إذا كُتب 2_SECRET_ACCESS_KEY بدون حرف R).
+ * 3. إعدادات Resend للبريد الإلكتروني.
  */
 
 import fs from "node:fs";
 import path from "node:path";
 
-const rootDir = process.cwd();
-const envLocalPath = path.join(rootDir, ".env.local");
-const envPath = path.join(rootDir, ".env");
+const envPath = path.resolve(process.cwd(), ".env");
+console.log("====================================================================");
+console.log("🔍 فحص إعدادات البيئة والربط السحابي — منصة المسند (v16.0)");
+console.log("====================================================================");
 
-function parseEnvFile(filePath) {
-  if (!fs.existsSync(filePath)) return {};
-  const lines = fs.readFileSync(filePath, "utf8").split(/\r?\n/);
-  const result = {};
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const eqIdx = trimmed.indexOf("=");
-    if (eqIdx === -1) continue;
-    const key = trimmed.slice(0, eqIdx).trim();
-    const val = trimmed.slice(eqIdx + 1).trim().replace(/^['"]|['"]$/g, "");
-    result[key] = val;
-  }
-  return result;
-}
-
-const envVars = {
-  ...parseEnvFile(envPath),
-  ...parseEnvFile(envLocalPath),
-  ...process.env,
-};
-
-const REQUIRED_KEYS = [
-  {
-    key: "NEXT_PUBLIC_SUPABASE_URL",
-    desc: "رابط مشروع Supabase (Project URL)",
-  },
-  {
-    key: "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-    desc: "المفتاح العام للمصادقة (Supabase Anon Public Key)",
-  },
-  {
-    key: "SUPABASE_SERVICE_ROLE_KEY",
-    desc: "مفتاح الخدمة الإداري للتخزين السحابي (Supabase Service Role Key)",
-  },
-  {
-    key: "DATABASE_URL",
-    desc: "رابط اتصال قاعدة البيانات (PostgreSQL Transaction Pooler - Port 6543)",
-  },
-  {
-    key: "DIRECT_URL",
-    desc: "رابط الاتصال المباشر لـ Prisma (PostgreSQL Direct Connection - Port 5432)",
-  },
-];
-
-console.log("======================================================================");
-console.log("🔍 فحص جاهزية الربط الخارجي ومتغيرات البيئة لمنصة «المسند» (v9.0)");
-console.log("======================================================================\n");
-
-let missingCount = 0;
-
-for (const item of REQUIRED_KEYS) {
-  const val = envVars[item.key];
-  const isMissing =
-    !val ||
-    val.includes("YOUR_PROJECT_REF") ||
-    val.includes("placeholder") ||
-    val.length < 10;
-
-  if (isMissing) {
-    missingCount++;
-    console.log(`❌ [ناقص] ${item.key} — ${item.desc}`);
-  } else {
-    const masked = val.slice(0, 14) + "..." + val.slice(-4);
-    console.log(`✅ [مربوط] ${item.key} (${masked})`);
-  }
-}
-
-console.log("\n----------------------------------------------------------------------");
-if (missingCount > 0) {
-  console.log(`⚠️ تنبيه: يوجد (${missingCount}) متغيرات بيئية تحتاج إلى تعبئة في ملف .env.local`);
-  console.log("📌 افتح ملف .env.local وضع مفاتيح مشروعك من لوحة تحكم Supabase ثم أعد تشغيل:");
-  console.log("   1. npx prisma db push");
-  console.log("   2. npx prisma db seed");
-  console.log("   3. npm run dev");
+if (!fs.existsSync(envPath)) {
+  console.warn("⚠️ ملف .env غير موجود. يمكنك نسخه من .env.example عبر: cp .env.example .env");
 } else {
-  console.log("🎉 ممتاز! جميع مفاتيح الربط الخارجي وقواعد البيانات مهيأة بشكل سليم.");
-  console.log("📌 لتزامن الجداول والبيانات الأولية نفّذ الآن:");
-  console.log("   npx prisma generate && npx prisma db push && npx prisma db seed");
+  const raw = fs.readFileSync(envPath, "utf8");
+  if (raw.includes("2_SECRET_ACCESS_KEY") && !raw.includes("R2_SECRET_ACCESS_KEY")) {
+    console.warn("⚠️ تنبيه: وُجد المتغير باسم 2_SECRET_ACCESS_KEY (ينقصه حرف R في البداية).");
+    console.warn("   يقوم نظام المسند v16.0 بالتعرف عليه تلقائياً، ولكن يُفضل تعديل اسمه في .env و Vercel إلى: R2_SECRET_ACCESS_KEY");
+  }
 }
-console.log("======================================================================\n");
+
+const accessKey = (process.env.R2_ACCESS_KEY_ID || "").trim();
+const secretKey = (process.env.R2_SECRET_ACCESS_KEY || process.env["2_SECRET_ACCESS_KEY"] || "").trim();
+
+if (accessKey) {
+  console.log(`✅ R2_ACCESS_KEY_ID: الطول = ${accessKey.length} حرفاً ${accessKey.length === 32 ? "(صحيح 100%)" : "⚠️ (يجب أن يكون 32 حرفاً!)"}`);
+}
+if (secretKey) {
+  console.log(`✅ R2_SECRET_ACCESS_KEY: الطول = ${secretKey.length} حرفاً ${secretKey.length === 64 ? "(صحيح 100%)" : "⚠️ (يجب أن يكون 64 حرفاً!)"}`);
+}
+console.log("====================================================================");
 
 ```
 
@@ -1496,19 +1336,6 @@ model AuditLog {
 ### File: `prisma/seed.ts`
 
 ```typescript
-/**
- * Database Seed Script — Al-Musnad (المسند) v13.0
- *
- * Seeds:
- * 1. The 6 Primary Grade Levels: السنة الأولى ابتدائي .. السنة السادسة ابتدائي
- * 2. The 9 Academic Subjects + Administrative Section
- * 3. The 5 Subject Sub-divisions + Administrative Category
- * 4. The 6 Ready Demo Accounts (ADMIN, MODERATOR, INSPECTOR, INSTITUTION, TEACHER, STUDENT)
- *    with unified password: Musnad@2026
- *
- * Run with: npx prisma db seed
- */
-
 import { PrismaClient, Role } from "@prisma/client";
 import { createClient } from "@supabase/supabase-js";
 
@@ -2226,10 +2053,6 @@ ALTER TABLE public.users ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ DEFAU
 ### File: `src/config/constants.ts`
 
 ```typescript
-/**
- * Application Constants & Official Curriculum Structure — Al-Musnad (المسند) v15.0
- */
-
 export const APP_CONFIG = {
   name: "Al-Musnad",
   nameAr: "المسند",
@@ -2446,10 +2269,6 @@ export type SchoolTrimesterSlug = (typeof SCHOOL_TRIMESTERS)[number]["slug"];
 ### File: `src/types/api.ts`
 
 ```typescript
-/**
- * API Contracts and Data Transfer Object (DTO) Type Definitions — Al-Musnad v10.0
- */
-
 export type Role =
   | "INSTITUTION"
   | "INSPECTOR"
@@ -2718,10 +2537,6 @@ export interface SchoolTrimester {
 ### File: `src/types/index.ts`
 
 ```typescript
-/**
- * Barrel Export for Shared Types
- */
-
 export * from "./api";
 
 ```
@@ -2731,15 +2546,6 @@ export * from "./api";
 ### File: `src/lib/db.ts`
 
 ```typescript
-/**
- * Prisma Client Singleton
- *
- * Ensures a single Prisma Client instance is reused across hot reloads
- * in development. In production, this is a standard singleton.
- *
- * @see https://www.prisma.io/docs/guides/other/troubleshooting-orm/help-articles/nextjs-prisma-client-dev-practices
- */
-
 import { PrismaClient } from "@prisma/client";
 
 const globalForPrisma = globalThis as unknown as {
@@ -2766,13 +2572,6 @@ if (process.env.NODE_ENV !== "production") {
 ### File: `src/lib/security/rate-limit.ts`
 
 ```typescript
-/**
- * In-Memory Sliding Window Rate Limiter & Security Guard — Al-Musnad v9.0
- *
- * Protects authentication, file uploads, verification code activation,
- * and report submissions against brute-force and automated abuse.
- */
-
 import { NextRequest } from "next/server";
 
 interface RateBucket {
@@ -2842,13 +2641,6 @@ export function checkRateLimit(
 ### File: `src/lib/supabase/client.ts`
 
 ```typescript
-/**
- * Browser-Side Supabase Client
- *
- * Utilizes @supabase/ssr createBrowserClient for client components.
- * Session state is stored in browser cookies for synchronized SSR compatibility.
- */
-
 import { createBrowserClient } from "@supabase/ssr";
 
 export function createSupabaseBrowserClient() {
@@ -2867,13 +2659,6 @@ export function createSupabaseBrowserClient() {
 ### File: `src/lib/supabase/server.ts`
 
 ```typescript
-/**
- * Server-Side Supabase Clients
- *
- * Utilizes @supabase/ssr to manage cookie-based session state
- * across Next.js 15 Server Components, Server Actions, and Route Handlers.
- */
-
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
@@ -2938,17 +2723,6 @@ export function createSupabaseAdminClient() {
 ### File: `src/lib/supabase/middleware.ts`
 
 ```typescript
-/**
- * Supabase Auth Middleware Helper — Al-Musnad (المسند) v6.0
- *
- * Rules:
- * - Unauthenticated guests CAN visit `/` and `/browse` (to browse Grade Levels,
- *   Subjects, Sub-divisions, and see the titles of `audience === "ALL"` files)
- *   and `/support` (located at the bottom of the page).
- * - Unauthenticated guests CANNOT enter `/worksheet/*` (reading/downloading files),
- *   `/publisher/*`, `/upload`, `/profile`, `/admin/*`, or `/inspector/*`.
- */
-
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -3023,12 +2797,6 @@ export async function updateSession(request: NextRequest) {
 ### File: `src/lib/utils/api-response.ts`
 
 ```typescript
-/**
- * Standardized API Response Helpers
- *
- * Implements the API contract defined in Section 6 of COMPLETE_BACKEND_ARCHITECTURE.md.
- */
-
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { Prisma } from "@prisma/client";
@@ -3174,13 +2942,6 @@ export function errorResponse(
 ### File: `src/lib/utils/errors.ts`
 
 ```typescript
-/**
- * Custom Error Classes for Teacher's Activity Bank
- *
- * Provides strongly-typed application errors with HTTP status codes,
- * machine-readable codes, and optional error details.
- */
-
 import type { ApiErrorDetail } from "@/types/api";
 
 export class AppError extends Error {
@@ -3257,13 +3018,6 @@ export class InvalidFileTypeError extends AppError {
 ### File: `src/lib/utils/pagination.ts`
 
 ```typescript
-/**
- * Pagination Utility Functions
- *
- * Provides offset calculation for Prisma (`skip` / `take`) and
- * generates standardized pagination metadata.
- */
-
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from "@/config/constants";
 import type { PaginationMeta } from "@/types/api";
 
@@ -3324,13 +3078,6 @@ export function buildPaginationMeta(
 ### File: `src/lib/utils/pdf-thumbnail.ts`
 
 ```typescript
-/**
- * Client-Side PDF Thumbnail & Page Count Extractor
- *
- * Uses pdfjs-dist dynamically in the browser to render Page 1 of a PDF
- * into a compressed WebP image File and extract total page count.
- */
-
 export interface PdfExtractionResult {
   thumbnailFile: File;
   thumbnailPreviewUrl: string;
@@ -3406,10 +3153,6 @@ export async function extractPdfThumbnailAndPages(
 ### File: `src/lib/validators/auth.ts`
 
 ```typescript
-/**
- * Auth & Profile Validation Schemas — Al-Musnad v8.0
- */
-
 import { z } from "zod";
 
 export const accountRoleOptionSchema = z
@@ -3480,12 +3223,6 @@ export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 ### File: `src/lib/validators/common.ts`
 
 ```typescript
-/**
- * Shared Common Zod Schemas — Al-Musnad v10.0
- *
- * Reusable validation building blocks for query parameters, identifiers, and sorting.
- */
-
 import { z } from "zod";
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from "@/config/constants";
 
@@ -3555,10 +3292,6 @@ export const searchSchema = z
 ### File: `src/lib/validators/worksheet.ts`
 
 ```typescript
-/**
- * Worksheet Validation Schemas — Al-Musnad v4.0
- */
-
 import { z } from "zod";
 import { WorksheetStatus } from "@prisma/client";
 import { uuidSchema, paginationSchema, worksheetSortSchema } from "./common";
@@ -3625,10 +3358,6 @@ export type WorksheetFilterInput = z.infer<typeof worksheetFilterSchema>;
 ### File: `src/lib/validators/review.ts`
 
 ```typescript
-/**
- * Educational Review & Rating Validation Schemas — Al-Musnad v8.0
- */
-
 import { z } from "zod";
 
 export const upsertReviewSchema = z.object({
@@ -3656,29 +3385,6 @@ export type UpsertReviewInput = z.infer<typeof upsertReviewSchema>;
 ### File: `src/services/worksheet.service.ts`
 
 ```typescript
-/**
- * Worksheet Service — Al-Musnad v10.0
- *
- * Implements:
- * 1. Automatic Taxonomy Initialization (`ensureOfficialTaxonomySeeded`):
- *    - Automatically verifies and seeds the 6 Grades, 10 Subjects, and 6 Categories in PostgreSQL.
- * 2. Guest Teaser Listing vs Authenticated Role-Based Listing:
- *    - Guests (`!viewerRole || !viewerUserId`) can list ONLY publications published
- *      with `audience === TargetAudience.ALL` («نشر للجميع»), and the returned items
- *      are sanitized to expose ONLY the file/lesson title and taxonomy badges
- *      (no fileUrl, no description, no previewUrl).
- *    - Guests are strictly blocked (`UnauthorizedError`) in `getWorksheetById`
- *      and `canUserAccessWorksheet` so they CANNOT enter, read, or download any file.
- *    - Logged-in users see all publications permitted for their specific account role.
- * 3. Strict DRAFT Worksheet Protection:
- *    - Non-PDF uploads (Word/Image) saved as `DRAFT` can ONLY be accessed by the owner,
- *      `ADMIN`, or `INSPECTOR`. Unprivileged users are blocked with `ForbiddenError`.
- * 4. PDF Conversion by Inspector / Admin:
- *    - When an `ADMIN` or `INSPECTOR` uploads a replacement PDF for a `DRAFT` worksheet,
- *      the status automatically transitions to `PUBLISHED`, and a notification
- *      (`PDF_CONVERSION_COMPLETED`) is sent to the uploader.
- */
-
 import { db } from "@/lib/db";
 import { Prisma, WorksheetStatus, Role, TargetAudience } from "@prisma/client";
 import { getPaginationParams, buildPaginationMeta } from "@/lib/utils/pagination";
@@ -4498,18 +4204,6 @@ export async function getUserUploads(
 ### File: `src/services/storage.service.ts`
 
 ```typescript
-/**
- * Storage Service — Al-Musnad (المسند) v15.0
- *
- * Primary: Cloudflare R2 Storage (10GB Free Tier) via AWS S3 Client SDK
- * Fallback: Supabase Storage Bucket ("worksheets")
- *
- * Supports:
- * - PDF documents (`.pdf`)
- * - Microsoft Word documents (`.doc`, `.docx`)
- * - Images (`.png`, `.jpg`, `.jpeg`, `.webp`)
- */
-
 import {
   S3Client,
   PutObjectCommand,
@@ -4562,6 +4256,37 @@ export function isR2Configured(): boolean {
 /**
  * Creates an S3Client targeted at Cloudflare R2 endpoint.
  */
+
+/**
+ * Returns safe R2 diagnostics for /api/health without exposing secrets.
+ */
+export function getR2Diagnostics() {
+  const ready = isR2Configured();
+  const accountId = process.env.R2_ACCOUNT_ID?.trim() || "";
+  const accessKey = process.env.R2_ACCESS_KEY_ID?.trim() || "";
+  const secretKey = process.env.R2_SECRET_ACCESS_KEY?.trim() || "";
+  const bucketName = process.env.R2_BUCKET_NAME?.trim() || "musnad-worksheets";
+  const publicUrl = process.env.R2_PUBLIC_URL?.trim() || "";
+
+  return {
+    configured: ready,
+    bucketName,
+    hasAccountId: Boolean(accountId && accountId.length >= 8 && !accountId.includes("[")),
+    accessKeyLength: accessKey.length,
+    secretKeyLength: secretKey.length,
+    hasPublicUrl: Boolean(publicUrl),
+    autoSwappedKeys: false,
+    usedTypoFallbackEnv: false,
+    status: ready
+      ? "Cloudflare R2 10GB storage active and verified"
+      : "Using Supabase Storage as primary/fallback",
+  };
+}
+
+// Compatibility aliases
+export const uploadWorksheetFile = uploadFile;
+export const deleteWorksheetFile = deleteFile;
+
 export function getR2Client(): S3Client {
   const accountId = process.env.R2_ACCOUNT_ID!.trim();
   return new S3Client({
@@ -4829,19 +4554,6 @@ export async function uploadThumbnail(
 ### File: `src/services/email.service.ts`
 
 ```typescript
-/**
- * Email Service — Al-Musnad (المسند)
- *
- * Powered by Resend for transactional, welcome, and notification emails.
- *
- * Implements:
- * 1. sendWelcomeEmail(to, name, roleTitle): Elegant welcome email upon registration.
- * 2. sendSupportReplyNotification(to, name, ticketSubject, replyText): Notification on support reply.
- * 3. sendEndorsementNotification(to, teacherName, worksheetTitle): Alert when inspector endorses a worksheet.
- * 4. Graceful fallback: If RESEND_API_KEY is missing or sending fails, logs error silently
- *    without crashing the user flow or halting registration.
- */
-
 import { Resend } from "resend";
 
 const apiKey = process.env.RESEND_API_KEY;
@@ -5032,7 +4744,7 @@ function createEmailTemplate({
         هذه الرسالة تم إرسالها تلقائياً من خوادم <strong>منصة المسند</strong>.<br>
         للدعم الفني والاستفسار، تواصل معنا عبر واتساب: 
         <a href="https://wa.me/21627764985">27764985</a> أو 
-        <a href="https://wa.me/21646907101">46907101</a>
+        <a href="https://wa.me/21676907101">76907101</a>
       </p>
       <p style="margin: 0; color: #94a3b8;">
         جميع الحقوق محفوظة © 2026 منصة المسند التربوية
@@ -5157,13 +4869,6 @@ export async function sendEndorsementNotification(
 ### File: `src/services/favorite.service.ts`
 
 ```typescript
-/**
- * Favorite Service — Al-Musnad v5.0
- *
- * Enforces strict authentication AND publisher audience access checks
- * before toggling favorites or listing favorited worksheets.
- */
-
 import { db } from "@/lib/db";
 import {
   NotFoundError,
@@ -5326,13 +5031,6 @@ export async function getUserFavorites(
 ### File: `src/services/download.service.ts`
 
 ```typescript
-/**
- * Download Service — Al-Musnad v5.0
- *
- * Enforces strict authentication AND publisher audience access check before
- * recording downloads or generating pre-signed Supabase Storage URLs.
- */
-
 import { db } from "@/lib/db";
 import { SIGNED_URL_EXPIRY_SECONDS } from "@/config/constants";
 import { getSignedDownloadUrl } from "@/services/storage.service";
@@ -5499,15 +5197,6 @@ export async function getUserDownloads(
 ### File: `src/services/review.service.ts`
 
 ```typescript
-/**
- * Review & Rating Service — Al-Musnad v8.0
- *
- * Implements:
- * 1. Pinned official directives for inspectors/admins (`isOfficialDirective`).
- * 2. Private direct comments for worksheet publishers (`isPrivateToPublisher`).
- * 3. Automatic `@username` mention detection and notifications (`dispatchMentionNotifications`).
- */
-
 import { db } from "@/lib/db";
 import {
   NotFoundError,
@@ -5800,13 +5489,6 @@ export async function deleteWorksheetReview(
 ### File: `src/services/audit.service.ts`
 
 ```typescript
-/**
- * Activity & Security Audit Log Service — Al-Musnad v9.0
- *
- * Records critical administrative, pedagogical, and publisher events in `audit_logs`
- * so the Top Administrator (`المشرف`) has full visibility over all platform operations.
- */
-
 import { db } from "@/lib/db";
 
 export interface LogActivityInput {
@@ -5895,13 +5577,6 @@ export async function listAuditLogs(options?: {
 ### File: `src/middleware.ts`
 
 ```typescript
-/**
- * Next.js Middleware
- *
- * Runs on every request to refresh the Supabase auth session.
- * Also handles route protection (redirects unauthenticated users).
- */
-
 import { type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
@@ -6146,16 +5821,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 ### File: `src/app/api/auth/callback/route.ts`
 
 ```typescript
-/**
- * GET /api/auth/callback — OAuth 2.0 (Google) & Email Confirmation Callback (Al-Musnad v11.0)
- *
- * Handles:
- * 1. "المتابعة باستخدام حساب جوجل" (Continue with Google) & "التسجيل باستخدام حساب جوجل" (Sign up with Google).
- * 2. Automatically creates or syncs the user profile in Prisma (`public.users`) with Google name,
- *    Google avatar (`avatar_url` / `picture`), unique `@username`, and selected role (`?role=...`).
- * 3. Enforces account lockout check (`failedLoginAttempts >= 6` or `lockedAt != null`).
- */
-
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
@@ -6408,11 +6073,6 @@ export async function GET() {
 ### File: `src/app/api/auth/resolve-username/route.ts`
 
 ```typescript
-/**
- * POST /api/auth/resolve-username — Securely resolves a @username to an email for login
- * Protected by sliding-window rate limiting to prevent username/email enumeration.
- */
-
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { successResponse, errorResponse } from "@/lib/utils/api-response";
@@ -6471,18 +6131,6 @@ export async function POST(request: NextRequest) {
 ### File: `src/app/api/auth/login-guard/route.ts`
 
 ```typescript
-/**
- * POST /api/auth/login-guard — Smart Login & 6-Strike Password Lockout Guard (Al-Musnad v11.0)
- *
- * Implements the user requirements:
- * 1. Verifies if an email or @username is registered in the platform.
- * 2. If registered and password fails, outputs a specific wrong-password error message
- *    warning the user that they have a maximum of 6 attempts (showing remaining attempts).
- * 3. On the 6th failed attempt, automatically locks the account and instructs the user
- *    to contact the Administrator (المشرف العام) or Moderator (المسؤول الإداري) to unlock it.
- * 4. Resets the failed attempt counter upon successful authentication.
- */
-
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { successResponse, errorResponse } from "@/lib/utils/api-response";
@@ -6678,17 +6326,6 @@ export async function POST(request: NextRequest) {
 ### File: `src/app/api/me/presence/route.ts`
 
 ```typescript
-/**
- * POST /api/me/presence — Member Online / Offline / Ghost Mode & Heartbeat API (Al-Musnad v11.0)
- *
- * Allows authenticated members to:
- * 1. Switch their presence status between:
- *    - `ONLINE` (متصل — green indicator dot)
- *    - `OFFLINE` (غير متصل — gray indicator dot + time since offline)
- *    - `GHOST` (وضع الشبح 👻 — browse the platform invisibly while appearing offline to others)
- * 2. Send periodic heartbeat updates while active on the site so `lastSeenAt` stays accurate.
- */
-
 import { NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
@@ -6762,12 +6399,6 @@ export async function POST(request: NextRequest) {
 ### File: `src/app/api/worksheets/route.ts`
 
 ```typescript
-/**
- * GET  /api/worksheets — Lists worksheets (Full for logged-in users per role; Title-Only `ALL` for guests)
- * POST /api/worksheets — Uploads PDF (instant publish) or Word/Image (queued for Admin & Inspector PDF conversion)
- * Protected by sliding-window rate limiting and activity audit logging.
- */
-
 import { NextRequest } from "next/server";
 import { successResponse, errorResponse } from "@/lib/utils/api-response";
 import {
@@ -6903,16 +6534,6 @@ export async function POST(request: NextRequest) {
 ### File: `src/app/api/worksheets/[id]/route.ts`
 
 ```typescript
-/**
- * Individual Worksheet Route Handlers — Al-Musnad v5.0
- *
- * - GET /api/worksheets/[id]: Strictly requires authentication AND verifies
- *   that the caller's account role is allowed by the publisher's `audience`.
- * - PATCH /api/worksheets/[id]: Supports metadata-only edits (preserving `isEndorsed`)
- *   AND multipart PDF file replacement (which resets `isEndorsed = false`).
- * - DELETE /api/worksheets/[id]: Soft-archives worksheet.
- */
-
 import { NextRequest } from "next/server";
 import { successResponse, errorResponse } from "@/lib/utils/api-response";
 import { uuidSchema } from "@/lib/validators/common";
@@ -7069,13 +6690,6 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
 ### File: `src/app/api/worksheets/[id]/download/route.ts`
 
 ```typescript
-/**
- * Worksheet Download Route Handler
- *
- * GET /api/worksheets/[id]/download -> Protected endpoint that records download
- * activity idempotently and generates a secure pre-signed download URL.
- */
-
 import { NextRequest } from "next/server";
 import { successResponse, errorResponse } from "@/lib/utils/api-response";
 import { uuidSchema } from "@/lib/validators/common";
@@ -7118,16 +6732,95 @@ export async function GET(
 
 ---
 
+### File: `src/app/api/worksheets/[id]/file/route.ts`
+
+```typescript
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { canUserAccessWorksheet } from "@/services/worksheet.service";
+import { getSignedDownloadUrl } from "@/services/storage.service";
+import { errorResponse } from "@/lib/utils/api-response";
+import {
+  ForbiddenError,
+  NotFoundError,
+  UnauthorizedError,
+} from "@/lib/utils/errors";
+
+interface RouteContext {
+  params: Promise<{ id: string }>;
+}
+
+export async function GET(request: NextRequest, context: RouteContext) {
+  try {
+    const { id } = await context.params;
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      throw new UnauthorizedError("يرجى تسجيل الدخول لمعاينة أو تحميل هذا الملف");
+    }
+
+    const [dbUser, worksheet] = await Promise.all([
+      db.user.findUnique({
+        where: { id: user.id },
+        select: { id: true, role: true },
+      }),
+      db.worksheet.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          fileUrl: true,
+          fileName: true,
+          status: true,
+          uploadedBy: true,
+          audience: true,
+          uploader: { select: { role: true } },
+        },
+      }),
+    ]);
+
+    if (!dbUser) {
+      throw new UnauthorizedError("الحساب غير موجود");
+    }
+
+    if (!worksheet || worksheet.status === "ARCHIVED") {
+      throw new NotFoundError("Worksheet");
+    }
+
+    if (
+      worksheet.status === "DRAFT" &&
+      worksheet.uploadedBy !== dbUser.id &&
+      dbUser.role !== "ADMIN" &&
+      dbUser.role !== "INSPECTOR"
+    ) {
+      throw new ForbiddenError(
+        "هذا الملف قيد المراجعة وإعادة الصياغة إلى PDF من قِبل المشرف والمتفقد."
+      );
+    }
+
+    if (!canUserAccessWorksheet(worksheet, dbUser.role, dbUser.id)) {
+      throw new ForbiddenError(
+        "غير مصرح لحسابك بمعاينة أو تحميل هذه النشرة حسب قيود الجمهور."
+      );
+    }
+
+    const signedUrl = await getSignedDownloadUrl(worksheet.fileUrl, 3600);
+    return NextResponse.redirect(signedUrl, { status: 302 });
+  } catch (error) {
+    return errorResponse(error);
+  }
+}
+
+```
+
+---
+
 ### File: `src/app/api/worksheets/[id]/favorite/route.ts`
 
 ```typescript
-/**
- * Worksheet Favorite Route Handler
- *
- * POST /api/worksheets/[id]/favorite -> Protected endpoint that atomically
- * toggles bookmark state and updates denormalized favorite counts.
- */
-
 import { NextRequest } from "next/server";
 import { successResponse, errorResponse } from "@/lib/utils/api-response";
 import { uuidSchema } from "@/lib/validators/common";
@@ -7173,9 +6866,6 @@ export async function POST(
 ### File: `src/app/api/worksheets/[id]/review/route.ts`
 
 ```typescript
-/**
- * Alias endpoint for /api/worksheets/[id]/reviews
- */
 export { GET, POST, DELETE } from "../reviews/route";
 
 ```
@@ -7185,12 +6875,6 @@ export { GET, POST, DELETE } from "../reviews/route";
 ### File: `src/app/api/worksheets/[id]/reviews/route.ts`
 
 ```typescript
-/**
- * GET    /api/worksheets/[id]/reviews — List all reviews (Supports authenticated and guest browsing)
- * POST   /api/worksheets/[id]/reviews — Upsert a review & rating (Protected by rate limiting)
- * DELETE /api/worksheets/[id]/reviews — Delete a review
- */
-
 import { NextRequest } from "next/server";
 import { successResponse, errorResponse } from "@/lib/utils/api-response";
 import { uuidSchema } from "@/lib/validators/common";
@@ -7504,11 +7188,6 @@ export async function GET(request: NextRequest) {
 ### File: `src/app/api/notifications/route.ts`
 
 ```typescript
-/**
- * GET   /api/notifications — Fetch current user's notifications & unread count
- * PATCH /api/notifications — Mark all (or single) notifications as read
- */
-
 import { NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
@@ -7582,11 +7261,6 @@ export async function PATCH(request: NextRequest) {
 ### File: `src/app/api/users/mentions/route.ts`
 
 ```typescript
-/**
- * GET /api/users/mentions?q=... — Lightweight `@username` autocomplete endpoint (Al-Musnad v10.0)
- * Security Fix: Never exposes user email addresses in public JSON responses; protected by rate limiting.
- */
-
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { successResponse, errorResponse } from "@/lib/utils/api-response";
@@ -7662,14 +7336,10 @@ export async function GET(request: NextRequest) {
 ### File: `src/app/api/health/route.ts`
 
 ```typescript
-/**
- * GET /api/health — System Health, Database Connectivity & Version Endpoint (Al-Musnad v12.0)
- */
-
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { APP_CONFIG, STORAGE_BUCKETS } from "@/config/constants";
-import { isR2Configured } from "@/services/storage.service";
+import { isR2Configured, getR2Diagnostics } from "@/services/storage.service";
 
 export async function GET() {
   const startedAt = Date.now();
@@ -7696,11 +7366,12 @@ export async function GET() {
   );
 
   const r2Ready = isR2Configured();
+  const r2Diagnostics = getR2Diagnostics();
 
   return NextResponse.json({
     success: true,
     platform: APP_CONFIG.nameAr,
-    version: "15.0.0",
+    version: "16.0.0",
     status: databaseConnected && supabaseConfigured ? "HEALTHY" : "DEGRADED",
     latencyMs: Date.now() - startedAt,
     services: {
@@ -7708,7 +7379,10 @@ export async function GET() {
       supabaseAuth: supabaseConfigured ? "CONFIGURED" : "MISSING_ENV",
       storageProvider: r2Ready ? "CLOUDFLARE_R2_10GB" : "SUPABASE_STORAGE",
       cloudflareR2: r2Ready ? "ACTIVE_10GB" : "FALLBACK",
-      storageBucket: r2Ready ? (process.env.R2_BUCKET_NAME || "musnad-worksheets") : STORAGE_BUCKETS.WORKSHEETS,
+      storageBucket: r2Ready
+        ? r2Diagnostics.bucketName
+        : STORAGE_BUCKETS.WORKSHEETS,
+      r2Diagnostics,
     },
     metrics: databaseConnected
       ? {
@@ -10845,16 +10519,6 @@ export default function GlobalError({
 ```typescript
 "use client";
 
-/**
- * Global Theme & Trilingual Context — Al-Musnad (المسند) v4.0
- *
- * Updates:
- * - Renamed "بنك المنشورات" to "النشرات".
- * - Added "التوثيق" (`verification`) right under "الاشتراكات" (`subscriptions`).
- * - Added "الدعم الفني وخدمة العملاء" (`support`).
- * - Removed all example names of people, schools, or institutions from placeholders!
- */
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import type { AccountRoleOption } from "@/types/api";
 
@@ -11306,12 +10970,6 @@ export function useAppPreferences() {
 ```typescript
 "use client";
 
-/**
- * Full-Screen 4-Role Selection Overlay — Al-Musnad (المسند) v3.0
- *
- * Clean badges without "Option 1 / 2 / 3 / 4" wording, rebranded with "م" logo for Al-Musnad.
- */
-
 import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -11521,27 +11179,7 @@ export default function AuthRoleModal() {
 ```typescript
 "use client";
 
-/**
- * Upgraded Navigation Bar — Al-Musnad (المسند) v11.0
- *
- * Implements all v11.0 User Directives:
- * 1. Role-Distinguished Username Box in Top Bar:
- *    - Surrounds the username & avatar box with a distinctive colored frame (`border-2` + `ring-2`)
- *      according to the user's supervisory rank:
- *      • `ADMIN` (المشرف العام): Royal Purple/Blue frame (`border-purple-500 ring-purple-400/40`)
- *      • `MODERATOR` (المسؤول الإداري): Indigo frame (`border-indigo-500 ring-indigo-400/40`)
- *      • `INSPECTOR` (المتفقد التربوي): Amber/Gold frame (`border-amber-500 ring-amber-400/40`)
- * 2. Merged Supervisory Badge + Dashboard Control Panel Inside the User Dropdown Menu:
- *    - When clicking the username box, directly below «ملفي الشخصي» (`/profile`) and
- *      «صفحتي العامة كناشر» (`/publisher/${user.id}`), we place the unified Supervisory Badge +
- *      Control Panel button for `ADMIN`, `MODERATOR`, and `INSPECTOR`.
- * 3. Live Online / Offline / Ghost Mode (`وضع الشبح`) Presence System:
- *    - Displays the small green dot below the user picture when connected (`ONLINE`)
- *      and gray dot when disconnected (`OFFLINE` / `GHOST`), with elapsed offline duration,
- *      plus one-click switching between `متصل`، `غير متصل`، and `👻 وضع الشبح`.
- */
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -11681,6 +11319,52 @@ export default function Navbar() {
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [notifMenuOpen, setNotifMenuOpen] = useState(false);
+
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+  const notifMenuRef = useRef<HTMLDivElement>(null);
+  const langMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleOutsideMouseDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        profileMenuOpen &&
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(target)
+      ) {
+        setProfileMenuOpen(false);
+      }
+      if (
+        notifMenuOpen &&
+        notifMenuRef.current &&
+        !notifMenuRef.current.contains(target)
+      ) {
+        setNotifMenuOpen(false);
+      }
+      if (
+        langMenuOpen &&
+        langMenuRef.current &&
+        !langMenuRef.current.contains(target)
+      ) {
+        setLangMenuOpen(false);
+      }
+    };
+
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setProfileMenuOpen(false);
+        setNotifMenuOpen(false);
+        setLangMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideMouseDown);
+    document.addEventListener("keydown", handleEscapeKey);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideMouseDown);
+      document.removeEventListener("keydown", handleEscapeKey);
+    };
+  }, [profileMenuOpen, notifMenuOpen, langMenuOpen]);
   const [updatingPresence, setUpdatingPresence] = useState(false);
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -11991,7 +11675,7 @@ export default function Navbar() {
           {/* Action Area */}
           <div className="hidden md:flex items-center gap-2.5">
             {/* Language Switcher */}
-            <div className="relative">
+            <div className="relative" ref={langMenuRef}>
               <button
                 type="button"
                 onClick={() => setLangMenuOpen((prev) => !prev)}
@@ -12065,7 +11749,7 @@ export default function Navbar() {
                 )}
 
                 {/* Notification Bell Icon */}
-                <div className="relative">
+                <div className="relative" ref={notifMenuRef}>
                   <button
                     type="button"
                     onClick={() => {
@@ -12147,16 +11831,16 @@ export default function Navbar() {
                   )}
                 </div>
 
-                {/* Unified Role-Distinguished Username Box & Dropdown Menu */}
-                <div className="relative">
+                {/* Unified Role-Distinguished Username Box & Dropdown Menu (Full Name + Colored Rank Border) */}
+                <div className="relative" ref={profileMenuRef}>
                   <button
                     type="button"
                     onClick={() => {
                       setProfileMenuOpen((prev) => !prev);
                       setNotifMenuOpen(false);
                     }}
-                    className={`flex items-center gap-2.5 px-3 py-1.5 rounded-2xl transition cursor-pointer ${roleBoxStyle.boxClass}`}
-                    title={`${user.name} — ${roleBoxStyle.roleLabel}`}
+                    className={`flex items-center gap-2.5 px-3.5 py-1.5 rounded-2xl transition cursor-pointer shrink-0 ${roleBoxStyle.boxClass}`}
+                    title={user.name}
                   >
                     <UserAvatarWithPresence
                       name={user.name}
@@ -12167,19 +11851,14 @@ export default function Navbar() {
                       size="md"
                       avatarBgClass={roleBoxStyle.avatarBgClass}
                     />
-                    <div className="flex flex-col items-start text-start min-w-0">
-                      <span className="text-xs font-extrabold text-slate-900 dark:text-white truncate max-w-[160px] sm:max-w-[200px]">
-                        {user.name}
-                      </span>
-                      <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
-                        {currentPresenceInfo.isGhostSelf
-                          ? "👻 وضع الشبح"
-                          : currentPresenceInfo.isOnlinePublicly
-                          ? "🟢 متصل الآن"
-                          : `⚪ غير متصل (${currentPresenceInfo.durationLabelAr || ""})`}
-                      </span>
-                    </div>
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white whitespace-nowrap">
+                      {user.name}
+                    </span>
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${
+                        profileMenuOpen ? "rotate-180" : ""
+                      }`}
+                    />
                   </button>
 
                   {profileMenuOpen && (
@@ -12640,20 +12319,6 @@ export default function Navbar() {
 ```typescript
 "use client";
 
-/**
- * SupervisoryHierarchyBar Component — Al-Musnad (المسند) v10.0
- *
- * Implements the 3-Tier Supervisory Navigation & Isolation System:
- * 1. When the logged-in user is the Top Administrator (`viewerRole === "ADMIN"`):
- *    - Displays an interactive 3-Tier Supervisory Switcher Bar at the top of all 3 dashboards
- *      (`/admin/dashboard` ↔ `/moderator/dashboard` ↔ `/inspector/dashboard`).
- *    - When the Admin is inside `/moderator/dashboard` or `/inspector/dashboard`, displays a prominent
- *      one-click button: «العودة إلى لوحة المشرف العام» (`Return to Admin Dashboard`) alongside the switcher.
- * 2. When the logged-in user is a Moderator (`viewerRole === "MODERATOR"`) or Inspector (`viewerRole === "INSPECTOR"`):
- *    - Displays an Exclusive Scope Notice confirming that this dashboard is strictly dedicated and exclusive
- *      to their role and permissions, with ZERO links or ability to switch to other supervisory levels.
- */
-
 import React from "react";
 import Link from "next/link";
 import {
@@ -13081,14 +12746,6 @@ export default function InstallPwaBanner() {
 ```typescript
 "use client";
 
-/**
- * MentionText Component — Al-Musnad v8.0
- *
- * Automatically detects any `@username` in comments, reviews, or messages
- * and renders it as an interactive clickable badge that navigates to `/u/[username]`
- * which redirects straight to the Publisher's Profile Page (`/publisher/[id]`).
- */
-
 import React from "react";
 import Link from "next/link";
 
@@ -13134,20 +12791,6 @@ export default function MentionText({ text, className = "" }: MentionTextProps) 
 
 ```typescript
 "use client";
-
-/**
- * UserPresenceIndicator & UserAvatarWithPresence — Al-Musnad (المسند) v11.0
- *
- * Implements:
- * 1. Small green indicator dot at the bottom of the user avatar when connected (`ONLINE`),
- *    and a small gray indicator dot when disconnected (`OFFLINE` or `GHOST`).
- * 2. Calculates and displays the elapsed time since the user went offline
- *    (e.g., «غير متصل • منذ 10 دقائق» / «منذ ساعتين» / «منذ 3 أيام»).
- * 3. Supports Ghost Mode (`GHOST` / وضع الشبح):
- *    - When a user enables Ghost Mode, they can browse the entire platform freely
- *      while appearing `OFFLINE` (gray dot + elapsed time) to all other users.
- *    - Only the user themselves (when `isSelf === true`) sees the `👻 متصفح خفي (وضع الشبح)` badge.
- */
 
 import React from "react";
 import { Ghost } from "lucide-react";
@@ -13371,13 +13014,6 @@ export function UserPresenceBadge({
 ```typescript
 "use client";
 
-/**
- * SubjectIcon — Expressive Visual Symbol for Each Academic Subject (Al-Musnad v12.0)
- *
- * Replaces raw numeric indices (1..9) inside Subject cards with a meaningful icon
- * that visually represents the subject matter.
- */
-
 import React from "react";
 import {
   Calculator,
@@ -13450,27 +13086,6 @@ export default function SubjectIcon({
 
 ```typescript
 "use client";
-
-/**
- * RolePersonalizedHub — Tailored Top Workspace & Exclusive Role Feeds (Al-Musnad v12.0)
- *
- * Implements the User Directives for Role-Based Interface Personalization:
- * 1. `INSTITUTION` (المؤسسات التربوية):
- *    - Dedicated top section («قسم نشرات المؤسسات التربوية») displaying publications
- *      specifically for/by institutions (`INSTITUTIONS_ONLY`, `SAME_ROLE_ONLY` by institutions,
- *      or institutional publications) so institutions can interact and share purposeful content.
- * 2. `INSPECTOR` (المتفقدون التربويون):
- *    - Dedicated top section («قسم منشورات المتفقدين فقط») displaying publications
- *      exclusively for/by inspectors to facilitate pedagogical collaboration among inspectors.
- * 3. `TEACHER` (المعلمون):
- *    - Dedicated top section («قسم منشورات المعلمين») displaying all teacher-specific
- *      publications (`TEACHERS_ONLY`, fiches/lesson plans, exam keys, and peer resources).
- * 4. `STUDENT` (التلاميذ):
- *    - Dedicated distraction-free Student Study Hub («فضاء التلميذ للمراجعة والتفوق»)
- *      with zero administrative clutter, focused on lessons, exercises, exams, and activities.
- * 5. `ADMIN` / `MODERATOR`:
- *    - Can switch across all 4 role hubs to supervise and inspect each community space.
- */
 
 import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
@@ -14056,16 +13671,6 @@ export default function RolePersonalizedHub({
 ```typescript
 "use client";
 
-/**
- * PlatformIdentityAndFaqSection — About Us, Role Benefits Guide & Interactive FAQ (Al-Musnad v13.0)
- *
- * Implements the Unified "اعرف المزيد" (Learn More) Section (`#learn-more`):
- * - Merges «من نحن» + «مزايا الفئات» + «الأسئلة الشائعة» under a single top-level section.
- * - Interactive tab switcher: [الكل المدمج | من نحن | مزايا الفئات | الأسئلة الشائعة].
- * - Preserves anchor scroll targets `#about-us`, `#roles-guide`, `#faq-section`.
- * - Replaces any "مجاني" claim with "حماية الخصوصية وأمان متقدم" for strict policy compliance.
- */
-
 import React, { useState } from "react";
 import Link from "next/link";
 import {
@@ -14478,16 +14083,6 @@ export default function PlatformIdentityAndFaqSection() {
 ```typescript
 "use client";
 
-/**
- * Subscriptions Section & Preserved Plans Archive — Al-Musnad (المسند) v13.0
- *
- * Implements Project Manager Directive for v13.0:
- * - Displays ONLY the clean "سيأتي قريباً" (Coming Soon) state without explaining
- *   why the site is free or discussing founding period pricing.
- * - Preserves the 100% complete `PRESERVED_SUBSCRIPTION_PLANS` array in code so it
- *   can be reactivated immediately whenever paid tiers are introduced in the future.
- */
-
 import React from "react";
 import { Clock } from "lucide-react";
 
@@ -14565,14 +14160,6 @@ export default function ArchivedSubscriptionsPlans(
 
 ```typescript
 "use client";
-
-/**
- * Filter & Search Bar Component — Al-Musnad (المسند) v15.0
- *
- * Provides responsive multi-dimensional faceted filtering:
- * text search, grade level, subject, activity category, Tunisian school trimester, and sorting.
- * Fully synchronized with Next.js URL SearchParams with Dark Mode support.
- */
 
 import React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -14803,20 +14390,6 @@ export { FilterBar };
 ```typescript
 "use client";
 
-/**
- * WorksheetCard — Al-Musnad (المسند) v11.0
- *
- * Implements:
- * 1. Explicit File Metadata Badges on every card:
- *    - اسم المادة (`worksheet.subject?.nameAr`)
- *    - السنة الدراسية (`worksheet.grade?.nameAr`)
- *    - القسم التربوي (`worksheet.category?.nameAr`: درس، تمرين، امتحان، جذاذة، نشاط تفاعلي، أخرى)
- *    - نوع / صيغة الملف (`PDF` / `Word` / `صورة` via `getFileFormatInfo`)
- * 2. Publisher Avatar with Live Presence Dot (`UserAvatarWithPresence`):
- *    - Small green dot under the publisher avatar when connected (`ONLINE`),
- *      gray dot when disconnected (`OFFLINE` / `GHOST`).
- */
-
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14849,6 +14422,13 @@ export default function WorksheetCard({
   );
   const [isFavorited, setIsFavorited] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
+  const [thumbError, setThumbError] = useState(false);
+  const hasValidThumbnail = Boolean(
+    worksheet.thumbnailUrl &&
+      !thumbError &&
+      !(worksheet.thumbnailUrl.includes('X-Amz-Credential=') &&
+        (worksheet.thumbnailUrl.split('X-Amz-Credential=')[1]?.split('%2F')[0]?.split('/')[0]?.length || 32) !== 32)
+  );
 
   const title = worksheet.titleAr || worksheet.title;
   const subjectColor = worksheet.subject?.color || "#2563EB";
@@ -14958,10 +14538,11 @@ export default function WorksheetCard({
           href={`/worksheet/${worksheet.id}`}
           className="block relative overflow-hidden"
         >
-          {worksheet.thumbnailUrl ? (
+          {hasValidThumbnail ? (
             <img
-              src={worksheet.thumbnailUrl}
+              src={worksheet.thumbnailUrl!}
               alt={title}
+              onError={() => setThumbError(true)}
               className="w-full h-44 object-cover group-hover:scale-102 transition-transform duration-300"
             />
           ) : (
@@ -15110,18 +14691,6 @@ export default function WorksheetCard({
 
 ```typescript
 "use client";
-
-/**
- * Worksheet Detail Client — Al-Musnad (المسند) v4.0
- *
- * Implements:
- * 1. Edit Publication Modal (`تعديل المنشور`):
- *    - If publisher edits only title, description, or audience, `isEndorsed` stays intact.
- *    - If publisher selects a new PDF file (`newFile`), displays a prominent warning alert
- *      before confirming: changing the file and its content will revoke the current endorsement badge!
- * 2. Report Publication Modal (`🚩 إبلاغ عن المنشور`).
- * 3. Inspector Endorsement toggle button.
- */
 
 import React, { useEffect, useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -15501,43 +15070,103 @@ export default function WorksheetDetailClient({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Right Column: Embedded PDF Viewer & Reviews */}
         <section className="lg:col-span-8 flex flex-col gap-6">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
-            <div className="bg-slate-50 dark:bg-slate-800 px-5 py-3.5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-semibold text-sm">
-                <FileText className="w-4 h-4 text-blue-600" />
-                <span>معاينة مباشرة لملف النشرة ({worksheet.fileName})</span>
-              </div>
-              {worksheet.previewUrl && (
-                <a
-                  href={worksheet.previewUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs font-medium text-blue-600 hover:text-blue-800 inline-flex items-center gap-1"
-                >
-                  <span>فتح في نافذة مستقلة</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-              )}
-            </div>
+          {(() => {
+            const rawPreviewUrl = worksheet.previewUrl || "";
+            const hasBroken64CharKey =
+              rawPreviewUrl.includes("r2.cloudflarestorage.com") &&
+              rawPreviewUrl.includes("X-Amz-Credential=") &&
+              (rawPreviewUrl
+                .split("X-Amz-Credential=")[1]
+                ?.split("%2F")[0]
+                ?.split("/")[0]?.length || 32) !== 32;
+            const effectivePreviewUrl =
+              !rawPreviewUrl || hasBroken64CharKey
+                ? `/api/worksheets/${worksheet.id}/file?disposition=inline`
+                : rawPreviewUrl;
 
-            {worksheet.previewUrl ? (
-              <iframe
-                src={`${worksheet.previewUrl}#toolbar=0&navpanes=0`}
-                title={displayTitle}
-                className="w-full h-[680px] bg-slate-100"
-              />
-            ) : (
-              <div className="h-[450px] flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-800/40 p-8 text-center">
-                <FileText className="w-16 h-16 text-slate-400 mb-3" />
-                <p className="text-slate-700 dark:text-slate-200 font-semibold mb-1">
-                  المعاينة المباشرة جاهزة عند التحميل
-                </p>
-                <p className="text-sm text-slate-500 max-w-md mb-4">
-                  اضغط على زر &quot;تحميل مباشر (PDF)&quot; لتنزيل النسخة الكاملة عالية الدقة.
-                </p>
+            const lowerFileName = (worksheet.fileName || "").toLowerCase();
+            const isImageFile =
+              lowerFileName.endsWith(".png") ||
+              lowerFileName.endsWith(".jpg") ||
+              lowerFileName.endsWith(".jpeg") ||
+              lowerFileName.endsWith(".webp") ||
+              lowerFileName.endsWith(".gif");
+            const isPdfFile = lowerFileName.endsWith(".pdf") || (!isImageFile && !lowerFileName.endsWith(".doc") && !lowerFileName.endsWith(".docx"));
+
+            return (
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+                <div className="bg-slate-50 dark:bg-slate-800 px-5 py-3.5 border-b border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-semibold text-sm">
+                    <FileText className="w-4 h-4 text-blue-600" />
+                    <span>معاينة مباشرة لملف النشرة ({worksheet.fileName})</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={effectivePreviewUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-bold px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 hover:bg-blue-100 inline-flex items-center gap-1 transition"
+                    >
+                      <span>فتح في نافذة مستقلة</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                    <button
+                      type="button"
+                      onClick={handleDownload}
+                      disabled={downloading}
+                      className="text-xs font-bold px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white inline-flex items-center gap-1 transition cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>{downloading ? "جاري التحضير..." : "تحميل الملف"}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {isImageFile ? (
+                  <div className="p-4 sm:p-6 bg-slate-900 flex flex-col items-center justify-center min-h-[380px]">
+                    <img
+                      src={effectivePreviewUrl}
+                      alt={displayTitle}
+                      className="max-h-[680px] w-auto object-contain rounded-xl shadow-lg border border-slate-700 bg-white"
+                    />
+                  </div>
+                ) : isPdfFile ? (
+                  <div className="w-full h-[540px] sm:h-[680px] bg-slate-100">
+                    <object
+                      data={`${effectivePreviewUrl}#toolbar=1&navpanes=0`}
+                      type="application/pdf"
+                      className="w-full h-full"
+                    >
+                      <iframe
+                        src={`${effectivePreviewUrl}#toolbar=1&navpanes=0`}
+                        title={displayTitle}
+                        className="w-full h-full bg-slate-100"
+                      />
+                    </object>
+                  </div>
+                ) : (
+                  <div className="h-[420px] flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-800/40 p-8 text-center">
+                    <FileText className="w-16 h-16 text-slate-400 mb-3" />
+                    <p className="text-slate-700 dark:text-slate-200 font-semibold mb-1">
+                      هذا الملف بصيغة مستند ({worksheet.fileName})
+                    </p>
+                    <p className="text-sm text-slate-500 max-w-md mb-4">
+                      اضغط على زر &quot;تحميل الملف&quot; لتنزيل النسخة الكاملة على جهازك.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleDownload}
+                      disabled={downloading}
+                      className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold inline-flex items-center gap-2 transition cursor-pointer"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>تحميل الملف الآن</span>
+                    </button>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            );
+          })()}
 
           <ReviewSection
             worksheetId={worksheet.id}
@@ -15995,6 +15624,7 @@ export default function WorksheetDetailClient({
     </main>
   );
 }
+
 ```
 
 ---
@@ -16003,21 +15633,6 @@ export default function WorksheetDetailClient({
 
 ```typescript
 "use client";
-
-/**
- * Upgraded Review & Discussion Section — Al-Musnad v8.0
- *
- * Implements:
- * 1. `@username` Mention System:
- *    - Typing `@` opens a live autocomplete list of publishers/members (`@username — الاسم`).
- *    - Selecting a user inserts `@username` into the comment.
- *    - Every rendered `@username` in any comment is a clickable link (`MentionText`) that
- *      navigates directly to that user's Publisher Profile Page (`/publisher/[id]`)!
- * 2. Inspector & Supervisory Comment Modes:
- *    - `تعليق في الصدارة` (`isOfficialDirective: true`): Pinned at the very top of comments.
- *    - `تعليق خاص مباشرة إلى الناشر` (`isPrivateToPublisher: true`): Visible ONLY to the
- *      worksheet publisher and supervisory staff.
- */
 
 import React, { useState, useEffect, FormEvent } from "react";
 import Link from "next/link";
@@ -16518,16 +16133,6 @@ export default function ReviewSection({
 ```typescript
 "use client";
 
-/**
- * Curriculum & Administration Explorer on the Main Landing Page — Al-Musnad v10.0
- *
- * Updates in v10.0:
- * 1. Fixed administrative category slug check (`administrative` and `administrative-docs` and `administration`)
- *    so administrative documents always appear properly in «قسم الإدارة والمعاملات الإدارية».
- * 2. Added a prominent button to open the dedicated Materials & Levels Repository page (`/levels`)
- *    so clicking to browse Materials/Levels navigates directly to `/levels`.
- */
-
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import {
@@ -16840,25 +16445,6 @@ export default function CurriculumAndAdminExplorer({
 ### File: `src/app/page.tsx`
 
 ```typescript
-/**
- * Al-Musnad (المسند) — Main Landing, Role-Personalized Workspace & Discovery Page (v12.0)
- *
- * Implements all v12.0 User Directives:
- * 1. Complete Main Navigation Bar for Visitors & Members:
- *    - القائمة الرئيسية (`/`)
- *    - مستودع المواد والمستويات (`/levels`)
- *    - قائمة النشرات (`/#catalog`)
- *    - قسم الإدارة (`/#administration-section` — hidden for `STUDENT`, shown for Teachers, Inspectors & Institutions)
- *    - قسم من نحن وتعريف الهوية (`/#about-us`)
- *    - تفسير مزايا كل فئة من المشتركين (`/#roles-guide`)
- *    - قسم الأسئلة الشائعة (`/#faq-section`)
- * 2. Role-Personalized Top Workspace (`RolePersonalizedHub`):
- *    - Institutions see the exclusive Institution Publications Hub at the top.
- *    - Inspectors see the exclusive Inspector Publications Hub at the top.
- *    - Teachers see the exclusive Teacher Publications Hub at the top.
- *    - Students see their distraction-free Student Study Hub (with Administration removed).
- */
-
 import React, { Suspense } from "react";
 import Link from "next/link";
 import {
@@ -17775,16 +17361,6 @@ export default async function BrowsePage(props: BrowseProps) {
 ### File: `src/app/(main)/levels/page.tsx`
 
 ```typescript
-/**
- * Step 1 of Curriculum Flow: Approved Grade Levels (`/levels`) — Al-Musnad v11.0
- *
- * Simplified & Streamlined Interface per User Directives:
- * - Displays ONLY the Approved Grade Levels (`المستويات الدراسية المعتمدة`).
- * - Removed the duplicate quick-access subjects matrix and removed the phrase "9 مواد أساسية".
- * - Clicking any Grade Level navigates directly to `/levels/[gradeSlug]`, where the user
- *   finds the full Materials Repository (`مستودع المواد الدراسية`) for that Grade Level.
- */
-
 import React from "react";
 import Link from "next/link";
 import {
@@ -17913,16 +17489,6 @@ export default async function GradeLevelsPage() {
 ### File: `src/app/(main)/levels/[gradeSlug]/page.tsx`
 
 ```typescript
-/**
- * Step 2 of Curriculum Flow: Materials Repository Inside Selected Grade (`/levels/[gradeSlug]`) — Al-Musnad v12.0
- *
- * Updates in v12.0:
- * - Removed numeric numbering (1..9) inside Subject cards and replaced it with a descriptive
- *   visual icon (`<SubjectIcon />`) representing each Subject.
- * - Clicking any Subject opens its dedicated publications page organized into the 6 sections:
- *   (درس • تمرين • امتحان • جذاذة • نشاط تفاعلي • أخرى).
- */
-
 import React from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -18088,21 +17654,6 @@ export default async function GradeSubjectsPage(props: GradeSubjectsPageProps) {
 ### File: `src/app/(main)/levels/[gradeSlug]/subjects/[subjectSlug]/page.tsx`
 
 ```typescript
-/**
- * Step 3 of Curriculum Flow: Subject Publications Page (`/levels/[gradeSlug]/subjects/[subjectSlug]`) — Al-Musnad v11.0
- *
- * Implements:
- * 1. Full 6-Section Pedagogical Organization inside every Subject:
- *    - درس (`lesson`)
- *    - تمرين (`worksheet`)
- *    - امتحان (`exam`)
- *    - جذاذة (`lesson-plan`)
- *    - نشاط تفاعلي (`activity`)
- *    - أخرى (`other`)
- * 2. Ensures every file is placed in its appropriate section and carries badges for:
- *    Subject Name + Grade Level + File Category (Section) + File Format (PDF / Word / Image).
- */
-
 import React from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -18396,19 +17947,6 @@ export default async function SubjectPublicationsPage(
 ### File: `src/app/(main)/worksheet/[id]/page.tsx`
 
 ```typescript
-/**
- * Worksheet Detail View Route (Server Component) — Al-Musnad v5.0
- *
- * Route: /worksheet/[id]
- *
- * Enforces:
- * 1. Mandatory Authentication: Unauthenticated visitors are immediately redirected
- *    to `/login?redirectTo=/worksheet/[id]`.
- * 2. Strict Publisher Audience Permission: Calls `getWorksheetById(id, dbUser.role, user.id)`.
- *    If the publisher restricted the worksheet to another account category (`ForbiddenError`),
- *    renders a clear Arabic Audience Restriction Notice instead of exposing the content.
- */
-
 import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -18553,19 +18091,6 @@ export default async function WorksheetDetailPage(props: WorksheetPageProps) {
 
 ```typescript
 "use client";
-
-/**
- * Upload New Publication Page — Al-Musnad (المسند) v6.0
- *
- * Updates per Project Manager v6.0 Directives:
- * 1. Accepts PDF (`.pdf`), Microsoft Word (`.doc`, `.docx`), and Images (`.png`, `.jpg`, `.jpeg`, `.webp`).
- * 2. When the user uploads a file that is NOT a PDF (Word or Image), the system accepts the file,
- *    saves it for review, and displays a warm Thank You screen informing the user:
- *    "شكراً لك على مساهمتك! هذا المحتوى الذي أرسلته سيتم مراجعته من عند المشرف والمتفقد
- *     وإعادة صياغته لملف PDF ليكون الوصول إليه أفضل من عند المستخدمين."
- * 3. Supports publishing either to a Curriculum Subject Sub-division (درس، تمارين، امتحانات،
- *    جذاذات، أنشطة تفاعلية) OR directly to «قسم الإدارة (وثائق ومعاملات إدارية للمعلم)».
- */
 
 import React, { useState, useEffect, DragEvent, ChangeEvent, FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -19418,16 +18943,6 @@ export default function UploadWorksheetPage() {
 ```typescript
 "use client";
 
-/**
- * Public Publisher Profile Page — Al-Musnad (المسند) v4.0
- *
- * Includes:
- * - Follow Publisher (`+ متابعة الناشر`)
- * - Favorite Publisher (`♥ إضافة الناشر للمفضلة`)
- * - Report Publisher (`🚩 إبلاغ عن الناشر`)
- * - Publisher Ban Badge (`🚫 ناشر محظور`) & Official Verified Badge (`InspectorBadge`)
- */
-
 import React, { useEffect, useState, FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -19881,14 +19396,6 @@ export default function PublicPublisherProfilePage() {
 ### File: `src/app/(main)/u/[username]/page.tsx`
 
 ```typescript
-/**
- * Username Mention Resolver Route (`/u/[username]`) — Al-Musnad v8.0
- *
- * When a user clicks on `@username` in any comment or conversation,
- * this route looks up the user by their `username` (or fallback email prefix / ID)
- * and immediately navigates to their Publisher Profile Page (`/publisher/[id]`).
- */
-
 import { redirect, notFound } from "next/navigation";
 import { db } from "@/lib/db";
 
@@ -19942,21 +19449,6 @@ export default async function UsernameRedirectPage(props: UsernamePageProps) {
 
 ```typescript
 "use client";
-
-/**
- * Member Workspace & Profile Page — Al-Musnad (المسند) v4.0
- *
- * Includes:
- * 1. نشراتي (uploads)
- * 2. المفضلة (favorites)
- * 3. الناشرون المفضلون (favorite_publishers)
- * 4. التحميلات (downloads)
- * 5. تعديل الملف الشخصي — بموافقة المشرف (edit)
- * 6. الاشتراكات (subscriptions)
- * 7. التوثيق (verification) <-- Directly right after Subscriptions!
- *    Allows Teachers, Institutions, and Inspectors to request verification & enter their Admin code.
- * 8. الإعدادات وحذف الحساب (settings) <-- Includes Publisher Account Deletion (`deleteMyAccountAction`).
- */
 
 import React, { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
@@ -21027,20 +20519,6 @@ export default function TeacherProfilePage() {
 ```typescript
 "use client";
 
-/**
- * Technical Support & Customer Service Center — Al-Musnad (المسند) v13.0
- *
- * Route: /support
- * Implements:
- * 1. Two Role-Dedicated WhatsApp Direct Support Channels (معلمين وتلاميذ / مؤسسات ومتفقدين):
- *    - خط المعلمين والتلاميذ: 27764985 (https://wa.me/21627764985)
- *    - خط المؤسسات التربوية والمتفقدين: 76907101 (https://wa.me/21676907101)
- * 2. One-Click Quick Support Topic Cards (فك القفل بعد 6 محاولات، توثيق الهوية، استفسارات، مقترحات).
- * 3. Direct Support Ticket Submission Form.
- * 4. Live Ticket History & Official Replies Tracker.
- * 5. Instant Self-Service Help & Troubleshooting Guide.
- */
-
 import React, { useState, useEffect, FormEvent } from "react";
 import Link from "next/link";
 import {
@@ -21259,10 +20737,10 @@ export default function SupportAndCustomerServicePage() {
               </a>
             )}
 
-            {/* Channel 2: Institutions & Inspectors (46907101) */}
+            {/* Channel 2: Institutions & Inspectors (76907101) */}
             {showInstitution && (
               <a
-                href="https://wa.me/21646907101?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%20%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9%20%D9%85%D9%86%D8%B5%D8%A9%20%D8%A7%D9%84%D9%85%D8%B3%D9%86%D8%AF%D8%8C%20%D8%A3%D8%AA%D9%88%D8%A7%D8%B5%D9%84%20%D9%85%D8%B9%D9%83%D9%85%20%D8%B9%D8%A8%D8%B1%20%D8%AE%D8%B7%20%D8%A7%D9%84%D9%85%D8%A4%D8%B3%D8%B3%D8%A7%D8%AA%20%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%88%D9%8A%D8%A9%20%D9%88%D8%A7%D9%84%D9%85%D8%AA%D9%81%D9%82%D8%AF%D9%8A%D9%86%3A"
+                href="https://wa.me/21676907101?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%20%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9%20%D9%85%D9%86%D8%B5%D8%A9%20%D8%A7%D9%84%D9%85%D8%B3%D9%86%D8%AF%D8%8C%20%D8%A3%D8%AA%D9%88%D8%A7%D8%B5%D9%84%20%D9%85%D8%B9%D9%83%D9%85%20%D8%B9%D8%A8%D8%B1%20%D8%AE%D8%B7%20%D8%A7%D9%84%D9%85%D8%A4%D8%B3%D8%B3%D8%A7%D8%AA%20%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%88%D9%8A%D8%A9%20%D9%88%D8%A7%D9%84%D9%85%D8%AA%D9%81%D9%82%D8%AF%D9%8A%D9%86%3A"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group relative overflow-hidden rounded-3xl border-2 border-indigo-300 dark:border-indigo-800/80 bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-indigo-950/40 dark:via-slate-900 dark:to-purple-950/20 p-6 shadow-sm hover:shadow-md hover:border-indigo-500 transition flex items-start gap-4"
@@ -21288,7 +20766,7 @@ export default function SupportAndCustomerServicePage() {
                   <div className="pt-2 flex items-center gap-2 text-sm font-black text-indigo-700 dark:text-indigo-300" dir="ltr">
                     <span>+216 46 907 101</span>
                     <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-950 text-indigo-800 dark:text-indigo-300">
-                      WhatsApp: 46907101
+                      WhatsApp: 76907101
                     </span>
                   </div>
                 </div>
@@ -21693,17 +21171,6 @@ export { default } from "@/app/(auth)/register/inspector/page";
 
 ```typescript
 "use client";
-
-/**
- * Multi-Role Login Page — Al-Musnad (المسند) v13.0
- *
- * Implements:
- * 1. 6 Instant One-Click Demo Accounts Switcher (ADMIN, MODERATOR, INSPECTOR, INSTITUTION, TEACHER, STUDENT)
- *    with unified password `Musnad@2026`.
- * 2. Pressing `Enter` after typing email/username and password immediately submits login.
- * 3. Smart Password Check & 6-Attempt Lockout Protection (`/api/auth/login-guard`).
- * 4. Google OAuth redirection fix with `skipBrowserRedirect: true` and `window.top` iframe breakout.
- */
 
 import React, {
   useState,
@@ -22252,20 +21719,6 @@ export default function LoginPage() {
 
 ```typescript
 "use client";
-
-/**
- * Upgraded Multi-Role Registration Page — Al-Musnad (المسند) v6.0
- *
- * Implements all Project Manager v6.0 Directives:
- * 1. Removed all verification code alerts, banners, and code activation links
- *    from the registration form so the user creates their account normally.
- * 2. After registration succeeds, displays a dedicated Thank You screen thanking
- *    the user for registering and informing them that identity verification
- *    (which grants broader privileges and the official verification badge)
- *    takes place after communicating with the Administrator (`المشرف`).
- * 3. Preserves Show/Hide password toggle, mandatory Student Grade Level,
- *    mandatory Terms & Conditions checkbox, and zero example names in placeholders.
- */
 
 import React, { useState, useEffect, FormEvent, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
@@ -22866,16 +22319,6 @@ export default function InspectorRegisterRedirectPage() {
 
 ```typescript
 "use client";
-
-/**
- * Inspector Dedicated Dashboard (لوحة تحكم المتفقد التربوي) — Al-Musnad v10.0
- *
- * المستوى الأول في سلم الأولوية الرقابية والبيداغوجية (القاعدة):
- * - إذا دخل المشرف العام (`ADMIN`) إلى هذه اللوحة، يظهر له شريط التنقل العلوي `SupervisoryHierarchyBar`
- *   الذي يمكّنه بضغطة زر من الرجوع فوراً إلى «لوحة المشرف العام» أو الانتقال إلى «لوحة المسؤول».
- * - إذا دخل المتفقد التربوي (`INSPECTOR`)، يكتفي بالصلاحيات البيداغوجية الموجودة له فقط في هذه اللوحة الحصرية له
- *   دون أي قدرة على الانتقال إلى لوحة المسؤول أو لوحة المشرف العام.
- */
 
 import React, { useEffect, useState, useMemo, FormEvent } from "react";
 import Link from "next/link";
@@ -23649,16 +23092,6 @@ export default function InspectorDashboardPage() {
 ```typescript
 "use client";
 
-/**
- * Moderator Dedicated Dashboard (لوحة تحكم المسؤول) — Al-Musnad v10.0
- *
- * المستوى الثاني في سلم الأولوية الرقابية والإدارية (المسؤول - الوسط):
- * - إذا دخل المشرف العام (`ADMIN`) إلى هذه اللوحة، يظهر له شريط التنقل العلوي `SupervisoryHierarchyBar`
- *   الذي يمكّنه بضغطة زر من الرجوع فوراً إلى «لوحة المشرف العام» أو الانتقال إلى «لوحة المتفقد».
- * - إذا دخل المسؤول الإداري (`MODERATOR`)، يكتفي بالصلاحيات الموجودة له فقط في هذه اللوحة الحصرية له
- *   دون أي قدرة على الانتقال إلى لوحة المشرف العام أو لوحة المتفقد.
- */
-
 import React, { useEffect, useState, useMemo, FormEvent } from "react";
 import Link from "next/link";
 import {
@@ -24419,16 +23852,6 @@ export default function ModeratorDashboardPage() {
 
 ```typescript
 "use client";
-
-/**
- * Top-Tier Admin Dashboard (لوحة تحكم المشرف العام في القمة) — Al-Musnad v10.0
- *
- * المشرف في قمة الهرم يمتلك جميع صلاحيات المتفقد والمسؤول، بالإضافة إلى الميزات الحصرية التالية:
- * 1. شريط التنقل الموحد بين درجات الإشراف الثلاث (`SupervisoryHierarchyBar`) خاص بالمشرف العام فقط.
- * 2. تفعيل التوثيق المباشر للحسابات (`toggleVerifyUserAdminAction`) — ميزة حصرية للمشرف!
- * 3. إنشاء وتوليد أكواد التوثيق في الداشبورد للمشرف (`createVerificationCodeAdminAction`).
- * 4. التحكم الكامل في الموقع والأدوار وسجل النشاطات والأمن (`AuditLog`).
- */
 
 import React, { useEffect, useState, useMemo, FormEvent } from "react";
 import Link from "next/link";
@@ -25854,4 +25277,4 @@ export default function AdminDashboardPage() {
 
 ---
 
-*End of Master Project Handover Document (v12.0 Complete Single-File Edition) — Total included files: 113.*
+*End of Master Project Handover Document (v12.0 Complete Single-File Edition) — Total included files: 114.*

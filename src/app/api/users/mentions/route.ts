@@ -1,8 +1,3 @@
-/**
- * GET /api/users/mentions?q=... — Lightweight `@username` autocomplete endpoint (Al-Musnad v10.0)
- * Security Fix: Never exposes user email addresses in public JSON responses; protected by rate limiting.
- */
-
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { successResponse, errorResponse } from "@/lib/utils/api-response";

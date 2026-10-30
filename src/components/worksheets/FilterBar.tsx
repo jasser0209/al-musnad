@@ -1,13 +1,5 @@
 "use client";
 
-/**
- * Filter & Search Bar Component — Al-Musnad (المسند) v15.0
- *
- * Provides responsive multi-dimensional faceted filtering:
- * text search, grade level, subject, activity category, Tunisian school trimester, and sorting.
- * Fully synchronized with Next.js URL SearchParams with Dark Mode support.
- */
-
 import React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Calendar, Filter, Sparkles } from "lucide-react";

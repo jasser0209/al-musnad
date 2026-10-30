@@ -1,13 +1,3 @@
-/**
- * Step 1 of Curriculum Flow: Approved Grade Levels (`/levels`) — Al-Musnad v11.0
- *
- * Simplified & Streamlined Interface per User Directives:
- * - Displays ONLY the Approved Grade Levels (`المستويات الدراسية المعتمدة`).
- * - Removed the duplicate quick-access subjects matrix and removed the phrase "9 مواد أساسية".
- * - Clicking any Grade Level navigates directly to `/levels/[gradeSlug]`, where the user
- *   finds the full Materials Repository (`مستودع المواد الدراسية`) for that Grade Level.
- */
-
 import React from "react";
 import Link from "next/link";
 import {

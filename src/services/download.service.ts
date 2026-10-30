@@ -1,10 +1,3 @@
-/**
- * Download Service — Al-Musnad v5.0
- *
- * Enforces strict authentication AND publisher audience access check before
- * recording downloads or generating pre-signed Supabase Storage URLs.
- */
-
 import { db } from "@/lib/db";
 import { SIGNED_URL_EXPIRY_SECONDS } from "@/config/constants";
 import { getSignedDownloadUrl } from "@/services/storage.service";

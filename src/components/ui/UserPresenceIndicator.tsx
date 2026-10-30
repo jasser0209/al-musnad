@@ -1,19 +1,5 @@
 "use client";
 
-/**
- * UserPresenceIndicator & UserAvatarWithPresence — Al-Musnad (المسند) v11.0
- *
- * Implements:
- * 1. Small green indicator dot at the bottom of the user avatar when connected (`ONLINE`),
- *    and a small gray indicator dot when disconnected (`OFFLINE` or `GHOST`).
- * 2. Calculates and displays the elapsed time since the user went offline
- *    (e.g., «غير متصل • منذ 10 دقائق» / «منذ ساعتين» / «منذ 3 أيام»).
- * 3. Supports Ghost Mode (`GHOST` / وضع الشبح):
- *    - When a user enables Ghost Mode, they can browse the entire platform freely
- *      while appearing `OFFLINE` (gray dot + elapsed time) to all other users.
- *    - Only the user themselves (when `isSelf === true`) sees the `👻 متصفح خفي (وضع الشبح)` badge.
- */
-
 import React from "react";
 import { Ghost } from "lucide-react";
 

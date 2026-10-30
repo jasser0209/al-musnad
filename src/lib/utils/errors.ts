@@ -1,10 +1,3 @@
-/**
- * Custom Error Classes for Teacher's Activity Bank
- *
- * Provides strongly-typed application errors with HTTP status codes,
- * machine-readable codes, and optional error details.
- */
-
 import type { ApiErrorDetail } from "@/types/api";
 
 export class AppError extends Error {

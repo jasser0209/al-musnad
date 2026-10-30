@@ -1,26 +1,3 @@
-/**
- * Worksheet Service — Al-Musnad v10.0
- *
- * Implements:
- * 1. Automatic Taxonomy Initialization (`ensureOfficialTaxonomySeeded`):
- *    - Automatically verifies and seeds the 6 Grades, 10 Subjects, and 6 Categories in PostgreSQL.
- * 2. Guest Teaser Listing vs Authenticated Role-Based Listing:
- *    - Guests (`!viewerRole || !viewerUserId`) can list ONLY publications published
- *      with `audience === TargetAudience.ALL` («نشر للجميع»), and the returned items
- *      are sanitized to expose ONLY the file/lesson title and taxonomy badges
- *      (no fileUrl, no description, no previewUrl).
- *    - Guests are strictly blocked (`UnauthorizedError`) in `getWorksheetById`
- *      and `canUserAccessWorksheet` so they CANNOT enter, read, or download any file.
- *    - Logged-in users see all publications permitted for their specific account role.
- * 3. Strict DRAFT Worksheet Protection:
- *    - Non-PDF uploads (Word/Image) saved as `DRAFT` can ONLY be accessed by the owner,
- *      `ADMIN`, or `INSPECTOR`. Unprivileged users are blocked with `ForbiddenError`.
- * 4. PDF Conversion by Inspector / Admin:
- *    - When an `ADMIN` or `INSPECTOR` uploads a replacement PDF for a `DRAFT` worksheet,
- *      the status automatically transitions to `PUBLISHED`, and a notification
- *      (`PDF_CONVERSION_COMPLETED`) is sent to the uploader.
- */
-
 import { db } from "@/lib/db";
 import { Prisma, WorksheetStatus, Role, TargetAudience } from "@prisma/client";
 import { getPaginationParams, buildPaginationMeta } from "@/lib/utils/pagination";

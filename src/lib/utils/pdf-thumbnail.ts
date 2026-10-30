@@ -1,10 +1,3 @@
-/**
- * Client-Side PDF Thumbnail & Page Count Extractor
- *
- * Uses pdfjs-dist dynamically in the browser to render Page 1 of a PDF
- * into a compressed WebP image File and extract total page count.
- */
-
 export interface PdfExtractionResult {
   thumbnailFile: File;
   thumbnailPreviewUrl: string;

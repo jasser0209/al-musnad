@@ -1,12 +1,3 @@
-/**
- * Review & Rating Service — Al-Musnad v8.0
- *
- * Implements:
- * 1. Pinned official directives for inspectors/admins (`isOfficialDirective`).
- * 2. Private direct comments for worksheet publishers (`isPrivateToPublisher`).
- * 3. Automatic `@username` mention detection and notifications (`dispatchMentionNotifications`).
- */
-
 import { db } from "@/lib/db";
 import {
   NotFoundError,

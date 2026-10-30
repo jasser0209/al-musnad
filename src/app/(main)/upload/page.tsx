@@ -1,18 +1,5 @@
 "use client";
 
-/**
- * Upload New Publication Page — Al-Musnad (المسند) v6.0
- *
- * Updates per Project Manager v6.0 Directives:
- * 1. Accepts PDF (`.pdf`), Microsoft Word (`.doc`, `.docx`), and Images (`.png`, `.jpg`, `.jpeg`, `.webp`).
- * 2. When the user uploads a file that is NOT a PDF (Word or Image), the system accepts the file,
- *    saves it for review, and displays a warm Thank You screen informing the user:
- *    "شكراً لك على مساهمتك! هذا المحتوى الذي أرسلته سيتم مراجعته من عند المشرف والمتفقد
- *     وإعادة صياغته لملف PDF ليكون الوصول إليه أفضل من عند المستخدمين."
- * 3. Supports publishing either to a Curriculum Subject Sub-division (درس، تمارين، امتحانات،
- *    جذاذات، أنشطة تفاعلية) OR directly to «قسم الإدارة (وثائق ومعاملات إدارية للمعلم)».
- */
-
 import React, { useState, useEffect, DragEvent, ChangeEvent, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";

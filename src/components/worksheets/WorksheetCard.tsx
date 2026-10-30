@@ -1,19 +1,5 @@
 "use client";
 
-/**
- * WorksheetCard — Al-Musnad (المسند) v11.0
- *
- * Implements:
- * 1. Explicit File Metadata Badges on every card:
- *    - اسم المادة (`worksheet.subject?.nameAr`)
- *    - السنة الدراسية (`worksheet.grade?.nameAr`)
- *    - القسم التربوي (`worksheet.category?.nameAr`: درس، تمرين، امتحان، جذاذة، نشاط تفاعلي، أخرى)
- *    - نوع / صيغة الملف (`PDF` / `Word` / `صورة` via `getFileFormatInfo`)
- * 2. Publisher Avatar with Live Presence Dot (`UserAvatarWithPresence`):
- *    - Small green dot under the publisher avatar when connected (`ONLINE`),
- *      gray dot when disconnected (`OFFLINE` / `GHOST`).
- */
-
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -46,6 +32,13 @@ export default function WorksheetCard({
   );
   const [isFavorited, setIsFavorited] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
+  const [thumbError, setThumbError] = useState(false);
+  const hasValidThumbnail = Boolean(
+    worksheet.thumbnailUrl &&
+      !thumbError &&
+      !(worksheet.thumbnailUrl.includes('X-Amz-Credential=') &&
+        (worksheet.thumbnailUrl.split('X-Amz-Credential=')[1]?.split('%2F')[0]?.split('/')[0]?.length || 32) !== 32)
+  );
 
   const title = worksheet.titleAr || worksheet.title;
   const subjectColor = worksheet.subject?.color || "#2563EB";
@@ -155,10 +148,11 @@ export default function WorksheetCard({
           href={`/worksheet/${worksheet.id}`}
           className="block relative overflow-hidden"
         >
-          {worksheet.thumbnailUrl ? (
+          {hasValidThumbnail ? (
             <img
-              src={worksheet.thumbnailUrl}
+              src={worksheet.thumbnailUrl!}
               alt={title}
+              onError={() => setThumbError(true)}
               className="w-full h-44 object-cover group-hover:scale-102 transition-transform duration-300"
             />
           ) : (

@@ -1,10 +1,3 @@
-/**
- * Pagination Utility Functions
- *
- * Provides offset calculation for Prisma (`skip` / `take`) and
- * generates standardized pagination metadata.
- */
-
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from "@/config/constants";
 import type { PaginationMeta } from "@/types/api";
 

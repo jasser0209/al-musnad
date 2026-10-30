@@ -1,20 +1,5 @@
 "use client";
 
-/**
- * Member Workspace & Profile Page — Al-Musnad (المسند) v4.0
- *
- * Includes:
- * 1. نشراتي (uploads)
- * 2. المفضلة (favorites)
- * 3. الناشرون المفضلون (favorite_publishers)
- * 4. التحميلات (downloads)
- * 5. تعديل الملف الشخصي — بموافقة المشرف (edit)
- * 6. الاشتراكات (subscriptions)
- * 7. التوثيق (verification) <-- Directly right after Subscriptions!
- *    Allows Teachers, Institutions, and Inspectors to request verification & enter their Admin code.
- * 8. الإعدادات وحذف الحساب (settings) <-- Includes Publisher Account Deletion (`deleteMyAccountAction`).
- */
-
 import React, { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";

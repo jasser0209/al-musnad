@@ -1,10 +1,3 @@
-/**
- * Worksheet Download Route Handler
- *
- * GET /api/worksheets/[id]/download -> Protected endpoint that records download
- * activity idempotently and generates a secure pre-signed download URL.
- */
-
 import { NextRequest } from "next/server";
 import { successResponse, errorResponse } from "@/lib/utils/api-response";
 import { uuidSchema } from "@/lib/validators/common";

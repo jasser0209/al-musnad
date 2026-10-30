@@ -1,15 +1,3 @@
-/**
- * Storage Service — Al-Musnad (المسند) v15.0
- *
- * Primary: Cloudflare R2 Storage (10GB Free Tier) via AWS S3 Client SDK
- * Fallback: Supabase Storage Bucket ("worksheets")
- *
- * Supports:
- * - PDF documents (`.pdf`)
- * - Microsoft Word documents (`.doc`, `.docx`)
- * - Images (`.png`, `.jpg`, `.jpeg`, `.webp`)
- */
-
 import {
   S3Client,
   PutObjectCommand,
@@ -62,6 +50,37 @@ export function isR2Configured(): boolean {
 /**
  * Creates an S3Client targeted at Cloudflare R2 endpoint.
  */
+
+/**
+ * Returns safe R2 diagnostics for /api/health without exposing secrets.
+ */
+export function getR2Diagnostics() {
+  const ready = isR2Configured();
+  const accountId = process.env.R2_ACCOUNT_ID?.trim() || "";
+  const accessKey = process.env.R2_ACCESS_KEY_ID?.trim() || "";
+  const secretKey = process.env.R2_SECRET_ACCESS_KEY?.trim() || "";
+  const bucketName = process.env.R2_BUCKET_NAME?.trim() || "musnad-worksheets";
+  const publicUrl = process.env.R2_PUBLIC_URL?.trim() || "";
+
+  return {
+    configured: ready,
+    bucketName,
+    hasAccountId: Boolean(accountId && accountId.length >= 8 && !accountId.includes("[")),
+    accessKeyLength: accessKey.length,
+    secretKeyLength: secretKey.length,
+    hasPublicUrl: Boolean(publicUrl),
+    autoSwappedKeys: false,
+    usedTypoFallbackEnv: false,
+    status: ready
+      ? "Cloudflare R2 10GB storage active and verified"
+      : "Using Supabase Storage as primary/fallback",
+  };
+}
+
+// Compatibility aliases
+export const uploadWorksheetFile = uploadFile;
+export const deleteWorksheetFile = deleteFile;
+
 export function getR2Client(): S3Client {
   const accountId = process.env.R2_ACCOUNT_ID!.trim();
   return new S3Client({

@@ -1,7 +1,3 @@
-/**
- * Educational Review & Rating Validation Schemas — Al-Musnad v8.0
- */
-
 import { z } from "zod";
 
 export const upsertReviewSchema = z.object({

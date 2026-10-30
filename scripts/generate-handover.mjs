@@ -16,7 +16,7 @@ const part1Files = [
   "postcss.config.mjs",
   ".env.example",
   "README.md",
-  "apply-musnad-v15-upgrade.mjs",
+  "apply-musnad-v16-upgrade.mjs",
   "scripts/extract-handover.mjs",
   "scripts/generate-handover.mjs",
   "scripts/verify-and-connect.mjs",
@@ -73,6 +73,7 @@ const part1Files = [
   "src/app/api/worksheets/route.ts",
   "src/app/api/worksheets/[id]/route.ts",
   "src/app/api/worksheets/[id]/download/route.ts",
+  "src/app/api/worksheets/[id]/file/route.ts",
   "src/app/api/worksheets/[id]/favorite/route.ts",
   "src/app/api/worksheets/[id]/review/route.ts",
   "src/app/api/worksheets/[id]/reviews/route.ts",
@@ -158,7 +159,7 @@ function getLanguage(filePath) {
   return "text";
 }
 
-const strictHeader = (titleSuffix = "") => `# 🏛️ Project Handover & Master Technical Audit — Al-Musnad (v15.0) ${titleSuffix}
+const strictHeader = (titleSuffix = "") => `# 🏛️ Project Handover & Master Technical Audit — Al-Musnad (v16.0) ${titleSuffix}
 **Project:** Al-Musnad (المسند) — Integrated Educational & Pedagogical Platform  
 **Architecture:** Next.js 15 (App Router) + TypeScript + Prisma ORM + PostgreSQL (Supabase) + Cloudflare R2 + Tailwind CSS + Lucide Icons  
 **Version:** 15.0.0 (Optimized Handover Archive — Complete Source Code, Security Configs & Commands)  
@@ -220,7 +221,7 @@ const strictHeader = (titleSuffix = "") => `# 🏛️ Project Handover & Master 
 
 - **1. تشغيل سكريبت ترقية الإصدار 15.0 الشامل:**
   \`\`\`bash
-  node apply-musnad-v15-upgrade.mjs
+  node apply-musnad-v16-upgrade.mjs
   \`\`\`
 - **2. فحص سلامة الأنواع البرمجية (TypeScript Check):**
   \`\`\`bash
@@ -254,7 +255,12 @@ function buildMarkdownForFiles(fileList, titleSuffix, footerNote) {
       console.warn(`File not found: ${fullPath}`);
       continue;
     }
-    const fileContent = fs.readFileSync(fullPath, "utf-8");
+    let fileContent = fs.readFileSync(fullPath, "utf-8");
+    if (relPath.endsWith(".ts") || relPath.endsWith(".tsx")) {
+      fileContent = fileContent
+        .replace(/^\/\*\*[\s\S]*?\*\/\s*/, "")
+        .replace(/^("use client";\s*)\/\*\*[\s\S]*?\*\/\s*/, "$1");
+    }
     const lang = getLanguage(relPath);
     md += `\n### File: \`${relPath}\`\n\n\`\`\`${lang}\n${fileContent}\n\`\`\`\n\n---\n`;
     count++;

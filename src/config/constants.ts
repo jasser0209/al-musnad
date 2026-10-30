@@ -1,7 +1,3 @@
-/**
- * Application Constants & Official Curriculum Structure — Al-Musnad (المسند) v15.0
- */
-
 export const APP_CONFIG = {
   name: "Al-Musnad",
   nameAr: "المسند",

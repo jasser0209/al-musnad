@@ -1,7 +1,3 @@
-/**
- * API Contracts and Data Transfer Object (DTO) Type Definitions — Al-Musnad v10.0
- */
-
 export type Role =
   | "INSTITUTION"
   | "INSPECTOR"

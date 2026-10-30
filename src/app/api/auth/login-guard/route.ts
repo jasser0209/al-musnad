@@ -1,15 +1,3 @@
-/**
- * POST /api/auth/login-guard — Smart Login & 6-Strike Password Lockout Guard (Al-Musnad v11.0)
- *
- * Implements the user requirements:
- * 1. Verifies if an email or @username is registered in the platform.
- * 2. If registered and password fails, outputs a specific wrong-password error message
- *    warning the user that they have a maximum of 6 attempts (showing remaining attempts).
- * 3. On the 6th failed attempt, automatically locks the account and instructs the user
- *    to contact the Administrator (المشرف العام) or Moderator (المسؤول الإداري) to unlock it.
- * 4. Resets the failed attempt counter upon successful authentication.
- */
-
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { successResponse, errorResponse } from "@/lib/utils/api-response";

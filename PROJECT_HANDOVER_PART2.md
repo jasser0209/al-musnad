@@ -1,4 +1,4 @@
-# 🏛️ Project Handover & Master Technical Audit — Al-Musnad (v15.0) — الجزء الثاني: المكونات، الواجهات، مستودع المواد، ولوحات الإشراف الثلاث (Part 2 of 2)
+# 🏛️ Project Handover & Master Technical Audit — Al-Musnad (v16.0) — الجزء الثاني: المكونات، الواجهات، مستودع المواد، ولوحات الإشراف الثلاث (Part 2 of 2)
 **Project:** Al-Musnad (المسند) — Integrated Educational & Pedagogical Platform  
 **Architecture:** Next.js 15 (App Router) + TypeScript + Prisma ORM + PostgreSQL (Supabase) + Cloudflare R2 + Tailwind CSS + Lucide Icons  
 **Version:** 15.0.0 (Optimized Handover Archive — Complete Source Code, Security Configs & Commands)  
@@ -60,7 +60,7 @@
 
 - **1. تشغيل سكريبت ترقية الإصدار 15.0 الشامل:**
   ```bash
-  node apply-musnad-v15-upgrade.mjs
+  node apply-musnad-v16-upgrade.mjs
   ```
 - **2. فحص سلامة الأنواع البرمجية (TypeScript Check):**
   ```bash
@@ -571,16 +571,6 @@ export default function GlobalError({
 ```typescript
 "use client";
 
-/**
- * Global Theme & Trilingual Context — Al-Musnad (المسند) v4.0
- *
- * Updates:
- * - Renamed "بنك المنشورات" to "النشرات".
- * - Added "التوثيق" (`verification`) right under "الاشتراكات" (`subscriptions`).
- * - Added "الدعم الفني وخدمة العملاء" (`support`).
- * - Removed all example names of people, schools, or institutions from placeholders!
- */
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import type { AccountRoleOption } from "@/types/api";
 
@@ -1032,12 +1022,6 @@ export function useAppPreferences() {
 ```typescript
 "use client";
 
-/**
- * Full-Screen 4-Role Selection Overlay — Al-Musnad (المسند) v3.0
- *
- * Clean badges without "Option 1 / 2 / 3 / 4" wording, rebranded with "م" logo for Al-Musnad.
- */
-
 import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -1247,27 +1231,7 @@ export default function AuthRoleModal() {
 ```typescript
 "use client";
 
-/**
- * Upgraded Navigation Bar — Al-Musnad (المسند) v11.0
- *
- * Implements all v11.0 User Directives:
- * 1. Role-Distinguished Username Box in Top Bar:
- *    - Surrounds the username & avatar box with a distinctive colored frame (`border-2` + `ring-2`)
- *      according to the user's supervisory rank:
- *      • `ADMIN` (المشرف العام): Royal Purple/Blue frame (`border-purple-500 ring-purple-400/40`)
- *      • `MODERATOR` (المسؤول الإداري): Indigo frame (`border-indigo-500 ring-indigo-400/40`)
- *      • `INSPECTOR` (المتفقد التربوي): Amber/Gold frame (`border-amber-500 ring-amber-400/40`)
- * 2. Merged Supervisory Badge + Dashboard Control Panel Inside the User Dropdown Menu:
- *    - When clicking the username box, directly below «ملفي الشخصي» (`/profile`) and
- *      «صفحتي العامة كناشر» (`/publisher/${user.id}`), we place the unified Supervisory Badge +
- *      Control Panel button for `ADMIN`, `MODERATOR`, and `INSPECTOR`.
- * 3. Live Online / Offline / Ghost Mode (`وضع الشبح`) Presence System:
- *    - Displays the small green dot below the user picture when connected (`ONLINE`)
- *      and gray dot when disconnected (`OFFLINE` / `GHOST`), with elapsed offline duration,
- *      plus one-click switching between `متصل`، `غير متصل`، and `👻 وضع الشبح`.
- */
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -1407,6 +1371,52 @@ export default function Navbar() {
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [notifMenuOpen, setNotifMenuOpen] = useState(false);
+
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+  const notifMenuRef = useRef<HTMLDivElement>(null);
+  const langMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleOutsideMouseDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        profileMenuOpen &&
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(target)
+      ) {
+        setProfileMenuOpen(false);
+      }
+      if (
+        notifMenuOpen &&
+        notifMenuRef.current &&
+        !notifMenuRef.current.contains(target)
+      ) {
+        setNotifMenuOpen(false);
+      }
+      if (
+        langMenuOpen &&
+        langMenuRef.current &&
+        !langMenuRef.current.contains(target)
+      ) {
+        setLangMenuOpen(false);
+      }
+    };
+
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setProfileMenuOpen(false);
+        setNotifMenuOpen(false);
+        setLangMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideMouseDown);
+    document.addEventListener("keydown", handleEscapeKey);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideMouseDown);
+      document.removeEventListener("keydown", handleEscapeKey);
+    };
+  }, [profileMenuOpen, notifMenuOpen, langMenuOpen]);
   const [updatingPresence, setUpdatingPresence] = useState(false);
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -1717,7 +1727,7 @@ export default function Navbar() {
           {/* Action Area */}
           <div className="hidden md:flex items-center gap-2.5">
             {/* Language Switcher */}
-            <div className="relative">
+            <div className="relative" ref={langMenuRef}>
               <button
                 type="button"
                 onClick={() => setLangMenuOpen((prev) => !prev)}
@@ -1791,7 +1801,7 @@ export default function Navbar() {
                 )}
 
                 {/* Notification Bell Icon */}
-                <div className="relative">
+                <div className="relative" ref={notifMenuRef}>
                   <button
                     type="button"
                     onClick={() => {
@@ -1873,16 +1883,16 @@ export default function Navbar() {
                   )}
                 </div>
 
-                {/* Unified Role-Distinguished Username Box & Dropdown Menu */}
-                <div className="relative">
+                {/* Unified Role-Distinguished Username Box & Dropdown Menu (Full Name + Colored Rank Border) */}
+                <div className="relative" ref={profileMenuRef}>
                   <button
                     type="button"
                     onClick={() => {
                       setProfileMenuOpen((prev) => !prev);
                       setNotifMenuOpen(false);
                     }}
-                    className={`flex items-center gap-2.5 px-3 py-1.5 rounded-2xl transition cursor-pointer ${roleBoxStyle.boxClass}`}
-                    title={`${user.name} — ${roleBoxStyle.roleLabel}`}
+                    className={`flex items-center gap-2.5 px-3.5 py-1.5 rounded-2xl transition cursor-pointer shrink-0 ${roleBoxStyle.boxClass}`}
+                    title={user.name}
                   >
                     <UserAvatarWithPresence
                       name={user.name}
@@ -1893,19 +1903,14 @@ export default function Navbar() {
                       size="md"
                       avatarBgClass={roleBoxStyle.avatarBgClass}
                     />
-                    <div className="flex flex-col items-start text-start min-w-0">
-                      <span className="text-xs font-extrabold text-slate-900 dark:text-white truncate max-w-[160px] sm:max-w-[200px]">
-                        {user.name}
-                      </span>
-                      <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
-                        {currentPresenceInfo.isGhostSelf
-                          ? "👻 وضع الشبح"
-                          : currentPresenceInfo.isOnlinePublicly
-                          ? "🟢 متصل الآن"
-                          : `⚪ غير متصل (${currentPresenceInfo.durationLabelAr || ""})`}
-                      </span>
-                    </div>
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white whitespace-nowrap">
+                      {user.name}
+                    </span>
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${
+                        profileMenuOpen ? "rotate-180" : ""
+                      }`}
+                    />
                   </button>
 
                   {profileMenuOpen && (
@@ -2366,20 +2371,6 @@ export default function Navbar() {
 ```typescript
 "use client";
 
-/**
- * SupervisoryHierarchyBar Component — Al-Musnad (المسند) v10.0
- *
- * Implements the 3-Tier Supervisory Navigation & Isolation System:
- * 1. When the logged-in user is the Top Administrator (`viewerRole === "ADMIN"`):
- *    - Displays an interactive 3-Tier Supervisory Switcher Bar at the top of all 3 dashboards
- *      (`/admin/dashboard` ↔ `/moderator/dashboard` ↔ `/inspector/dashboard`).
- *    - When the Admin is inside `/moderator/dashboard` or `/inspector/dashboard`, displays a prominent
- *      one-click button: «العودة إلى لوحة المشرف العام» (`Return to Admin Dashboard`) alongside the switcher.
- * 2. When the logged-in user is a Moderator (`viewerRole === "MODERATOR"`) or Inspector (`viewerRole === "INSPECTOR"`):
- *    - Displays an Exclusive Scope Notice confirming that this dashboard is strictly dedicated and exclusive
- *      to their role and permissions, with ZERO links or ability to switch to other supervisory levels.
- */
-
 import React from "react";
 import Link from "next/link";
 import {
@@ -2807,14 +2798,6 @@ export default function InstallPwaBanner() {
 ```typescript
 "use client";
 
-/**
- * MentionText Component — Al-Musnad v8.0
- *
- * Automatically detects any `@username` in comments, reviews, or messages
- * and renders it as an interactive clickable badge that navigates to `/u/[username]`
- * which redirects straight to the Publisher's Profile Page (`/publisher/[id]`).
- */
-
 import React from "react";
 import Link from "next/link";
 
@@ -2860,20 +2843,6 @@ export default function MentionText({ text, className = "" }: MentionTextProps) 
 
 ```typescript
 "use client";
-
-/**
- * UserPresenceIndicator & UserAvatarWithPresence — Al-Musnad (المسند) v11.0
- *
- * Implements:
- * 1. Small green indicator dot at the bottom of the user avatar when connected (`ONLINE`),
- *    and a small gray indicator dot when disconnected (`OFFLINE` or `GHOST`).
- * 2. Calculates and displays the elapsed time since the user went offline
- *    (e.g., «غير متصل • منذ 10 دقائق» / «منذ ساعتين» / «منذ 3 أيام»).
- * 3. Supports Ghost Mode (`GHOST` / وضع الشبح):
- *    - When a user enables Ghost Mode, they can browse the entire platform freely
- *      while appearing `OFFLINE` (gray dot + elapsed time) to all other users.
- *    - Only the user themselves (when `isSelf === true`) sees the `👻 متصفح خفي (وضع الشبح)` badge.
- */
 
 import React from "react";
 import { Ghost } from "lucide-react";
@@ -3097,13 +3066,6 @@ export function UserPresenceBadge({
 ```typescript
 "use client";
 
-/**
- * SubjectIcon — Expressive Visual Symbol for Each Academic Subject (Al-Musnad v12.0)
- *
- * Replaces raw numeric indices (1..9) inside Subject cards with a meaningful icon
- * that visually represents the subject matter.
- */
-
 import React from "react";
 import {
   Calculator,
@@ -3176,27 +3138,6 @@ export default function SubjectIcon({
 
 ```typescript
 "use client";
-
-/**
- * RolePersonalizedHub — Tailored Top Workspace & Exclusive Role Feeds (Al-Musnad v12.0)
- *
- * Implements the User Directives for Role-Based Interface Personalization:
- * 1. `INSTITUTION` (المؤسسات التربوية):
- *    - Dedicated top section («قسم نشرات المؤسسات التربوية») displaying publications
- *      specifically for/by institutions (`INSTITUTIONS_ONLY`, `SAME_ROLE_ONLY` by institutions,
- *      or institutional publications) so institutions can interact and share purposeful content.
- * 2. `INSPECTOR` (المتفقدون التربويون):
- *    - Dedicated top section («قسم منشورات المتفقدين فقط») displaying publications
- *      exclusively for/by inspectors to facilitate pedagogical collaboration among inspectors.
- * 3. `TEACHER` (المعلمون):
- *    - Dedicated top section («قسم منشورات المعلمين») displaying all teacher-specific
- *      publications (`TEACHERS_ONLY`, fiches/lesson plans, exam keys, and peer resources).
- * 4. `STUDENT` (التلاميذ):
- *    - Dedicated distraction-free Student Study Hub («فضاء التلميذ للمراجعة والتفوق»)
- *      with zero administrative clutter, focused on lessons, exercises, exams, and activities.
- * 5. `ADMIN` / `MODERATOR`:
- *    - Can switch across all 4 role hubs to supervise and inspect each community space.
- */
 
 import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
@@ -3782,16 +3723,6 @@ export default function RolePersonalizedHub({
 ```typescript
 "use client";
 
-/**
- * PlatformIdentityAndFaqSection — About Us, Role Benefits Guide & Interactive FAQ (Al-Musnad v13.0)
- *
- * Implements the Unified "اعرف المزيد" (Learn More) Section (`#learn-more`):
- * - Merges «من نحن» + «مزايا الفئات» + «الأسئلة الشائعة» under a single top-level section.
- * - Interactive tab switcher: [الكل المدمج | من نحن | مزايا الفئات | الأسئلة الشائعة].
- * - Preserves anchor scroll targets `#about-us`, `#roles-guide`, `#faq-section`.
- * - Replaces any "مجاني" claim with "حماية الخصوصية وأمان متقدم" for strict policy compliance.
- */
-
 import React, { useState } from "react";
 import Link from "next/link";
 import {
@@ -4204,16 +4135,6 @@ export default function PlatformIdentityAndFaqSection() {
 ```typescript
 "use client";
 
-/**
- * Subscriptions Section & Preserved Plans Archive — Al-Musnad (المسند) v13.0
- *
- * Implements Project Manager Directive for v13.0:
- * - Displays ONLY the clean "سيأتي قريباً" (Coming Soon) state without explaining
- *   why the site is free or discussing founding period pricing.
- * - Preserves the 100% complete `PRESERVED_SUBSCRIPTION_PLANS` array in code so it
- *   can be reactivated immediately whenever paid tiers are introduced in the future.
- */
-
 import React from "react";
 import { Clock } from "lucide-react";
 
@@ -4291,14 +4212,6 @@ export default function ArchivedSubscriptionsPlans(
 
 ```typescript
 "use client";
-
-/**
- * Filter & Search Bar Component — Al-Musnad (المسند) v15.0
- *
- * Provides responsive multi-dimensional faceted filtering:
- * text search, grade level, subject, activity category, Tunisian school trimester, and sorting.
- * Fully synchronized with Next.js URL SearchParams with Dark Mode support.
- */
 
 import React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -4529,20 +4442,6 @@ export { FilterBar };
 ```typescript
 "use client";
 
-/**
- * WorksheetCard — Al-Musnad (المسند) v11.0
- *
- * Implements:
- * 1. Explicit File Metadata Badges on every card:
- *    - اسم المادة (`worksheet.subject?.nameAr`)
- *    - السنة الدراسية (`worksheet.grade?.nameAr`)
- *    - القسم التربوي (`worksheet.category?.nameAr`: درس، تمرين، امتحان، جذاذة، نشاط تفاعلي، أخرى)
- *    - نوع / صيغة الملف (`PDF` / `Word` / `صورة` via `getFileFormatInfo`)
- * 2. Publisher Avatar with Live Presence Dot (`UserAvatarWithPresence`):
- *    - Small green dot under the publisher avatar when connected (`ONLINE`),
- *      gray dot when disconnected (`OFFLINE` / `GHOST`).
- */
-
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -4575,6 +4474,13 @@ export default function WorksheetCard({
   );
   const [isFavorited, setIsFavorited] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
+  const [thumbError, setThumbError] = useState(false);
+  const hasValidThumbnail = Boolean(
+    worksheet.thumbnailUrl &&
+      !thumbError &&
+      !(worksheet.thumbnailUrl.includes('X-Amz-Credential=') &&
+        (worksheet.thumbnailUrl.split('X-Amz-Credential=')[1]?.split('%2F')[0]?.split('/')[0]?.length || 32) !== 32)
+  );
 
   const title = worksheet.titleAr || worksheet.title;
   const subjectColor = worksheet.subject?.color || "#2563EB";
@@ -4684,10 +4590,11 @@ export default function WorksheetCard({
           href={`/worksheet/${worksheet.id}`}
           className="block relative overflow-hidden"
         >
-          {worksheet.thumbnailUrl ? (
+          {hasValidThumbnail ? (
             <img
-              src={worksheet.thumbnailUrl}
+              src={worksheet.thumbnailUrl!}
               alt={title}
+              onError={() => setThumbError(true)}
               className="w-full h-44 object-cover group-hover:scale-102 transition-transform duration-300"
             />
           ) : (
@@ -4836,18 +4743,6 @@ export default function WorksheetCard({
 
 ```typescript
 "use client";
-
-/**
- * Worksheet Detail Client — Al-Musnad (المسند) v4.0
- *
- * Implements:
- * 1. Edit Publication Modal (`تعديل المنشور`):
- *    - If publisher edits only title, description, or audience, `isEndorsed` stays intact.
- *    - If publisher selects a new PDF file (`newFile`), displays a prominent warning alert
- *      before confirming: changing the file and its content will revoke the current endorsement badge!
- * 2. Report Publication Modal (`🚩 إبلاغ عن المنشور`).
- * 3. Inspector Endorsement toggle button.
- */
 
 import React, { useEffect, useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -5227,43 +5122,103 @@ export default function WorksheetDetailClient({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Right Column: Embedded PDF Viewer & Reviews */}
         <section className="lg:col-span-8 flex flex-col gap-6">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
-            <div className="bg-slate-50 dark:bg-slate-800 px-5 py-3.5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-semibold text-sm">
-                <FileText className="w-4 h-4 text-blue-600" />
-                <span>معاينة مباشرة لملف النشرة ({worksheet.fileName})</span>
-              </div>
-              {worksheet.previewUrl && (
-                <a
-                  href={worksheet.previewUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs font-medium text-blue-600 hover:text-blue-800 inline-flex items-center gap-1"
-                >
-                  <span>فتح في نافذة مستقلة</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-              )}
-            </div>
+          {(() => {
+            const rawPreviewUrl = worksheet.previewUrl || "";
+            const hasBroken64CharKey =
+              rawPreviewUrl.includes("r2.cloudflarestorage.com") &&
+              rawPreviewUrl.includes("X-Amz-Credential=") &&
+              (rawPreviewUrl
+                .split("X-Amz-Credential=")[1]
+                ?.split("%2F")[0]
+                ?.split("/")[0]?.length || 32) !== 32;
+            const effectivePreviewUrl =
+              !rawPreviewUrl || hasBroken64CharKey
+                ? `/api/worksheets/${worksheet.id}/file?disposition=inline`
+                : rawPreviewUrl;
 
-            {worksheet.previewUrl ? (
-              <iframe
-                src={`${worksheet.previewUrl}#toolbar=0&navpanes=0`}
-                title={displayTitle}
-                className="w-full h-[680px] bg-slate-100"
-              />
-            ) : (
-              <div className="h-[450px] flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-800/40 p-8 text-center">
-                <FileText className="w-16 h-16 text-slate-400 mb-3" />
-                <p className="text-slate-700 dark:text-slate-200 font-semibold mb-1">
-                  المعاينة المباشرة جاهزة عند التحميل
-                </p>
-                <p className="text-sm text-slate-500 max-w-md mb-4">
-                  اضغط على زر &quot;تحميل مباشر (PDF)&quot; لتنزيل النسخة الكاملة عالية الدقة.
-                </p>
+            const lowerFileName = (worksheet.fileName || "").toLowerCase();
+            const isImageFile =
+              lowerFileName.endsWith(".png") ||
+              lowerFileName.endsWith(".jpg") ||
+              lowerFileName.endsWith(".jpeg") ||
+              lowerFileName.endsWith(".webp") ||
+              lowerFileName.endsWith(".gif");
+            const isPdfFile = lowerFileName.endsWith(".pdf") || (!isImageFile && !lowerFileName.endsWith(".doc") && !lowerFileName.endsWith(".docx"));
+
+            return (
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+                <div className="bg-slate-50 dark:bg-slate-800 px-5 py-3.5 border-b border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-semibold text-sm">
+                    <FileText className="w-4 h-4 text-blue-600" />
+                    <span>معاينة مباشرة لملف النشرة ({worksheet.fileName})</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={effectivePreviewUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-bold px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 hover:bg-blue-100 inline-flex items-center gap-1 transition"
+                    >
+                      <span>فتح في نافذة مستقلة</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                    <button
+                      type="button"
+                      onClick={handleDownload}
+                      disabled={downloading}
+                      className="text-xs font-bold px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white inline-flex items-center gap-1 transition cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>{downloading ? "جاري التحضير..." : "تحميل الملف"}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {isImageFile ? (
+                  <div className="p-4 sm:p-6 bg-slate-900 flex flex-col items-center justify-center min-h-[380px]">
+                    <img
+                      src={effectivePreviewUrl}
+                      alt={displayTitle}
+                      className="max-h-[680px] w-auto object-contain rounded-xl shadow-lg border border-slate-700 bg-white"
+                    />
+                  </div>
+                ) : isPdfFile ? (
+                  <div className="w-full h-[540px] sm:h-[680px] bg-slate-100">
+                    <object
+                      data={`${effectivePreviewUrl}#toolbar=1&navpanes=0`}
+                      type="application/pdf"
+                      className="w-full h-full"
+                    >
+                      <iframe
+                        src={`${effectivePreviewUrl}#toolbar=1&navpanes=0`}
+                        title={displayTitle}
+                        className="w-full h-full bg-slate-100"
+                      />
+                    </object>
+                  </div>
+                ) : (
+                  <div className="h-[420px] flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-800/40 p-8 text-center">
+                    <FileText className="w-16 h-16 text-slate-400 mb-3" />
+                    <p className="text-slate-700 dark:text-slate-200 font-semibold mb-1">
+                      هذا الملف بصيغة مستند ({worksheet.fileName})
+                    </p>
+                    <p className="text-sm text-slate-500 max-w-md mb-4">
+                      اضغط على زر &quot;تحميل الملف&quot; لتنزيل النسخة الكاملة على جهازك.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleDownload}
+                      disabled={downloading}
+                      className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold inline-flex items-center gap-2 transition cursor-pointer"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>تحميل الملف الآن</span>
+                    </button>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            );
+          })()}
 
           <ReviewSection
             worksheetId={worksheet.id}
@@ -5721,6 +5676,7 @@ export default function WorksheetDetailClient({
     </main>
   );
 }
+
 ```
 
 ---
@@ -5729,21 +5685,6 @@ export default function WorksheetDetailClient({
 
 ```typescript
 "use client";
-
-/**
- * Upgraded Review & Discussion Section — Al-Musnad v8.0
- *
- * Implements:
- * 1. `@username` Mention System:
- *    - Typing `@` opens a live autocomplete list of publishers/members (`@username — الاسم`).
- *    - Selecting a user inserts `@username` into the comment.
- *    - Every rendered `@username` in any comment is a clickable link (`MentionText`) that
- *      navigates directly to that user's Publisher Profile Page (`/publisher/[id]`)!
- * 2. Inspector & Supervisory Comment Modes:
- *    - `تعليق في الصدارة` (`isOfficialDirective: true`): Pinned at the very top of comments.
- *    - `تعليق خاص مباشرة إلى الناشر` (`isPrivateToPublisher: true`): Visible ONLY to the
- *      worksheet publisher and supervisory staff.
- */
 
 import React, { useState, useEffect, FormEvent } from "react";
 import Link from "next/link";
@@ -6244,16 +6185,6 @@ export default function ReviewSection({
 ```typescript
 "use client";
 
-/**
- * Curriculum & Administration Explorer on the Main Landing Page — Al-Musnad v10.0
- *
- * Updates in v10.0:
- * 1. Fixed administrative category slug check (`administrative` and `administrative-docs` and `administration`)
- *    so administrative documents always appear properly in «قسم الإدارة والمعاملات الإدارية».
- * 2. Added a prominent button to open the dedicated Materials & Levels Repository page (`/levels`)
- *    so clicking to browse Materials/Levels navigates directly to `/levels`.
- */
-
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import {
@@ -6566,25 +6497,6 @@ export default function CurriculumAndAdminExplorer({
 ### File: `src/app/page.tsx`
 
 ```typescript
-/**
- * Al-Musnad (المسند) — Main Landing, Role-Personalized Workspace & Discovery Page (v12.0)
- *
- * Implements all v12.0 User Directives:
- * 1. Complete Main Navigation Bar for Visitors & Members:
- *    - القائمة الرئيسية (`/`)
- *    - مستودع المواد والمستويات (`/levels`)
- *    - قائمة النشرات (`/#catalog`)
- *    - قسم الإدارة (`/#administration-section` — hidden for `STUDENT`, shown for Teachers, Inspectors & Institutions)
- *    - قسم من نحن وتعريف الهوية (`/#about-us`)
- *    - تفسير مزايا كل فئة من المشتركين (`/#roles-guide`)
- *    - قسم الأسئلة الشائعة (`/#faq-section`)
- * 2. Role-Personalized Top Workspace (`RolePersonalizedHub`):
- *    - Institutions see the exclusive Institution Publications Hub at the top.
- *    - Inspectors see the exclusive Inspector Publications Hub at the top.
- *    - Teachers see the exclusive Teacher Publications Hub at the top.
- *    - Students see their distraction-free Student Study Hub (with Administration removed).
- */
-
 import React, { Suspense } from "react";
 import Link from "next/link";
 import {
@@ -7501,16 +7413,6 @@ export default async function BrowsePage(props: BrowseProps) {
 ### File: `src/app/(main)/levels/page.tsx`
 
 ```typescript
-/**
- * Step 1 of Curriculum Flow: Approved Grade Levels (`/levels`) — Al-Musnad v11.0
- *
- * Simplified & Streamlined Interface per User Directives:
- * - Displays ONLY the Approved Grade Levels (`المستويات الدراسية المعتمدة`).
- * - Removed the duplicate quick-access subjects matrix and removed the phrase "9 مواد أساسية".
- * - Clicking any Grade Level navigates directly to `/levels/[gradeSlug]`, where the user
- *   finds the full Materials Repository (`مستودع المواد الدراسية`) for that Grade Level.
- */
-
 import React from "react";
 import Link from "next/link";
 import {
@@ -7639,16 +7541,6 @@ export default async function GradeLevelsPage() {
 ### File: `src/app/(main)/levels/[gradeSlug]/page.tsx`
 
 ```typescript
-/**
- * Step 2 of Curriculum Flow: Materials Repository Inside Selected Grade (`/levels/[gradeSlug]`) — Al-Musnad v12.0
- *
- * Updates in v12.0:
- * - Removed numeric numbering (1..9) inside Subject cards and replaced it with a descriptive
- *   visual icon (`<SubjectIcon />`) representing each Subject.
- * - Clicking any Subject opens its dedicated publications page organized into the 6 sections:
- *   (درس • تمرين • امتحان • جذاذة • نشاط تفاعلي • أخرى).
- */
-
 import React from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -7814,21 +7706,6 @@ export default async function GradeSubjectsPage(props: GradeSubjectsPageProps) {
 ### File: `src/app/(main)/levels/[gradeSlug]/subjects/[subjectSlug]/page.tsx`
 
 ```typescript
-/**
- * Step 3 of Curriculum Flow: Subject Publications Page (`/levels/[gradeSlug]/subjects/[subjectSlug]`) — Al-Musnad v11.0
- *
- * Implements:
- * 1. Full 6-Section Pedagogical Organization inside every Subject:
- *    - درس (`lesson`)
- *    - تمرين (`worksheet`)
- *    - امتحان (`exam`)
- *    - جذاذة (`lesson-plan`)
- *    - نشاط تفاعلي (`activity`)
- *    - أخرى (`other`)
- * 2. Ensures every file is placed in its appropriate section and carries badges for:
- *    Subject Name + Grade Level + File Category (Section) + File Format (PDF / Word / Image).
- */
-
 import React from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -8122,19 +7999,6 @@ export default async function SubjectPublicationsPage(
 ### File: `src/app/(main)/worksheet/[id]/page.tsx`
 
 ```typescript
-/**
- * Worksheet Detail View Route (Server Component) — Al-Musnad v5.0
- *
- * Route: /worksheet/[id]
- *
- * Enforces:
- * 1. Mandatory Authentication: Unauthenticated visitors are immediately redirected
- *    to `/login?redirectTo=/worksheet/[id]`.
- * 2. Strict Publisher Audience Permission: Calls `getWorksheetById(id, dbUser.role, user.id)`.
- *    If the publisher restricted the worksheet to another account category (`ForbiddenError`),
- *    renders a clear Arabic Audience Restriction Notice instead of exposing the content.
- */
-
 import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -8279,19 +8143,6 @@ export default async function WorksheetDetailPage(props: WorksheetPageProps) {
 
 ```typescript
 "use client";
-
-/**
- * Upload New Publication Page — Al-Musnad (المسند) v6.0
- *
- * Updates per Project Manager v6.0 Directives:
- * 1. Accepts PDF (`.pdf`), Microsoft Word (`.doc`, `.docx`), and Images (`.png`, `.jpg`, `.jpeg`, `.webp`).
- * 2. When the user uploads a file that is NOT a PDF (Word or Image), the system accepts the file,
- *    saves it for review, and displays a warm Thank You screen informing the user:
- *    "شكراً لك على مساهمتك! هذا المحتوى الذي أرسلته سيتم مراجعته من عند المشرف والمتفقد
- *     وإعادة صياغته لملف PDF ليكون الوصول إليه أفضل من عند المستخدمين."
- * 3. Supports publishing either to a Curriculum Subject Sub-division (درس، تمارين، امتحانات،
- *    جذاذات، أنشطة تفاعلية) OR directly to «قسم الإدارة (وثائق ومعاملات إدارية للمعلم)».
- */
 
 import React, { useState, useEffect, DragEvent, ChangeEvent, FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -9144,16 +8995,6 @@ export default function UploadWorksheetPage() {
 ```typescript
 "use client";
 
-/**
- * Public Publisher Profile Page — Al-Musnad (المسند) v4.0
- *
- * Includes:
- * - Follow Publisher (`+ متابعة الناشر`)
- * - Favorite Publisher (`♥ إضافة الناشر للمفضلة`)
- * - Report Publisher (`🚩 إبلاغ عن الناشر`)
- * - Publisher Ban Badge (`🚫 ناشر محظور`) & Official Verified Badge (`InspectorBadge`)
- */
-
 import React, { useEffect, useState, FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -9607,14 +9448,6 @@ export default function PublicPublisherProfilePage() {
 ### File: `src/app/(main)/u/[username]/page.tsx`
 
 ```typescript
-/**
- * Username Mention Resolver Route (`/u/[username]`) — Al-Musnad v8.0
- *
- * When a user clicks on `@username` in any comment or conversation,
- * this route looks up the user by their `username` (or fallback email prefix / ID)
- * and immediately navigates to their Publisher Profile Page (`/publisher/[id]`).
- */
-
 import { redirect, notFound } from "next/navigation";
 import { db } from "@/lib/db";
 
@@ -9668,21 +9501,6 @@ export default async function UsernameRedirectPage(props: UsernamePageProps) {
 
 ```typescript
 "use client";
-
-/**
- * Member Workspace & Profile Page — Al-Musnad (المسند) v4.0
- *
- * Includes:
- * 1. نشراتي (uploads)
- * 2. المفضلة (favorites)
- * 3. الناشرون المفضلون (favorite_publishers)
- * 4. التحميلات (downloads)
- * 5. تعديل الملف الشخصي — بموافقة المشرف (edit)
- * 6. الاشتراكات (subscriptions)
- * 7. التوثيق (verification) <-- Directly right after Subscriptions!
- *    Allows Teachers, Institutions, and Inspectors to request verification & enter their Admin code.
- * 8. الإعدادات وحذف الحساب (settings) <-- Includes Publisher Account Deletion (`deleteMyAccountAction`).
- */
 
 import React, { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
@@ -10753,20 +10571,6 @@ export default function TeacherProfilePage() {
 ```typescript
 "use client";
 
-/**
- * Technical Support & Customer Service Center — Al-Musnad (المسند) v13.0
- *
- * Route: /support
- * Implements:
- * 1. Two Role-Dedicated WhatsApp Direct Support Channels (معلمين وتلاميذ / مؤسسات ومتفقدين):
- *    - خط المعلمين والتلاميذ: 27764985 (https://wa.me/21627764985)
- *    - خط المؤسسات التربوية والمتفقدين: 76907101 (https://wa.me/21676907101)
- * 2. One-Click Quick Support Topic Cards (فك القفل بعد 6 محاولات، توثيق الهوية، استفسارات، مقترحات).
- * 3. Direct Support Ticket Submission Form.
- * 4. Live Ticket History & Official Replies Tracker.
- * 5. Instant Self-Service Help & Troubleshooting Guide.
- */
-
 import React, { useState, useEffect, FormEvent } from "react";
 import Link from "next/link";
 import {
@@ -10985,10 +10789,10 @@ export default function SupportAndCustomerServicePage() {
               </a>
             )}
 
-            {/* Channel 2: Institutions & Inspectors (46907101) */}
+            {/* Channel 2: Institutions & Inspectors (76907101) */}
             {showInstitution && (
               <a
-                href="https://wa.me/21646907101?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%20%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9%20%D9%85%D9%86%D8%B5%D8%A9%20%D8%A7%D9%84%D9%85%D8%B3%D9%86%D8%AF%D8%8C%20%D8%A3%D8%AA%D9%88%D8%A7%D8%B5%D9%84%20%D9%85%D8%B9%D9%83%D9%85%20%D8%B9%D8%A8%D8%B1%20%D8%AE%D8%B7%20%D8%A7%D9%84%D9%85%D8%A4%D8%B3%D8%B3%D8%A7%D8%AA%20%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%88%D9%8A%D8%A9%20%D9%88%D8%A7%D9%84%D9%85%D8%AA%D9%81%D9%82%D8%AF%D9%8A%D9%86%3A"
+                href="https://wa.me/21676907101?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%20%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9%20%D9%85%D9%86%D8%B5%D8%A9%20%D8%A7%D9%84%D9%85%D8%B3%D9%86%D8%AF%D8%8C%20%D8%A3%D8%AA%D9%88%D8%A7%D8%B5%D9%84%20%D9%85%D8%B9%D9%83%D9%85%20%D8%B9%D8%A8%D8%B1%20%D8%AE%D8%B7%20%D8%A7%D9%84%D9%85%D8%A4%D8%B3%D8%B3%D8%A7%D8%AA%20%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%88%D9%8A%D8%A9%20%D9%88%D8%A7%D9%84%D9%85%D8%AA%D9%81%D9%82%D8%AF%D9%8A%D9%86%3A"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group relative overflow-hidden rounded-3xl border-2 border-indigo-300 dark:border-indigo-800/80 bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-indigo-950/40 dark:via-slate-900 dark:to-purple-950/20 p-6 shadow-sm hover:shadow-md hover:border-indigo-500 transition flex items-start gap-4"
@@ -11014,7 +10818,7 @@ export default function SupportAndCustomerServicePage() {
                   <div className="pt-2 flex items-center gap-2 text-sm font-black text-indigo-700 dark:text-indigo-300" dir="ltr">
                     <span>+216 46 907 101</span>
                     <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-950 text-indigo-800 dark:text-indigo-300">
-                      WhatsApp: 46907101
+                      WhatsApp: 76907101
                     </span>
                   </div>
                 </div>
@@ -11419,17 +11223,6 @@ export { default } from "@/app/(auth)/register/inspector/page";
 
 ```typescript
 "use client";
-
-/**
- * Multi-Role Login Page — Al-Musnad (المسند) v13.0
- *
- * Implements:
- * 1. 6 Instant One-Click Demo Accounts Switcher (ADMIN, MODERATOR, INSPECTOR, INSTITUTION, TEACHER, STUDENT)
- *    with unified password `Musnad@2026`.
- * 2. Pressing `Enter` after typing email/username and password immediately submits login.
- * 3. Smart Password Check & 6-Attempt Lockout Protection (`/api/auth/login-guard`).
- * 4. Google OAuth redirection fix with `skipBrowserRedirect: true` and `window.top` iframe breakout.
- */
 
 import React, {
   useState,
@@ -11978,20 +11771,6 @@ export default function LoginPage() {
 
 ```typescript
 "use client";
-
-/**
- * Upgraded Multi-Role Registration Page — Al-Musnad (المسند) v6.0
- *
- * Implements all Project Manager v6.0 Directives:
- * 1. Removed all verification code alerts, banners, and code activation links
- *    from the registration form so the user creates their account normally.
- * 2. After registration succeeds, displays a dedicated Thank You screen thanking
- *    the user for registering and informing them that identity verification
- *    (which grants broader privileges and the official verification badge)
- *    takes place after communicating with the Administrator (`المشرف`).
- * 3. Preserves Show/Hide password toggle, mandatory Student Grade Level,
- *    mandatory Terms & Conditions checkbox, and zero example names in placeholders.
- */
 
 import React, { useState, useEffect, FormEvent, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
@@ -12592,16 +12371,6 @@ export default function InspectorRegisterRedirectPage() {
 
 ```typescript
 "use client";
-
-/**
- * Inspector Dedicated Dashboard (لوحة تحكم المتفقد التربوي) — Al-Musnad v10.0
- *
- * المستوى الأول في سلم الأولوية الرقابية والبيداغوجية (القاعدة):
- * - إذا دخل المشرف العام (`ADMIN`) إلى هذه اللوحة، يظهر له شريط التنقل العلوي `SupervisoryHierarchyBar`
- *   الذي يمكّنه بضغطة زر من الرجوع فوراً إلى «لوحة المشرف العام» أو الانتقال إلى «لوحة المسؤول».
- * - إذا دخل المتفقد التربوي (`INSPECTOR`)، يكتفي بالصلاحيات البيداغوجية الموجودة له فقط في هذه اللوحة الحصرية له
- *   دون أي قدرة على الانتقال إلى لوحة المسؤول أو لوحة المشرف العام.
- */
 
 import React, { useEffect, useState, useMemo, FormEvent } from "react";
 import Link from "next/link";
@@ -13375,16 +13144,6 @@ export default function InspectorDashboardPage() {
 ```typescript
 "use client";
 
-/**
- * Moderator Dedicated Dashboard (لوحة تحكم المسؤول) — Al-Musnad v10.0
- *
- * المستوى الثاني في سلم الأولوية الرقابية والإدارية (المسؤول - الوسط):
- * - إذا دخل المشرف العام (`ADMIN`) إلى هذه اللوحة، يظهر له شريط التنقل العلوي `SupervisoryHierarchyBar`
- *   الذي يمكّنه بضغطة زر من الرجوع فوراً إلى «لوحة المشرف العام» أو الانتقال إلى «لوحة المتفقد».
- * - إذا دخل المسؤول الإداري (`MODERATOR`)، يكتفي بالصلاحيات الموجودة له فقط في هذه اللوحة الحصرية له
- *   دون أي قدرة على الانتقال إلى لوحة المشرف العام أو لوحة المتفقد.
- */
-
 import React, { useEffect, useState, useMemo, FormEvent } from "react";
 import Link from "next/link";
 import {
@@ -14145,16 +13904,6 @@ export default function ModeratorDashboardPage() {
 
 ```typescript
 "use client";
-
-/**
- * Top-Tier Admin Dashboard (لوحة تحكم المشرف العام في القمة) — Al-Musnad v10.0
- *
- * المشرف في قمة الهرم يمتلك جميع صلاحيات المتفقد والمسؤول، بالإضافة إلى الميزات الحصرية التالية:
- * 1. شريط التنقل الموحد بين درجات الإشراف الثلاث (`SupervisoryHierarchyBar`) خاص بالمشرف العام فقط.
- * 2. تفعيل التوثيق المباشر للحسابات (`toggleVerifyUserAdminAction`) — ميزة حصرية للمشرف!
- * 3. إنشاء وتوليد أكواد التوثيق في الداشبورد للمشرف (`createVerificationCodeAdminAction`).
- * 4. التحكم الكامل في الموقع والأدوار وسجل النشاطات والأمن (`AuditLog`).
- */
 
 import React, { useEffect, useState, useMemo, FormEvent } from "react";
 import Link from "next/link";

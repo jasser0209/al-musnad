@@ -1,9 +1,3 @@
-/**
- * GET    /api/worksheets/[id]/reviews — List all reviews (Supports authenticated and guest browsing)
- * POST   /api/worksheets/[id]/reviews — Upsert a review & rating (Protected by rate limiting)
- * DELETE /api/worksheets/[id]/reviews — Delete a review
- */
-
 import { NextRequest } from "next/server";
 import { successResponse, errorResponse } from "@/lib/utils/api-response";
 import { uuidSchema } from "@/lib/validators/common";

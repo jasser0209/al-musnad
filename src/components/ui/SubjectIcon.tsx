@@ -1,12 +1,5 @@
 "use client";
 
-/**
- * SubjectIcon — Expressive Visual Symbol for Each Academic Subject (Al-Musnad v12.0)
- *
- * Replaces raw numeric indices (1..9) inside Subject cards with a meaningful icon
- * that visually represents the subject matter.
- */
-
 import React from "react";
 import {
   Calculator,

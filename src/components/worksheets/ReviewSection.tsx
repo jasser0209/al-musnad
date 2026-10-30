@@ -1,20 +1,5 @@
 "use client";
 
-/**
- * Upgraded Review & Discussion Section — Al-Musnad v8.0
- *
- * Implements:
- * 1. `@username` Mention System:
- *    - Typing `@` opens a live autocomplete list of publishers/members (`@username — الاسم`).
- *    - Selecting a user inserts `@username` into the comment.
- *    - Every rendered `@username` in any comment is a clickable link (`MentionText`) that
- *      navigates directly to that user's Publisher Profile Page (`/publisher/[id]`)!
- * 2. Inspector & Supervisory Comment Modes:
- *    - `تعليق في الصدارة` (`isOfficialDirective: true`): Pinned at the very top of comments.
- *    - `تعليق خاص مباشرة إلى الناشر` (`isPrivateToPublisher: true`): Visible ONLY to the
- *      worksheet publisher and supervisory staff.
- */
-
 import React, { useState, useEffect, FormEvent } from "react";
 import Link from "next/link";
 import {

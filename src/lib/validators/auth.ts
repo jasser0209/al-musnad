@@ -1,7 +1,3 @@
-/**
- * Auth & Profile Validation Schemas — Al-Musnad v8.0
- */
-
 import { z } from "zod";
 
 export const accountRoleOptionSchema = z

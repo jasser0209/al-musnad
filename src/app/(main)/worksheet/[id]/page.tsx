@@ -1,16 +1,3 @@
-/**
- * Worksheet Detail View Route (Server Component) — Al-Musnad v5.0
- *
- * Route: /worksheet/[id]
- *
- * Enforces:
- * 1. Mandatory Authentication: Unauthenticated visitors are immediately redirected
- *    to `/login?redirectTo=/worksheet/[id]`.
- * 2. Strict Publisher Audience Permission: Calls `getWorksheetById(id, dbUser.role, user.id)`.
- *    If the publisher restricted the worksheet to another account category (`ForbiddenError`),
- *    renders a clear Arabic Audience Restriction Notice instead of exposing the content.
- */
-
 import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";

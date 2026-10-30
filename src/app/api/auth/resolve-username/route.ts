@@ -1,8 +1,3 @@
-/**
- * POST /api/auth/resolve-username — Securely resolves a @username to an email for login
- * Protected by sliding-window rate limiting to prevent username/email enumeration.
- */
-
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { successResponse, errorResponse } from "@/lib/utils/api-response";

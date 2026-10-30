@@ -1,10 +1,3 @@
-/**
- * Worksheet Favorite Route Handler
- *
- * POST /api/worksheets/[id]/favorite -> Protected endpoint that atomically
- * toggles bookmark state and updates denormalized favorite counts.
- */
-
 import { NextRequest } from "next/server";
 import { successResponse, errorResponse } from "@/lib/utils/api-response";
 import { uuidSchema } from "@/lib/validators/common";

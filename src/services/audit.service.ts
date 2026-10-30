@@ -1,10 +1,3 @@
-/**
- * Activity & Security Audit Log Service — Al-Musnad v9.0
- *
- * Records critical administrative, pedagogical, and publisher events in `audit_logs`
- * so the Top Administrator (`المشرف`) has full visibility over all platform operations.
- */
-
 import { db } from "@/lib/db";
 
 export interface LogActivityInput {

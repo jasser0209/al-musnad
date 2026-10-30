@@ -1,16 +1,5 @@
 "use client";
 
-/**
- * Multi-Role Login Page — Al-Musnad (المسند) v13.0
- *
- * Implements:
- * 1. 6 Instant One-Click Demo Accounts Switcher (ADMIN, MODERATOR, INSPECTOR, INSTITUTION, TEACHER, STUDENT)
- *    with unified password `Musnad@2026`.
- * 2. Pressing `Enter` after typing email/username and password immediately submits login.
- * 3. Smart Password Check & 6-Attempt Lockout Protection (`/api/auth/login-guard`).
- * 4. Google OAuth redirection fix with `skipBrowserRedirect: true` and `window.top` iframe breakout.
- */
-
 import React, {
   useState,
   FormEvent,

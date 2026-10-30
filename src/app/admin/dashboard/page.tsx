@@ -1,15 +1,5 @@
 "use client";
 
-/**
- * Top-Tier Admin Dashboard (لوحة تحكم المشرف العام في القمة) — Al-Musnad v10.0
- *
- * المشرف في قمة الهرم يمتلك جميع صلاحيات المتفقد والمسؤول، بالإضافة إلى الميزات الحصرية التالية:
- * 1. شريط التنقل الموحد بين درجات الإشراف الثلاث (`SupervisoryHierarchyBar`) خاص بالمشرف العام فقط.
- * 2. تفعيل التوثيق المباشر للحسابات (`toggleVerifyUserAdminAction`) — ميزة حصرية للمشرف!
- * 3. إنشاء وتوليد أكواد التوثيق في الداشبورد للمشرف (`createVerificationCodeAdminAction`).
- * 4. التحكم الكامل في الموقع والأدوار وسجل النشاطات والأمن (`AuditLog`).
- */
-
 import React, { useEffect, useState, useMemo, FormEvent } from "react";
 import Link from "next/link";
 import {

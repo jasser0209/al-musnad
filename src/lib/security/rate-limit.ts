@@ -1,10 +1,3 @@
-/**
- * In-Memory Sliding Window Rate Limiter & Security Guard — Al-Musnad v9.0
- *
- * Protects authentication, file uploads, verification code activation,
- * and report submissions against brute-force and automated abuse.
- */
-
 import { NextRequest } from "next/server";
 
 interface RateBucket {

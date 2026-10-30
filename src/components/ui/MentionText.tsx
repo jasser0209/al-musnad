@@ -1,13 +1,5 @@
 "use client";
 
-/**
- * MentionText Component — Al-Musnad v8.0
- *
- * Automatically detects any `@username` in comments, reviews, or messages
- * and renders it as an interactive clickable badge that navigates to `/u/[username]`
- * which redirects straight to the Publisher's Profile Page (`/publisher/[id]`).
- */
-
 import React from "react";
 import Link from "next/link";
 

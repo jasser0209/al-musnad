@@ -1,15 +1,5 @@
 "use client";
 
-/**
- * Subscriptions Section & Preserved Plans Archive — Al-Musnad (المسند) v13.0
- *
- * Implements Project Manager Directive for v13.0:
- * - Displays ONLY the clean "سيأتي قريباً" (Coming Soon) state without explaining
- *   why the site is free or discussing founding period pricing.
- * - Preserves the 100% complete `PRESERVED_SUBSCRIPTION_PLANS` array in code so it
- *   can be reactivated immediately whenever paid tiers are introduced in the future.
- */
-
 import React from "react";
 import { Clock } from "lucide-react";
 

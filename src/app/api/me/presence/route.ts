@@ -1,14 +1,3 @@
-/**
- * POST /api/me/presence — Member Online / Offline / Ghost Mode & Heartbeat API (Al-Musnad v11.0)
- *
- * Allows authenticated members to:
- * 1. Switch their presence status between:
- *    - `ONLINE` (متصل — green indicator dot)
- *    - `OFFLINE` (غير متصل — gray indicator dot + time since offline)
- *    - `GHOST` (وضع الشبح 👻 — browse the platform invisibly while appearing offline to others)
- * 2. Send periodic heartbeat updates while active on the site so `lastSeenAt` stays accurate.
- */
-
 import { NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";

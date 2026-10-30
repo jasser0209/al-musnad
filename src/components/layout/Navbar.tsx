@@ -1,26 +1,6 @@
 "use client";
 
-/**
- * Upgraded Navigation Bar — Al-Musnad (المسند) v11.0
- *
- * Implements all v11.0 User Directives:
- * 1. Role-Distinguished Username Box in Top Bar:
- *    - Surrounds the username & avatar box with a distinctive colored frame (`border-2` + `ring-2`)
- *      according to the user's supervisory rank:
- *      • `ADMIN` (المشرف العام): Royal Purple/Blue frame (`border-purple-500 ring-purple-400/40`)
- *      • `MODERATOR` (المسؤول الإداري): Indigo frame (`border-indigo-500 ring-indigo-400/40`)
- *      • `INSPECTOR` (المتفقد التربوي): Amber/Gold frame (`border-amber-500 ring-amber-400/40`)
- * 2. Merged Supervisory Badge + Dashboard Control Panel Inside the User Dropdown Menu:
- *    - When clicking the username box, directly below «ملفي الشخصي» (`/profile`) and
- *      «صفحتي العامة كناشر» (`/publisher/${user.id}`), we place the unified Supervisory Badge +
- *      Control Panel button for `ADMIN`, `MODERATOR`, and `INSPECTOR`.
- * 3. Live Online / Offline / Ghost Mode (`وضع الشبح`) Presence System:
- *    - Displays the small green dot below the user picture when connected (`ONLINE`)
- *      and gray dot when disconnected (`OFFLINE` / `GHOST`), with elapsed offline duration,
- *      plus one-click switching between `متصل`، `غير متصل`، and `👻 وضع الشبح`.
- */
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -160,6 +140,52 @@ export default function Navbar() {
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [notifMenuOpen, setNotifMenuOpen] = useState(false);
+
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+  const notifMenuRef = useRef<HTMLDivElement>(null);
+  const langMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleOutsideMouseDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        profileMenuOpen &&
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(target)
+      ) {
+        setProfileMenuOpen(false);
+      }
+      if (
+        notifMenuOpen &&
+        notifMenuRef.current &&
+        !notifMenuRef.current.contains(target)
+      ) {
+        setNotifMenuOpen(false);
+      }
+      if (
+        langMenuOpen &&
+        langMenuRef.current &&
+        !langMenuRef.current.contains(target)
+      ) {
+        setLangMenuOpen(false);
+      }
+    };
+
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setProfileMenuOpen(false);
+        setNotifMenuOpen(false);
+        setLangMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideMouseDown);
+    document.addEventListener("keydown", handleEscapeKey);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideMouseDown);
+      document.removeEventListener("keydown", handleEscapeKey);
+    };
+  }, [profileMenuOpen, notifMenuOpen, langMenuOpen]);
   const [updatingPresence, setUpdatingPresence] = useState(false);
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -470,7 +496,7 @@ export default function Navbar() {
           {/* Action Area */}
           <div className="hidden md:flex items-center gap-2.5">
             {/* Language Switcher */}
-            <div className="relative">
+            <div className="relative" ref={langMenuRef}>
               <button
                 type="button"
                 onClick={() => setLangMenuOpen((prev) => !prev)}
@@ -544,7 +570,7 @@ export default function Navbar() {
                 )}
 
                 {/* Notification Bell Icon */}
-                <div className="relative">
+                <div className="relative" ref={notifMenuRef}>
                   <button
                     type="button"
                     onClick={() => {
@@ -626,16 +652,16 @@ export default function Navbar() {
                   )}
                 </div>
 
-                {/* Unified Role-Distinguished Username Box & Dropdown Menu */}
-                <div className="relative">
+                {/* Unified Role-Distinguished Username Box & Dropdown Menu (Full Name + Colored Rank Border) */}
+                <div className="relative" ref={profileMenuRef}>
                   <button
                     type="button"
                     onClick={() => {
                       setProfileMenuOpen((prev) => !prev);
                       setNotifMenuOpen(false);
                     }}
-                    className={`flex items-center gap-2.5 px-3 py-1.5 rounded-2xl transition cursor-pointer ${roleBoxStyle.boxClass}`}
-                    title={`${user.name} — ${roleBoxStyle.roleLabel}`}
+                    className={`flex items-center gap-2.5 px-3.5 py-1.5 rounded-2xl transition cursor-pointer shrink-0 ${roleBoxStyle.boxClass}`}
+                    title={user.name}
                   >
                     <UserAvatarWithPresence
                       name={user.name}
@@ -646,19 +672,14 @@ export default function Navbar() {
                       size="md"
                       avatarBgClass={roleBoxStyle.avatarBgClass}
                     />
-                    <div className="flex flex-col items-start text-start min-w-0">
-                      <span className="text-xs font-extrabold text-slate-900 dark:text-white truncate max-w-[160px] sm:max-w-[200px]">
-                        {user.name}
-                      </span>
-                      <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
-                        {currentPresenceInfo.isGhostSelf
-                          ? "👻 وضع الشبح"
-                          : currentPresenceInfo.isOnlinePublicly
-                          ? "🟢 متصل الآن"
-                          : `⚪ غير متصل (${currentPresenceInfo.durationLabelAr || ""})`}
-                      </span>
-                    </div>
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white whitespace-nowrap">
+                      {user.name}
+                    </span>
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${
+                        profileMenuOpen ? "rotate-180" : ""
+                      }`}
+                    />
                   </button>
 
                   {profileMenuOpen && (

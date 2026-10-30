@@ -1,13 +1,3 @@
-/**
- * Individual Worksheet Route Handlers — Al-Musnad v5.0
- *
- * - GET /api/worksheets/[id]: Strictly requires authentication AND verifies
- *   that the caller's account role is allowed by the publisher's `audience`.
- * - PATCH /api/worksheets/[id]: Supports metadata-only edits (preserving `isEndorsed`)
- *   AND multipart PDF file replacement (which resets `isEndorsed = false`).
- * - DELETE /api/worksheets/[id]: Soft-archives worksheet.
- */
-
 import { NextRequest } from "next/server";
 import { successResponse, errorResponse } from "@/lib/utils/api-response";
 import { uuidSchema } from "@/lib/validators/common";

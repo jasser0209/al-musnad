@@ -1,8 +1,3 @@
-/**
- * GET   /api/notifications — Fetch current user's notifications & unread count
- * PATCH /api/notifications — Mark all (or single) notifications as read
- */
-
 import { NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";

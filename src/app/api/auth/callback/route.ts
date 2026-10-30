@@ -1,13 +1,3 @@
-/**
- * GET /api/auth/callback — OAuth 2.0 (Google) & Email Confirmation Callback (Al-Musnad v11.0)
- *
- * Handles:
- * 1. "المتابعة باستخدام حساب جوجل" (Continue with Google) & "التسجيل باستخدام حساب جوجل" (Sign up with Google).
- * 2. Automatically creates or syncs the user profile in Prisma (`public.users`) with Google name,
- *    Google avatar (`avatar_url` / `picture`), unique `@username`, and selected role (`?role=...`).
- * 3. Enforces account lockout check (`failedLoginAttempts >= 6` or `lockedAt != null`).
- */
-
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
