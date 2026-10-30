@@ -86,10 +86,11 @@ export async function GET(request: Request) {
           // Strict Portal-Specific Login Check:
           // Only ADMIN and MODERATOR can log in from any portal.
           // INSTITUTION, INSPECTOR, TEACHER, and STUDENT must log in from their own portal.
+          const configuredAdminEmail = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
           const isStaff =
             existingUser.role === Role.ADMIN ||
             existingUser.role === Role.MODERATOR ||
-            existingUser.email.toLowerCase() === "bjasser123@gmail.com";
+            Boolean(configuredAdminEmail && existingUser.email.toLowerCase() === configuredAdminEmail);
 
           if (
             !isStaff &&
@@ -133,15 +134,21 @@ export async function GET(request: Request) {
               ? "/#institutions-hub"
               : existingUser.role === Role.TEACHER
               ? "/#teachers-hub"
-              : next.startsWith("/")
+              : next.startsWith("/") && !next.startsWith("//")
               ? next
               : "/";
 
           return NextResponse.redirect(`${origin}${dest}`);
         } else if (authUser.email) {
+          const configuredAdminEmail = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
+          const isConfiguredAdmin = Boolean(
+            configuredAdminEmail &&
+              authUser.email.toLowerCase() === configuredAdminEmail
+          );
+
           // If the user came from `/login` (mode=login) and is NOT in `db.user` (e.g. deleted their account or never registered),
           // strictly block auto-registration on login and require them to create an account on `/register`!
-          if (modeParam === "login" && authUser.email.toLowerCase() !== "bjasser123@gmail.com") {
+          if (modeParam === "login" && !isConfiguredAdmin) {
             await db
               .$executeRawUnsafe(`DELETE FROM auth.users WHERE id = $1::uuid`, authUser.id)
               .catch(() => null);
@@ -159,10 +166,9 @@ export async function GET(request: Request) {
             metaRole ||
             "TEACHER";
 
-          const assignedRole: Role =
-            authUser.email.toLowerCase() === "bjasser123@gmail.com"
-              ? Role.ADMIN
-              : resolveAllowedPublicRole(rawRole);
+          const assignedRole: Role = isConfiguredAdmin
+            ? Role.ADMIN
+            : resolveAllowedPublicRole(rawRole);
 
           const isInspectorPending =
             Boolean(authUser.user_metadata?.inspector_pending) ||
@@ -235,7 +241,8 @@ export async function GET(request: Request) {
         // Proceed even if DB sync encountered a transient issue
       }
 
-      const safeNext = next.startsWith("/") ? next : "/";
+      const safeNext =
+        next.startsWith("/") && !next.startsWith("//") ? next : "/";
       return NextResponse.redirect(`${origin}${safeNext}`);
     }
   }

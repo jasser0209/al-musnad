@@ -46,10 +46,15 @@ export async function GET() {
     const rawMetaRole = String(user.user_metadata?.role || "").trim().toUpperCase();
 
     if (!profile) {
-      const safeRole: Role =
-        user.email?.toLowerCase() === "bjasser123@gmail.com"
-          ? Role.ADMIN
-          : resolveAllowedPublicRole(rawMetaRole || "TEACHER");
+      const configuredAdminEmail = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
+      const isConfiguredAdmin = Boolean(
+        configuredAdminEmail &&
+          user.email?.toLowerCase() === configuredAdminEmail
+      );
+
+      const safeRole: Role = isConfiguredAdmin
+        ? Role.ADMIN
+        : resolveAllowedPublicRole(rawMetaRole || "TEACHER");
 
       const isInspectorPending =
         Boolean(user.user_metadata?.inspector_pending) || safeRole === Role.INSPECTOR;

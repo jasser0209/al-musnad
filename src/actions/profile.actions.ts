@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
 import { updateProfileSchema, type UpdateProfileInput } from "@/lib/validators/auth";
-import { UnauthorizedError, ForbiddenError } from "@/lib/utils/errors";
+import { UnauthorizedError, ForbiddenError, ValidationError } from "@/lib/utils/errors";
 import { ProfileEditStatus, Role, Prisma } from "@prisma/client";
 
 export async function updateProfileAction(input: UpdateProfileInput) {
@@ -98,6 +98,8 @@ export async function updateProfileAction(input: UpdateProfileInput) {
   return { ...updatedUser, pendingApproval: true };
 }
 
+const VALID_SUBSCRIPTION_PLANS = ["STANDARD", "PRO_EDUCATOR", "INSTITUTION_PLUS"] as const;
+
 export async function updateSubscriptionPlanAction(planCode: string) {
   const supabase = await createSupabaseServerClient();
   const {
@@ -106,9 +108,14 @@ export async function updateSubscriptionPlanAction(planCode: string) {
 
   if (!user) throw new UnauthorizedError("يجب تسجيل الدخول أولاً");
 
+  const normalizedPlan = String(planCode || "").trim().toUpperCase();
+  if (!VALID_SUBSCRIPTION_PLANS.includes(normalizedPlan as any)) {
+    throw new ValidationError("باقة الاشتراك المحددة غير صالحة");
+  }
+
   const updated = await db.user.update({
     where: { id: user.id },
-    data: { subscriptionPlan: planCode },
+    data: { subscriptionPlan: normalizedPlan },
     select: { id: true, subscriptionPlan: true },
   });
 

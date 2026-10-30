@@ -165,7 +165,7 @@ const strictHeader = (titleSuffix = "") => `# 🏛️ Project Handover & Master 
 **Architecture:** Next.js 15 (App Router) + TypeScript + Prisma ORM + PostgreSQL (Supabase) + Cloudflare R2 + Tailwind CSS + Lucide Icons  
 **Version:** 15.0.0 (Optimized Handover Archive — Complete Source Code, Security Configs & Commands)  
 **Date:** October 2026  
-**Primary Admin Account:** \`bjasser123@gmail.com\` (Password: \`Jasserbes1M\` — Role: \`ADMIN\`)  
+**Primary Admin Account:** \`admin@musnad.tn\` (Password: Configured via ADMIN_INITIAL_PASSWORD — Role: \`ADMIN\`)  
 **Live Production URL:** [https://al-musnad.vercel.app](https://al-musnad.vercel.app)  
 **GitHub Repository:** [https://github.com/jasser0209/al-musnad.git](https://github.com/jasser0209/al-musnad.git)  
 

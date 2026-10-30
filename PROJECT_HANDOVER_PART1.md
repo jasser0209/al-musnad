@@ -3,7 +3,7 @@
 **Architecture:** Next.js 15 (App Router) + TypeScript + Prisma ORM + PostgreSQL (Supabase) + Cloudflare R2 + Tailwind CSS + Lucide Icons  
 **Version:** 15.0.0 (Optimized Handover Archive — Complete Source Code, Security Configs & Commands)  
 **Date:** October 2026  
-**Primary Admin Account:** `bjasser123@gmail.com` (Password: `Jasserbes1M` — Role: `ADMIN`)  
+**Primary Admin Account:** `admin@musnad.tn` (Password: Configured via ADMIN_INITIAL_PASSWORD — Role: `ADMIN`)  
 **Live Production URL:** [https://al-musnad.vercel.app](https://al-musnad.vercel.app)  
 **GitHub Repository:** [https://github.com/jasser0209/al-musnad.git](https://github.com/jasser0209/al-musnad.git)  
 
@@ -356,13 +356,13 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 NEXT_PUBLIC_APP_NAME="المسند - الفضاء التربوي الشامل"
 
 # 2. إعدادات المصادقة وقاعدة البيانات (Supabase Auth & PostgreSQL)
-NEXT_PUBLIC_SUPABASE_URL="https://kqlvckebqlhxghnjpbme.supabase.co"
+NEXT_PUBLIC_SUPABASE_URL="https://your-project-id.supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="ضع_مفتاح_ANON_KEY_الخاص_بمشروعك_في_Supabase_هنا"
 SUPABASE_SERVICE_ROLE_KEY="ضع_مفتاح_SERVICE_ROLE_KEY_الخاص_بمشروعك_في_Supabase_هنا"
 
 # روابط قاعدة البيانات PostgreSQL (Prisma ORM)
-DATABASE_URL="postgresql://postgres.kqlvckebqlhxghnjpbme:[YOUR-DB-PASSWORD]@aws-1-eu-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
-DIRECT_URL="postgresql://postgres.kqlvckebqlhxghnjpbme:[YOUR-DB-PASSWORD]@aws-1-eu-west-1.pooler.supabase.com:5432/postgres"
+DATABASE_URL="postgresql://postgres.your-project-id:[YOUR-DB-PASSWORD]@aws-1-eu-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+DIRECT_URL="postgresql://postgres.your-project-id:[YOUR-DB-PASSWORD]@aws-1-eu-west-1.pooler.supabase.com:5432/postgres"
 
 # 3. إعدادات التخزين السحابي Cloudflare R2 (مساحة 10GB مجانية + 0$ رسوم تحميل)
 # ⚠️ تنبيه هام جداً:
@@ -370,8 +370,8 @@ DIRECT_URL="postgresql://postgres.kqlvckebqlhxghnjpbme:[YOUR-DB-PASSWORD]@aws-1-
 # - طول `R2_ACCESS_KEY_ID` يجب أن يكون 32 حرفاً بالضبط.
 # - طول `R2_SECRET_ACCESS_KEY` يجب أن يكون 64 حرفاً بالضبط.
 R2_ACCOUNT_ID="ضع_معرف_حساب_Cloudflare_الخاص_بك_هنا"
-R2_ACCESS_KEY_ID="f272f5098c9f3eeb255a833defec2e89"
-R2_SECRET_ACCESS_KEY="6b5ca30a3de6c846aa585ddb963bc85a7a1e1e4155497fa50de39d7310e441ef"
+R2_ACCESS_KEY_ID="ضع_مفتاح_ACCESS_KEY_الخاص_بـ_Cloudflare_R2_هنا"
+R2_SECRET_ACCESS_KEY="ضع_مفتاح_SECRET_KEY_الخاص_بـ_Cloudflare_R2_هنا"
 R2_BUCKET_NAME="musnad-worksheets"
 R2_PUBLIC_URL=""
 
@@ -680,7 +680,7 @@ const strictHeader = (titleSuffix = "") => `# 🏛️ Project Handover & Master 
 **Architecture:** Next.js 15 (App Router) + TypeScript + Prisma ORM + PostgreSQL (Supabase) + Cloudflare R2 + Tailwind CSS + Lucide Icons  
 **Version:** 15.0.0 (Optimized Handover Archive — Complete Source Code, Security Configs & Commands)  
 **Date:** October 2026  
-**Primary Admin Account:** \`bjasser123@gmail.com\` (Password: \`Jasserbes1M\` — Role: \`ADMIN\`)  
+**Primary Admin Account:** \`admin@musnad.tn\` (Password: Configured via ADMIN_INITIAL_PASSWORD — Role: \`ADMIN\`)  
 **Live Production URL:** [https://al-musnad.vercel.app](https://al-musnad.vercel.app)  
 **GitHub Repository:** [https://github.com/jasser0209/al-musnad.git](https://github.com/jasser0209/al-musnad.git)  
 
@@ -842,8 +842,19 @@ if (!fs.existsSync(envPath)) {
   }
 }
 
+const REVOKED_KEYS = [
+  "f272f5098c9f3eeb255a833defec2e89",
+  "6b5ca30a3de6c846aa585ddb963bc85a7a1e1e4155497fa50de39d7310e441ef",
+];
+
 const accessKey = (process.env.R2_ACCESS_KEY_ID || "").trim();
 const secretKey = (process.env.R2_SECRET_ACCESS_KEY || process.env["2_SECRET_ACCESS_KEY"] || "").trim();
+
+if (REVOKED_KEYS.includes(accessKey) || REVOKED_KEYS.includes(secretKey)) {
+  console.error("🚨 تحذير أمني حرج: تم اكتشاف مفاتيح Cloudflare R2 القديمة المسربة في ملف .env!");
+  console.error("   هذه المفاتيح محظورة أمنياً ومرفوضة من النظام.");
+  console.error("   يرجى توليد مفاتيح R2 جديدة وتحديثها في .env و Vercel فوراً.");
+}
 
 if (accessKey) {
   console.log(`✅ R2_ACCESS_KEY_ID: الطول = ${accessKey.length} حرفاً ${accessKey.length === 32 ? "(صحيح 100%)" : "⚠️ (يجب أن يكون 32 حرفاً!)"}`);
@@ -1316,15 +1327,15 @@ import { createClient } from "@supabase/supabase-js";
 
 const prisma = new PrismaClient();
 
-const supabaseUrl =
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://fzokicsiqbdmwsdcuojz.supabase.co";
-const serviceRoleKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6b2tpY3NpcWJkbXdzZGN1b2p6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MzIyMDYzOSwiZXhwIjoyMTA4Nzk2NjM5fQ.hZOIvBQjQlpZMDBa6DUdjHAd1Q-73YiHmEJo5u42f7k";
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
-const supabase = createClient(supabaseUrl, serviceRoleKey, {
-  auth: { autoRefreshToken: false, persistSession: false },
-});
+const supabase =
+  supabaseUrl && serviceRoleKey
+    ? createClient(supabaseUrl, serviceRoleKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      })
+    : null;
 
 interface SeedAccount {
   email: string;
@@ -1340,10 +1351,10 @@ interface SeedAccount {
 }
 
 const PRIMARY_ADMIN: SeedAccount = {
-  email: "bjasser123@gmail.com",
-  username: "bjasser",
-  password: "Jasserbes1M",
-  name: "Jasser",
+  email: process.env.ADMIN_EMAIL || "admin@musnad.tn",
+  username: "admin",
+  password: process.env.ADMIN_INITIAL_PASSWORD || "ChangeMeImmediately@2026",
+  name: process.env.ADMIN_NAME || "المشرف العام",
   role: Role.ADMIN,
   bio: "حساب المشرف العام الأساسي لمنصة المسند — إدارة النظام وصلاحيات الهرم الرقابي.",
   isVerified: true,
@@ -1496,6 +1507,9 @@ async function main() {
 
   console.log(`🌱 Seeding accounts (${accountsToSeed.length} accounts, Environment isProduction: ${isProduction})...`);
   try {
+    if (!supabase) {
+      throw new Error("Supabase credentials not configured in environment (missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY)");
+    }
     const { data: listData } = await supabase.auth.admin.listUsers({ page: 1, perPage: 100 });
     const authUsers = listData?.users || [];
 
@@ -4397,9 +4411,116 @@ const MAX_FILE_SIZE =
   (Number(process.env.MAX_FILE_SIZE_MB) || 20) * 1024 * 1024;
 const S3_MAX_EXPIRY_SECONDS = 604800; // 7 days max for S3/R2 SigV4
 
-const KNOWN_VERIFIED_R2_ACCESS_KEY_ID = "f272f5098c9f3eeb255a833defec2e89";
-const KNOWN_VERIFIED_R2_SECRET_KEY =
-  "6b5ca30a3de6c846aa585ddb963bc85a7a1e1e4155497fa50de39d7310e441ef";
+export const REVOKED_COMPROMISED_R2_KEYS = new Set([
+  "f272f5098c9f3eeb255a833defec2e89",
+  "6b5ca30a3de6c846aa585ddb963bc85a7a1e1e4155497fa50de39d7310e441ef",
+]);
+
+/**
+ * Validates the binary magic bytes (file signature) of an uploaded file buffer.
+ * Prevents disguised executable / malicious files from bypassing MIME-type checks.
+ */
+export function verifyFileMagicBytes(
+  buffer: Buffer,
+  fileName: string,
+  declaredMimeType?: string
+): void {
+  if (!buffer || buffer.length < 4) {
+    throw new InvalidFileTypeError(ALLOWED_FILE_EXTENSIONS);
+  }
+
+  const ext = fileName.toLowerCase().split(".").pop() || "";
+
+  // PDF signature: %PDF- (0x25 0x50 0x44 0x46)
+  if (ext === "pdf" || declaredMimeType === "application/pdf") {
+    const isPdf =
+      buffer[0] === 0x25 &&
+      buffer[1] === 0x50 &&
+      buffer[2] === 0x44 &&
+      buffer[3] === 0x46;
+    if (!isPdf) {
+      throw new InvalidFileTypeError(["pdf (Invalid PDF signature)"]);
+    }
+    return;
+  }
+
+  // PNG signature: 89 50 4E 47 0D 0A 1A 0A
+  if (ext === "png" || declaredMimeType === "image/png") {
+    const isPng =
+      buffer[0] === 0x89 &&
+      buffer[1] === 0x50 &&
+      buffer[2] === 0x4e &&
+      buffer[3] === 0x47;
+    if (!isPng) {
+      throw new InvalidFileTypeError(["png (Invalid PNG signature)"]);
+    }
+    return;
+  }
+
+  // JPEG signature: FF D8 FF
+  if (
+    ext === "jpg" ||
+    ext === "jpeg" ||
+    declaredMimeType === "image/jpeg" ||
+    declaredMimeType === "image/jpg"
+  ) {
+    const isJpeg =
+      buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+    if (!isJpeg) {
+      throw new InvalidFileTypeError(["jpg/jpeg (Invalid JPEG signature)"]);
+    }
+    return;
+  }
+
+  // WEBP signature: RIFF....WEBP (0x52 0x49 0x46 0x46 ... 0x57 0x45 0x42 0x50)
+  if (ext === "webp" || declaredMimeType === "image/webp") {
+    const isRiff =
+      buffer[0] === 0x52 &&
+      buffer[1] === 0x49 &&
+      buffer[2] === 0x46 &&
+      buffer[3] === 0x46;
+    const isWebp =
+      buffer.length >= 12 &&
+      buffer[8] === 0x57 &&
+      buffer[9] === 0x45 &&
+      buffer[10] === 0x42 &&
+      buffer[11] === 0x50;
+    if (!isRiff || !isWebp) {
+      throw new InvalidFileTypeError(["webp (Invalid WebP signature)"]);
+    }
+    return;
+  }
+
+  // DOCX / ZIP: 50 4B 03 04 (PK..)
+  if (
+    ext === "docx" ||
+    declaredMimeType ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  ) {
+    const isZip =
+      buffer[0] === 0x50 &&
+      buffer[1] === 0x4b &&
+      (buffer[2] === 0x03 || buffer[2] === 0x05 || buffer[2] === 0x07) &&
+      (buffer[3] === 0x04 || buffer[3] === 0x06 || buffer[3] === 0x08);
+    if (!isZip) {
+      throw new InvalidFileTypeError(["docx (Invalid DOCX/Office signature)"]);
+    }
+    return;
+  }
+
+  // DOC (legacy binary compound document): D0 CF 11 E0 A1 B1 1A E1
+  if (ext === "doc" || declaredMimeType === "application/msword") {
+    const isDoc =
+      buffer[0] === 0xd0 &&
+      buffer[1] === 0xcf &&
+      buffer[2] === 0x11 &&
+      buffer[3] === 0xe0;
+    if (!isDoc) {
+      throw new InvalidFileTypeError(["doc (Invalid legacy Word signature)"]);
+    }
+    return;
+  }
+}
 
 export interface UploadResult {
   fileUrl: string;
@@ -4469,18 +4590,9 @@ export function resolveR2Config(): ResolvedR2Config {
     autoSwappedKeys = true;
   }
 
-  if (
-    rawAccessKey === KNOWN_VERIFIED_R2_SECRET_KEY &&
-    rawAccessKey.length === 64
-  ) {
-    rawSecretKey = KNOWN_VERIFIED_R2_SECRET_KEY;
-    rawAccessKey = KNOWN_VERIFIED_R2_ACCESS_KEY_ID;
-    autoSwappedKeys = true;
-  }
-
-  if (rawAccessKey === KNOWN_VERIFIED_R2_ACCESS_KEY_ID && !rawSecretKey) {
-    rawSecretKey = KNOWN_VERIFIED_R2_SECRET_KEY;
-  }
+  const isCompromised =
+    REVOKED_COMPROMISED_R2_KEYS.has(rawAccessKey) ||
+    REVOKED_COMPROMISED_R2_KEYS.has(rawSecretKey);
 
   const endpoint = accountId
     ? `https://${accountId}.r2.cloudflarestorage.com`
@@ -4489,7 +4601,8 @@ export function resolveR2Config(): ResolvedR2Config {
   const isAccessKeyValid = rawAccessKey.length === 32;
   const isSecretKeyValid = rawSecretKey.length === 64;
   const isValid = Boolean(
-    accountId &&
+    !isCompromised &&
+      accountId &&
       accountId.length >= 8 &&
       bucketName &&
       isAccessKeyValid &&
@@ -4497,7 +4610,10 @@ export function resolveR2Config(): ResolvedR2Config {
   );
 
   let diagnosticMessage = "READY";
-  if (!accountId) {
+  if (isCompromised) {
+    diagnosticMessage =
+      "REVOKED_COMPROMISED_KEY_DETECTED_PLEASE_ROTATE_IN_CLOUDFLARE_AND_VERCEL";
+  } else if (!accountId) {
     diagnosticMessage = "MISSING_R2_ACCOUNT_ID";
   } else if (!rawAccessKey && !rawSecretKey) {
     diagnosticMessage = "MISSING_R2_KEYS";
@@ -4645,6 +4761,9 @@ export async function uploadFile(
 
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
+
+  // Validate binary magic bytes to prevent file extension spoofing / malicious uploads
+  verifyFileMagicBytes(buffer, file.name, contentType);
 
   // 1. Attempt Cloudflare R2 Upload
   const cfg = resolveR2Config();
@@ -4857,6 +4976,9 @@ export async function uploadThumbnail(
 
   const arrayBuffer = await thumbnailFile.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
+
+  // Validate binary magic bytes for image thumbnails
+  verifyFileMagicBytes(buffer, thumbnailFile.name, contentType);
 
   // If thumbnail is <= 250 KB (standard WebP thumbnail is ~15-35 KB), return permanent base64 Data URI
   if (buffer.byteLength <= 250 * 1024) {
@@ -6275,10 +6397,11 @@ export async function GET(request: Request) {
           // Strict Portal-Specific Login Check:
           // Only ADMIN and MODERATOR can log in from any portal.
           // INSTITUTION, INSPECTOR, TEACHER, and STUDENT must log in from their own portal.
+          const configuredAdminEmail = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
           const isStaff =
             existingUser.role === Role.ADMIN ||
             existingUser.role === Role.MODERATOR ||
-            existingUser.email.toLowerCase() === "bjasser123@gmail.com";
+            Boolean(configuredAdminEmail && existingUser.email.toLowerCase() === configuredAdminEmail);
 
           if (
             !isStaff &&
@@ -6322,15 +6445,21 @@ export async function GET(request: Request) {
               ? "/#institutions-hub"
               : existingUser.role === Role.TEACHER
               ? "/#teachers-hub"
-              : next.startsWith("/")
+              : next.startsWith("/") && !next.startsWith("//")
               ? next
               : "/";
 
           return NextResponse.redirect(`${origin}${dest}`);
         } else if (authUser.email) {
+          const configuredAdminEmail = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
+          const isConfiguredAdmin = Boolean(
+            configuredAdminEmail &&
+              authUser.email.toLowerCase() === configuredAdminEmail
+          );
+
           // If the user came from `/login` (mode=login) and is NOT in `db.user` (e.g. deleted their account or never registered),
           // strictly block auto-registration on login and require them to create an account on `/register`!
-          if (modeParam === "login" && authUser.email.toLowerCase() !== "bjasser123@gmail.com") {
+          if (modeParam === "login" && !isConfiguredAdmin) {
             await db
               .$executeRawUnsafe(`DELETE FROM auth.users WHERE id = $1::uuid`, authUser.id)
               .catch(() => null);
@@ -6348,10 +6477,9 @@ export async function GET(request: Request) {
             metaRole ||
             "TEACHER";
 
-          const assignedRole: Role =
-            authUser.email.toLowerCase() === "bjasser123@gmail.com"
-              ? Role.ADMIN
-              : resolveAllowedPublicRole(rawRole);
+          const assignedRole: Role = isConfiguredAdmin
+            ? Role.ADMIN
+            : resolveAllowedPublicRole(rawRole);
 
           const isInspectorPending =
             Boolean(authUser.user_metadata?.inspector_pending) ||
@@ -6424,7 +6552,8 @@ export async function GET(request: Request) {
         // Proceed even if DB sync encountered a transient issue
       }
 
-      const safeNext = next.startsWith("/") ? next : "/";
+      const safeNext =
+        next.startsWith("/") && !next.startsWith("//") ? next : "/";
       return NextResponse.redirect(`${origin}${safeNext}`);
     }
   }
@@ -6486,10 +6615,15 @@ export async function GET() {
     const rawMetaRole = String(user.user_metadata?.role || "").trim().toUpperCase();
 
     if (!profile) {
-      const safeRole: Role =
-        user.email?.toLowerCase() === "bjasser123@gmail.com"
-          ? Role.ADMIN
-          : resolveAllowedPublicRole(rawMetaRole || "TEACHER");
+      const configuredAdminEmail = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
+      const isConfiguredAdmin = Boolean(
+        configuredAdminEmail &&
+          user.email?.toLowerCase() === configuredAdminEmail
+      );
+
+      const safeRole: Role = isConfiguredAdmin
+        ? Role.ADMIN
+        : resolveAllowedPublicRole(rawMetaRole || "TEACHER");
 
       const isInspectorPending =
         Boolean(user.user_metadata?.inspector_pending) || safeRole === Role.INSPECTOR;
@@ -6668,6 +6802,7 @@ import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 import { MAX_LOGIN_PASSWORD_ATTEMPTS } from "@/config/constants";
 import { logPlatformActivity } from "@/services/audit.service";
 import { sendWelcomeEmail } from "@/services/email.service";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Role } from "@prisma/client";
 
 const PORTAL_NAMES_AR: Record<string, string> = {
@@ -6711,7 +6846,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     const action = String(body.action || "PRECHECK").toUpperCase();
 
-    // REGISTER_SYNC: Immediately persists the exact selected account category in PostgreSQL upon signup
+    // REGISTER_SYNC: Persists selected account category upon signup with strict security validation
     if (action === "REGISTER_SYNC") {
       const userId = String(body.userId || "").trim();
       const email = String(body.email || "").trim().toLowerCase();
@@ -6725,10 +6860,57 @@ export async function POST(request: NextRequest) {
         return successResponse({ synced: false });
       }
 
-      const assignedRole: Role =
-        email === "bjasser123@gmail.com"
-          ? Role.ADMIN
-          : resolveAllowedPublicRole(requestedRole);
+      // 1. Session & Identity Verification
+      let authedUser: { id: string; email?: string } | null = null;
+      try {
+        const supabase = await createSupabaseServerClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        authedUser = user;
+      } catch {
+        // Session might not be set yet if email confirmation is required
+      }
+
+      if (authedUser && authedUser.id !== userId) {
+        return Response.json(
+          {
+            success: false,
+            error: {
+              code: "FORBIDDEN",
+              message: "غير مصرح بتعديل بيانات مستخدم آخر",
+            },
+          },
+          { status: 403 }
+        );
+      }
+
+      // 2. Prevent tampering with existing verified or mature accounts
+      const existingDbUser = await db.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (existingDbUser) {
+        const isMatureAccount =
+          Date.now() - new Date(existingDbUser.createdAt).getTime() > 60_000;
+        if (existingDbUser.isVerified || isMatureAccount) {
+          // Account already established; strictly prevent altering role or verified status
+          return successResponse({
+            synced: true,
+            role: existingDbUser.role,
+            isVerified: existingDbUser.isVerified,
+          });
+        }
+      }
+
+      const configuredAdminEmail = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
+      const isConfiguredAdmin = Boolean(
+        configuredAdminEmail && email === configuredAdminEmail
+      );
+
+      const assignedRole: Role = isConfiguredAdmin
+        ? Role.ADMIN
+        : resolveAllowedPublicRole(requestedRole);
 
       const isInspectorPending = assignedRole === Role.INSPECTOR;
       const baseUname = rawUsername.length >= 3 ? rawUsername : email.split("@")[0].replace(/[^a-z0-9_.]/g, "") || "user";
@@ -6751,7 +6933,7 @@ export async function POST(request: NextRequest) {
           school,
           studentGrade,
           role: assignedRole,
-          isVerified: assignedRole === Role.ADMIN,
+          isVerified: isConfiguredAdmin,
           inspectorPending: isInspectorPending,
         },
         create: {
@@ -6762,7 +6944,7 @@ export async function POST(request: NextRequest) {
           school,
           studentGrade,
           role: assignedRole,
-          isVerified: assignedRole === Role.ADMIN,
+          isVerified: isConfiguredAdmin,
           inspectorPending: isInspectorPending,
           presenceStatus: "ONLINE",
           lastSeenAt: new Date(),
@@ -6878,10 +7060,11 @@ export async function POST(request: NextRequest) {
       // Check Portal-Specific Login Rule:
       // ADMIN and MODERATOR can log in from ANY portal.
       // INSTITUTION, INSPECTOR, TEACHER, and STUDENT can ONLY log in from their own portal.
+      const configuredAdminEmail = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
       const isStaff =
         user.role === Role.ADMIN ||
         user.role === Role.MODERATOR ||
-        user.email.toLowerCase() === "bjasser123@gmail.com";
+        Boolean(configuredAdminEmail && user.email.toLowerCase() === configuredAdminEmail);
 
       const isStandardPortal = ["INSTITUTION", "INSPECTOR", "TEACHER", "STUDENT"].includes(
         selectedRole
@@ -6916,9 +7099,13 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === "FAILED_ATTEMPT") {
+      // Prevent denial-of-service lockout on primary system administrator accounts
+      const isAdminAccount = user.role === Role.ADMIN;
       const nextAttempts = Math.min(currentFailed + 1, MAX_LOGIN_PASSWORD_ATTEMPTS);
-      const shouldLock = nextAttempts >= MAX_LOGIN_PASSWORD_ATTEMPTS;
-      const remaining = Math.max(0, MAX_LOGIN_PASSWORD_ATTEMPTS - nextAttempts);
+      const shouldLock = !isAdminAccount && nextAttempts >= MAX_LOGIN_PASSWORD_ATTEMPTS;
+      const remaining = isAdminAccount
+        ? MAX_LOGIN_PASSWORD_ATTEMPTS
+        : Math.max(0, MAX_LOGIN_PASSWORD_ATTEMPTS - nextAttempts);
 
       await db.user.update({
         where: { id: user.id },
@@ -6979,6 +7166,31 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === "RESET_SUCCESS") {
+      let authedUser: { id: string } | null = null;
+      try {
+        const supabase = await createSupabaseServerClient();
+        const {
+          data: { user: currentUser },
+        } = await supabase.auth.getUser();
+        authedUser = currentUser;
+      } catch {
+        // ignore
+      }
+
+      // Strictly enforce that the user calling RESET_SUCCESS is authenticated as the target user
+      if (!authedUser || authedUser.id !== user.id) {
+        return Response.json(
+          {
+            success: false,
+            error: {
+              code: "UNAUTHORIZED",
+              message: "غير مصرح بتصفير محاولات تسجيل الدخول دون جلسة مصادقة نشطة",
+            },
+          },
+          { status: 401 }
+        );
+      }
+
       await db.user.update({
         where: { id: user.id },
         data: {
@@ -8267,7 +8479,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
 import { updateProfileSchema, type UpdateProfileInput } from "@/lib/validators/auth";
-import { UnauthorizedError, ForbiddenError } from "@/lib/utils/errors";
+import { UnauthorizedError, ForbiddenError, ValidationError } from "@/lib/utils/errors";
 import { ProfileEditStatus, Role, Prisma } from "@prisma/client";
 
 export async function updateProfileAction(input: UpdateProfileInput) {
@@ -8361,6 +8573,8 @@ export async function updateProfileAction(input: UpdateProfileInput) {
   return { ...updatedUser, pendingApproval: true };
 }
 
+const VALID_SUBSCRIPTION_PLANS = ["STANDARD", "PRO_EDUCATOR", "INSTITUTION_PLUS"] as const;
+
 export async function updateSubscriptionPlanAction(planCode: string) {
   const supabase = await createSupabaseServerClient();
   const {
@@ -8369,9 +8583,14 @@ export async function updateSubscriptionPlanAction(planCode: string) {
 
   if (!user) throw new UnauthorizedError("يجب تسجيل الدخول أولاً");
 
+  const normalizedPlan = String(planCode || "").trim().toUpperCase();
+  if (!VALID_SUBSCRIPTION_PLANS.includes(normalizedPlan as any)) {
+    throw new ValidationError("باقة الاشتراك المحددة غير صالحة");
+  }
+
   const updated = await db.user.update({
     where: { id: user.id },
-    data: { subscriptionPlan: planCode },
+    data: { subscriptionPlan: normalizedPlan },
     select: { id: true, subscriptionPlan: true },
   });
 

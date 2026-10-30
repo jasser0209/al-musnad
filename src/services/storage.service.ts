@@ -26,9 +26,116 @@ const MAX_FILE_SIZE =
   (Number(process.env.MAX_FILE_SIZE_MB) || 20) * 1024 * 1024;
 const S3_MAX_EXPIRY_SECONDS = 604800; // 7 days max for S3/R2 SigV4
 
-const KNOWN_VERIFIED_R2_ACCESS_KEY_ID = "f272f5098c9f3eeb255a833defec2e89";
-const KNOWN_VERIFIED_R2_SECRET_KEY =
-  "6b5ca30a3de6c846aa585ddb963bc85a7a1e1e4155497fa50de39d7310e441ef";
+export const REVOKED_COMPROMISED_R2_KEYS = new Set([
+  "f272f5098c9f3eeb255a833defec2e89",
+  "6b5ca30a3de6c846aa585ddb963bc85a7a1e1e4155497fa50de39d7310e441ef",
+]);
+
+/**
+ * Validates the binary magic bytes (file signature) of an uploaded file buffer.
+ * Prevents disguised executable / malicious files from bypassing MIME-type checks.
+ */
+export function verifyFileMagicBytes(
+  buffer: Buffer,
+  fileName: string,
+  declaredMimeType?: string
+): void {
+  if (!buffer || buffer.length < 4) {
+    throw new InvalidFileTypeError(ALLOWED_FILE_EXTENSIONS);
+  }
+
+  const ext = fileName.toLowerCase().split(".").pop() || "";
+
+  // PDF signature: %PDF- (0x25 0x50 0x44 0x46)
+  if (ext === "pdf" || declaredMimeType === "application/pdf") {
+    const isPdf =
+      buffer[0] === 0x25 &&
+      buffer[1] === 0x50 &&
+      buffer[2] === 0x44 &&
+      buffer[3] === 0x46;
+    if (!isPdf) {
+      throw new InvalidFileTypeError(["pdf (Invalid PDF signature)"]);
+    }
+    return;
+  }
+
+  // PNG signature: 89 50 4E 47 0D 0A 1A 0A
+  if (ext === "png" || declaredMimeType === "image/png") {
+    const isPng =
+      buffer[0] === 0x89 &&
+      buffer[1] === 0x50 &&
+      buffer[2] === 0x4e &&
+      buffer[3] === 0x47;
+    if (!isPng) {
+      throw new InvalidFileTypeError(["png (Invalid PNG signature)"]);
+    }
+    return;
+  }
+
+  // JPEG signature: FF D8 FF
+  if (
+    ext === "jpg" ||
+    ext === "jpeg" ||
+    declaredMimeType === "image/jpeg" ||
+    declaredMimeType === "image/jpg"
+  ) {
+    const isJpeg =
+      buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+    if (!isJpeg) {
+      throw new InvalidFileTypeError(["jpg/jpeg (Invalid JPEG signature)"]);
+    }
+    return;
+  }
+
+  // WEBP signature: RIFF....WEBP (0x52 0x49 0x46 0x46 ... 0x57 0x45 0x42 0x50)
+  if (ext === "webp" || declaredMimeType === "image/webp") {
+    const isRiff =
+      buffer[0] === 0x52 &&
+      buffer[1] === 0x49 &&
+      buffer[2] === 0x46 &&
+      buffer[3] === 0x46;
+    const isWebp =
+      buffer.length >= 12 &&
+      buffer[8] === 0x57 &&
+      buffer[9] === 0x45 &&
+      buffer[10] === 0x42 &&
+      buffer[11] === 0x50;
+    if (!isRiff || !isWebp) {
+      throw new InvalidFileTypeError(["webp (Invalid WebP signature)"]);
+    }
+    return;
+  }
+
+  // DOCX / ZIP: 50 4B 03 04 (PK..)
+  if (
+    ext === "docx" ||
+    declaredMimeType ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  ) {
+    const isZip =
+      buffer[0] === 0x50 &&
+      buffer[1] === 0x4b &&
+      (buffer[2] === 0x03 || buffer[2] === 0x05 || buffer[2] === 0x07) &&
+      (buffer[3] === 0x04 || buffer[3] === 0x06 || buffer[3] === 0x08);
+    if (!isZip) {
+      throw new InvalidFileTypeError(["docx (Invalid DOCX/Office signature)"]);
+    }
+    return;
+  }
+
+  // DOC (legacy binary compound document): D0 CF 11 E0 A1 B1 1A E1
+  if (ext === "doc" || declaredMimeType === "application/msword") {
+    const isDoc =
+      buffer[0] === 0xd0 &&
+      buffer[1] === 0xcf &&
+      buffer[2] === 0x11 &&
+      buffer[3] === 0xe0;
+    if (!isDoc) {
+      throw new InvalidFileTypeError(["doc (Invalid legacy Word signature)"]);
+    }
+    return;
+  }
+}
 
 export interface UploadResult {
   fileUrl: string;
@@ -98,18 +205,9 @@ export function resolveR2Config(): ResolvedR2Config {
     autoSwappedKeys = true;
   }
 
-  if (
-    rawAccessKey === KNOWN_VERIFIED_R2_SECRET_KEY &&
-    rawAccessKey.length === 64
-  ) {
-    rawSecretKey = KNOWN_VERIFIED_R2_SECRET_KEY;
-    rawAccessKey = KNOWN_VERIFIED_R2_ACCESS_KEY_ID;
-    autoSwappedKeys = true;
-  }
-
-  if (rawAccessKey === KNOWN_VERIFIED_R2_ACCESS_KEY_ID && !rawSecretKey) {
-    rawSecretKey = KNOWN_VERIFIED_R2_SECRET_KEY;
-  }
+  const isCompromised =
+    REVOKED_COMPROMISED_R2_KEYS.has(rawAccessKey) ||
+    REVOKED_COMPROMISED_R2_KEYS.has(rawSecretKey);
 
   const endpoint = accountId
     ? `https://${accountId}.r2.cloudflarestorage.com`
@@ -118,7 +216,8 @@ export function resolveR2Config(): ResolvedR2Config {
   const isAccessKeyValid = rawAccessKey.length === 32;
   const isSecretKeyValid = rawSecretKey.length === 64;
   const isValid = Boolean(
-    accountId &&
+    !isCompromised &&
+      accountId &&
       accountId.length >= 8 &&
       bucketName &&
       isAccessKeyValid &&
@@ -126,7 +225,10 @@ export function resolveR2Config(): ResolvedR2Config {
   );
 
   let diagnosticMessage = "READY";
-  if (!accountId) {
+  if (isCompromised) {
+    diagnosticMessage =
+      "REVOKED_COMPROMISED_KEY_DETECTED_PLEASE_ROTATE_IN_CLOUDFLARE_AND_VERCEL";
+  } else if (!accountId) {
     diagnosticMessage = "MISSING_R2_ACCOUNT_ID";
   } else if (!rawAccessKey && !rawSecretKey) {
     diagnosticMessage = "MISSING_R2_KEYS";
@@ -274,6 +376,9 @@ export async function uploadFile(
 
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
+
+  // Validate binary magic bytes to prevent file extension spoofing / malicious uploads
+  verifyFileMagicBytes(buffer, file.name, contentType);
 
   // 1. Attempt Cloudflare R2 Upload
   const cfg = resolveR2Config();
@@ -486,6 +591,9 @@ export async function uploadThumbnail(
 
   const arrayBuffer = await thumbnailFile.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
+
+  // Validate binary magic bytes for image thumbnails
+  verifyFileMagicBytes(buffer, thumbnailFile.name, contentType);
 
   // If thumbnail is <= 250 KB (standard WebP thumbnail is ~15-35 KB), return permanent base64 Data URI
   if (buffer.byteLength <= 250 * 1024) {

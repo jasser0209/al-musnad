@@ -3,15 +3,15 @@ import { createClient } from "@supabase/supabase-js";
 
 const prisma = new PrismaClient();
 
-const supabaseUrl =
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://fzokicsiqbdmwsdcuojz.supabase.co";
-const serviceRoleKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6b2tpY3NpcWJkbXdzZGN1b2p6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MzIyMDYzOSwiZXhwIjoyMTA4Nzk2NjM5fQ.hZOIvBQjQlpZMDBa6DUdjHAd1Q-73YiHmEJo5u42f7k";
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
-const supabase = createClient(supabaseUrl, serviceRoleKey, {
-  auth: { autoRefreshToken: false, persistSession: false },
-});
+const supabase =
+  supabaseUrl && serviceRoleKey
+    ? createClient(supabaseUrl, serviceRoleKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      })
+    : null;
 
 interface SeedAccount {
   email: string;
@@ -27,10 +27,10 @@ interface SeedAccount {
 }
 
 const PRIMARY_ADMIN: SeedAccount = {
-  email: "bjasser123@gmail.com",
-  username: "bjasser",
-  password: "Jasserbes1M",
-  name: "Jasser",
+  email: process.env.ADMIN_EMAIL || "admin@musnad.tn",
+  username: "admin",
+  password: process.env.ADMIN_INITIAL_PASSWORD || "ChangeMeImmediately@2026",
+  name: process.env.ADMIN_NAME || "المشرف العام",
   role: Role.ADMIN,
   bio: "حساب المشرف العام الأساسي لمنصة المسند — إدارة النظام وصلاحيات الهرم الرقابي.",
   isVerified: true,
@@ -183,6 +183,9 @@ async function main() {
 
   console.log(`🌱 Seeding accounts (${accountsToSeed.length} accounts, Environment isProduction: ${isProduction})...`);
   try {
+    if (!supabase) {
+      throw new Error("Supabase credentials not configured in environment (missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY)");
+    }
     const { data: listData } = await supabase.auth.admin.listUsers({ page: 1, perPage: 100 });
     const authUsers = listData?.users || [];
 
