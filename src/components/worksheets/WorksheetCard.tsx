@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BadgeCheck, Lock, Users, FileText, FolderOpen } from "lucide-react";
@@ -33,12 +33,65 @@ export default function WorksheetCard({
   const [isFavorited, setIsFavorited] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
   const [thumbError, setThumbError] = useState(false);
+  const [healedThumbUrl, setHealedThumbUrl] = useState<string | null>(null);
+
+  const rawThumb = healedThumbUrl || worksheet.thumbnailUrl || null;
   const hasValidThumbnail = Boolean(
-    worksheet.thumbnailUrl &&
+    rawThumb &&
       !thumbError &&
-      !(worksheet.thumbnailUrl.includes('X-Amz-Credential=') &&
-        (worksheet.thumbnailUrl.split('X-Amz-Credential=')[1]?.split('%2F')[0]?.split('/')[0]?.length || 32) !== 32)
+      !(
+        rawThumb.includes("X-Amz-Credential=") &&
+        (rawThumb.split("X-Amz-Credential=")[1]?.split("%2F")[0]?.split("/")[0]
+          ?.length || 32) !== 32
+      )
   );
+
+  // Auto-generate and persist Page 1 thumbnail if a PDF card lacks a valid thumbnail
+  useEffect(() => {
+    if (guestTitleOnly || hasValidThumbnail) return;
+    const lowerName = (worksheet.fileName || "").toLowerCase();
+    if (!lowerName.endsWith(".pdf")) return;
+
+    let cancelled = false;
+    async function autoExtractCardThumbnail() {
+      try {
+        const res = await fetch(
+          `/api/worksheets/${worksheet.id}/file?disposition=inline&stream=1`
+        );
+        if (!res.ok || cancelled) return;
+        const blob = await res.blob();
+        if (cancelled || blob.size === 0) return;
+
+        const pdfFile = new File([blob], worksheet.fileName || "document.pdf", {
+          type: "application/pdf",
+        });
+        const { extractPdfThumbnailAndPages } = await import(
+          "@/lib/utils/pdf-thumbnail"
+        );
+        const { thumbnailFile, thumbnailPreviewUrl, pageCount } =
+          await extractPdfThumbnailAndPages(pdfFile);
+        if (cancelled) return;
+
+        setHealedThumbUrl(thumbnailPreviewUrl);
+        setThumbError(false);
+
+        const fd = new FormData();
+        fd.append("thumbnail", thumbnailFile);
+        if (pageCount > 0) fd.append("pageCount", String(pageCount));
+        await fetch(`/api/worksheets/${worksheet.id}/thumbnail`, {
+          method: "POST",
+          body: fd,
+        });
+      } catch {
+        // Silent fallback to gradient card header
+      }
+    }
+
+    autoExtractCardThumbnail();
+    return () => {
+      cancelled = true;
+    };
+  }, [guestTitleOnly, hasValidThumbnail, worksheet.id, worksheet.fileName]);
 
   const title = worksheet.titleAr || worksheet.title;
   const subjectColor = worksheet.subject?.color || "#2563EB";
@@ -150,7 +203,7 @@ export default function WorksheetCard({
         >
           {hasValidThumbnail ? (
             <img
-              src={worksheet.thumbnailUrl!}
+              src={rawThumb!}
               alt={title}
               onError={() => setThumbError(true)}
               className="w-full h-44 object-cover group-hover:scale-102 transition-transform duration-300"

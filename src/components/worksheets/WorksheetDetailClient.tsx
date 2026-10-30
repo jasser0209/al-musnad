@@ -96,6 +96,50 @@ export default function WorksheetDetailClient({
   const [reportLoading, setReportLoading] = useState(false);
   const [reportSuccess, setReportSuccess] = useState(false);
 
+  // Auto-heal missing PDF thumbnail for existing worksheets (e.g. 596.pdf)
+  useEffect(() => {
+    let cancelled = false;
+    const lowerName = (worksheet.fileName || "").toLowerCase();
+    if (!lowerName.endsWith(".pdf") || worksheet.thumbnailUrl) return;
+
+    async function healMissingThumbnail() {
+      try {
+        const res = await fetch(
+          `/api/worksheets/${worksheet.id}/file?disposition=inline&stream=1`
+        );
+        if (!res.ok || cancelled) return;
+        const blob = await res.blob();
+        if (cancelled || blob.size === 0) return;
+
+        const pdfFile = new File([blob], worksheet.fileName || "document.pdf", {
+          type: "application/pdf",
+        });
+        const { extractPdfThumbnailAndPages } = await import(
+          "@/lib/utils/pdf-thumbnail"
+        );
+        const { thumbnailFile, pageCount } =
+          await extractPdfThumbnailAndPages(pdfFile);
+        if (cancelled) return;
+
+        const fd = new FormData();
+        fd.append("thumbnail", thumbnailFile);
+        if (pageCount > 0) fd.append("pageCount", String(pageCount));
+
+        await fetch(`/api/worksheets/${worksheet.id}/thumbnail`, {
+          method: "POST",
+          body: fd,
+        });
+      } catch {
+        // Silent background self-heal
+      }
+    }
+
+    healMissingThumbnail();
+    return () => {
+      cancelled = true;
+    };
+  }, [worksheet.id, worksheet.fileName, worksheet.thumbnailUrl]);
+
   useEffect(() => {
     let isMounted = true;
     async function checkViewerState() {
@@ -379,18 +423,9 @@ export default function WorksheetDetailClient({
         {/* Right Column: Embedded PDF Viewer & Reviews */}
         <section className="lg:col-span-8 flex flex-col gap-6">
           {(() => {
-            const rawPreviewUrl = worksheet.previewUrl || "";
-            const hasBroken64CharKey =
-              rawPreviewUrl.includes("r2.cloudflarestorage.com") &&
-              rawPreviewUrl.includes("X-Amz-Credential=") &&
-              (rawPreviewUrl
-                .split("X-Amz-Credential=")[1]
-                ?.split("%2F")[0]
-                ?.split("/")[0]?.length || 32) !== 32;
-            const effectivePreviewUrl =
-              !rawPreviewUrl || hasBroken64CharKey
-                ? `/api/worksheets/${worksheet.id}/file?disposition=inline`
-                : rawPreviewUrl;
+            // Route preview through our verified same-origin server endpoint
+            // which checks R2 via HeadObjectCommand and automatically falls back to Supabase Storage!
+            const effectivePreviewUrl = `/api/worksheets/${worksheet.id}/file?disposition=inline&stream=1`;
 
             const lowerFileName = (worksheet.fileName || "").toLowerCase();
             const isImageFile =

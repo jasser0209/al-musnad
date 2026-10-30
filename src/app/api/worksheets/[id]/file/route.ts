@@ -14,6 +14,18 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
+function inferMimeType(fileName: string): string {
+  const lower = (fileName || "").toLowerCase();
+  if (lower.endsWith(".pdf")) return "application/pdf";
+  if (lower.endsWith(".png")) return "image/png";
+  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+  if (lower.endsWith(".webp")) return "image/webp";
+  if (lower.endsWith(".docx"))
+    return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  if (lower.endsWith(".doc")) return "application/msword";
+  return "application/octet-stream";
+}
+
 export async function GET(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
@@ -71,6 +83,32 @@ export async function GET(request: NextRequest, context: RouteContext) {
     }
 
     const signedUrl = await getSignedDownloadUrl(worksheet.fileUrl, 3600);
+    const shouldStream = request.nextUrl.searchParams.get("stream") === "1";
+    const disposition =
+      request.nextUrl.searchParams.get("disposition") === "attachment"
+        ? "attachment"
+        : "inline";
+
+    if (shouldStream) {
+      try {
+        const upstream = await fetch(signedUrl);
+        if (upstream.ok && upstream.body) {
+          const contentType = inferMimeType(worksheet.fileName);
+          const encodedName = encodeURIComponent(worksheet.fileName || "document.pdf");
+          return new NextResponse(upstream.body, {
+            status: 200,
+            headers: {
+              "Content-Type": contentType,
+              "Content-Disposition": `${disposition}; filename*=UTF-8''${encodedName}`,
+              "Cache-Control": "private, max-age=1800",
+            },
+          });
+        }
+      } catch {
+        // Fallback to redirect below
+      }
+    }
+
     return NextResponse.redirect(signedUrl, { status: 302 });
   } catch (error) {
     return errorResponse(error);

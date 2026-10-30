@@ -74,6 +74,7 @@ const part1Files = [
   "src/app/api/worksheets/[id]/route.ts",
   "src/app/api/worksheets/[id]/download/route.ts",
   "src/app/api/worksheets/[id]/file/route.ts",
+  "src/app/api/worksheets/[id]/thumbnail/route.ts",
   "src/app/api/worksheets/[id]/favorite/route.ts",
   "src/app/api/worksheets/[id]/review/route.ts",
   "src/app/api/worksheets/[id]/reviews/route.ts",

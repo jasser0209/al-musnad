@@ -7,10 +7,11 @@ export interface PdfExtractionResult {
 export async function extractPdfThumbnailAndPages(
   pdfFile: File
 ): Promise<PdfExtractionResult> {
-  // Dynamic import so Next.js SSR build never loads browser canvas APIs
   const pdfjsLib = await import("pdfjs-dist");
 
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+  if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+  }
 
   const arrayBuffer = await pdfFile.arrayBuffer();
   const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
@@ -19,8 +20,11 @@ export async function extractPdfThumbnailAndPages(
   const pageCount = pdfDocument.numPages;
   const firstPage = await pdfDocument.getPage(1);
 
-  // Render at scale 1.5 for crisp thumbnail quality
-  const viewport = firstPage.getViewport({ scale: 1.5 });
+  const baseViewport = firstPage.getViewport({ scale: 1.0 });
+  const targetWidth = 520;
+  const scale = Math.min(1.5, Math.max(0.75, targetWidth / (baseViewport.width || 520)));
+  const viewport = firstPage.getViewport({ scale });
+
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d");
 
@@ -28,18 +32,19 @@ export async function extractPdfThumbnailAndPages(
     throw new Error("تعذر إنشاء سياق الرسم للصورة المصغرة");
   }
 
-  canvas.width = viewport.width;
-  canvas.height = viewport.height;
+  canvas.width = Math.round(viewport.width);
+  canvas.height = Math.round(viewport.height);
 
-  // Fill white background for transparent PDFs
   context.fillStyle = "#ffffff";
   context.fillRect(0, 0, canvas.width, canvas.height);
 
-  await (firstPage.render({
-    canvas,
-    canvasContext: context,
-    viewport,
-  } as any)).promise;
+  await (
+    firstPage.render({
+      canvas,
+      canvasContext: context,
+      viewport,
+    } as any)
+  ).promise;
 
   const blob: Blob = await new Promise((resolve, reject) => {
     canvas.toBlob(
@@ -48,12 +53,14 @@ export async function extractPdfThumbnailAndPages(
         else reject(new Error("فشل تحويل صفحة الـ PDF إلى صورة"));
       },
       "image/webp",
-      0.85
+      0.82
     );
   });
 
-  const cleanBaseName = pdfFile.name.replace(/\.pdf$/i, "").replace(/[^a-zA-Z0-9_-]/g, "_");
-  const thumbnailFile = new File([blob], `${cleanBaseName}-thumb.webp`, {
+  const cleanBaseName = pdfFile.name
+    .replace(/\.pdf$/i, "")
+    .replace(/[^a-zA-Z0-9_-]/g, "_");
+  const thumbnailFile = new File([blob], `${cleanBaseName || "doc"}-thumb.webp`, {
     type: "image/webp",
   });
 
