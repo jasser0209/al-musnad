@@ -1,17 +1,10 @@
 "use client";
 
-/**
- * Filter & Search Bar Component — Al-Musnad (المسند) v15.0
- *
- * Includes Tunisian School Trimester filtering (`الثلاثي الأول`, `الثلاثي الثاني`, `الثلاثي الثالث`)
- * alongside keyword search, grade level, subject, category, and sorting.
- */
-
 import React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Calendar } from "lucide-react";
-import { SCHOOL_TRIMESTERS } from "@/config/constants";
+import { Calendar, Filter, Sparkles } from "lucide-react";
 import type { Grade, Subject, Category } from "@/types/api";
+import { SCHOOL_TRIMESTERS } from "@/config/constants";
 
 interface FilterBarProps {
   grades: (Grade | { id: string; name: string; nameAr?: string; slug?: string })[];
@@ -37,59 +30,71 @@ export default function FilterBar({ grades, subjects, categories }: FilterBarPro
     } else {
       params.delete(key);
     }
+    // Clean up alternate parameter keys
     if (key === "subject") params.delete("subjectId");
     if (key === "grade") params.delete("gradeId");
     if (key === "category") params.delete("categoryId");
 
     params.set("page", "1");
-    router.push(`/?${params.toString()}#catalog`);
+    router.push(`/?${params.toString()}`);
   }
 
   function resetAllFilters() {
-    router.push("/#catalog");
+    router.push("/");
   }
 
+  const hasActiveFilters = Boolean(
+    currentSearch ||
+    currentSubject ||
+    currentGrade ||
+    currentCategory ||
+    currentTrimester
+  );
+
   return (
-    <div className="mb-8 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
-      {/* Quick Trimester Pills Bar (الثلاثيات المدرسية التونسية) */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-3.5 border-b border-slate-100 dark:border-slate-800">
-        <div className="flex items-center gap-2 text-xs font-extrabold text-slate-700 dark:text-slate-200">
+    <div className="mb-8 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      {/* Tunisian School Trimesters — Quick 1-Click Filter Pills */}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2.5 pb-3 border-b border-slate-100 dark:border-slate-800/80">
+        <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-          <span>تصفية حسب الثلاثي الدراسي:</span>
+          <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+            الثلاثي المدرسي:
+          </span>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           <button
             type="button"
             onClick={() => updateFilter("trimester", "")}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               !currentTrimester
-                ? "bg-blue-600 text-white shadow-sm"
-                : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-600/20"
+                : "bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700"
             }`}
           >
             كل الثلاثيات
           </button>
-          {SCHOOL_TRIMESTERS.map((tri) => {
-            const active = currentTrimester === tri.slug;
+
+          {SCHOOL_TRIMESTERS.map((trim) => {
+            const isActive = currentTrimester === trim.slug;
             return (
               <button
-                key={tri.slug}
+                key={trim.id}
                 type="button"
-                onClick={() => updateFilter("trimester", active ? "" : tri.slug)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer ${
-                  active
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-slate-700"
+                onClick={() => updateFilter("trimester", trim.slug)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  isActive
+                    ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-600/30"
+                    : "bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700"
                 }`}
               >
-                {tri.labelAr}
+                <span>{trim.nameAr}</span>
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Main 6-Column Filter Grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
         <div className="lg:col-span-2">
           <label className="mb-1.5 block text-xs font-bold text-slate-600 dark:text-slate-300">
@@ -107,24 +112,6 @@ export default function FilterBar({ grades, subjects, categories }: FilterBarPro
             onBlur={(e) => updateFilter("search", e.target.value)}
             className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
           />
-        </div>
-
-        <div>
-          <label className="mb-1.5 block text-xs font-bold text-slate-600 dark:text-slate-300">
-            المستوى الدراسي
-          </label>
-          <select
-            value={currentGrade}
-            onChange={(e) => updateFilter("grade", e.target.value)}
-            className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:border-indigo-600 focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-          >
-            <option value="">جميع المستويات</option>
-            {grades.map((g) => (
-              <option key={g.id} value={g.slug || g.id}>
-                {g.nameAr || g.name}
-              </option>
-            ))}
-          </select>
         </div>
 
         <div>
@@ -147,6 +134,24 @@ export default function FilterBar({ grades, subjects, categories }: FilterBarPro
 
         <div>
           <label className="mb-1.5 block text-xs font-bold text-slate-600 dark:text-slate-300">
+            المستوى الدراسي
+          </label>
+          <select
+            value={currentGrade}
+            onChange={(e) => updateFilter("grade", e.target.value)}
+            className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:border-indigo-600 focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+          >
+            <option value="">جميع المستويات</option>
+            {grades.map((g) => (
+              <option key={g.id} value={g.slug || g.id}>
+                {g.nameAr || g.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-bold text-slate-600 dark:text-slate-300">
             الثلاثي الدراسي
           </label>
           <select
@@ -154,10 +159,10 @@ export default function FilterBar({ grades, subjects, categories }: FilterBarPro
             onChange={(e) => updateFilter("trimester", e.target.value)}
             className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:border-indigo-600 focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           >
-            <option value="">كل الثلاثيات</option>
-            {SCHOOL_TRIMESTERS.map((tri) => (
-              <option key={tri.slug} value={tri.slug}>
-                {tri.labelAr}
+            <option value="">جميع الثلاثيات</option>
+            {SCHOOL_TRIMESTERS.map((t) => (
+              <option key={t.id} value={t.slug}>
+                {t.nameAr}
               </option>
             ))}
           </select>
@@ -171,7 +176,7 @@ export default function FilterBar({ grades, subjects, categories }: FilterBarPro
             <select
               value={currentCategory}
               onChange={(e) => updateFilter("category", e.target.value)}
-              className="w-1/2 rounded-xl border border-slate-300 bg-slate-50 px-2 py-2.5 text-xs text-slate-900 focus:border-indigo-600 focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              className="w-1/2 rounded-xl border border-slate-300 bg-slate-50 px-2.5 py-2.5 text-xs text-slate-900 focus:border-indigo-600 focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             >
               <option value="">النوع</option>
               {categories.map((c) => (
@@ -184,7 +189,7 @@ export default function FilterBar({ grades, subjects, categories }: FilterBarPro
             <select
               value={currentSort}
               onChange={(e) => updateFilter("sort", e.target.value)}
-              className="w-1/2 rounded-xl border border-slate-300 bg-slate-50 px-2 py-2.5 text-xs text-slate-900 focus:border-indigo-600 focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              className="w-1/2 rounded-xl border border-slate-300 bg-slate-50 px-2.5 py-2.5 text-xs text-slate-900 focus:border-indigo-600 focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             >
               <option value="newest">الأحدث</option>
               <option value="popular">الأكثر تحميلاً</option>
@@ -194,8 +199,11 @@ export default function FilterBar({ grades, subjects, categories }: FilterBarPro
         </div>
       </div>
 
-      {(currentSearch || currentSubject || currentGrade || currentCategory || currentTrimester) && (
-        <div className="mt-2 flex items-center justify-end border-t border-slate-100 pt-3 dark:border-slate-800">
+      {hasActiveFilters && (
+        <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
+          <div className="text-xs text-slate-500 dark:text-slate-400">
+            الفلاتر النشطة قيد التطبيق حالياً
+          </div>
           <button
             type="button"
             onClick={resetAllFilters}
@@ -210,3 +218,4 @@ export default function FilterBar({ grades, subjects, categories }: FilterBarPro
 }
 
 export { FilterBar };
+

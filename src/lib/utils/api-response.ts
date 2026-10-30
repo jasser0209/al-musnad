@@ -9,6 +9,9 @@ import type {
   ApiErrorDetail,
 } from "@/types/api";
 
+/**
+ * Returns a standardized 2xx success JSON response.
+ */
 export function successResponse<T>(
   data: T,
   meta?: PaginationMeta,
@@ -23,6 +26,10 @@ export function successResponse<T>(
   return NextResponse.json(body, { status });
 }
 
+/**
+ * Returns a standardized error JSON response from any thrown exception.
+ * Dispatches AppError, Zod validation errors, Prisma database errors, and unknown exceptions.
+ */
 export function errorResponse(
   error: unknown,
   fallbackStatus: number = 500

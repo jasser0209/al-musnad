@@ -35,7 +35,3 @@ export async function GET(
     return errorResponse(error);
   }
 }
-
-export async function POST(request: NextRequest, context: RouteContext) {
-  return GET(request, context);
-}

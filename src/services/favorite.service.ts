@@ -27,7 +27,7 @@ export async function toggleFavorite(
   const [dbUser, worksheet] = await Promise.all([
     db.user.findUnique({
       where: { id: userId },
-      select: { id: true, role: true, isVerified: true },
+      select: { id: true, role: true },
     }),
     db.worksheet.findUnique({
       where: { id: worksheetId },
@@ -49,7 +49,7 @@ export async function toggleFavorite(
     throw new NotFoundError("Worksheet");
   }
 
-  if (!canUserAccessWorksheet(worksheet, dbUser.role, dbUser.id, dbUser.isVerified)) {
+  if (!canUserAccessWorksheet(worksheet, dbUser.role, dbUser.id)) {
     throw new ForbiddenError(
       "غير مصرح لحسابك بالتفاعل مع هذه النشرة حسب قيود الجمهور التي حددها الناشر."
     );
@@ -121,10 +121,10 @@ export async function getUserFavorites(
 
   const dbUser = await db.user.findUnique({
     where: { id: userId },
-    select: { id: true, role: true, isVerified: true },
+    select: { id: true, role: true },
   });
 
-  const audienceGuard = buildAudienceVisibilityFilter(dbUser?.role, userId, dbUser?.isVerified);
+  const audienceGuard = buildAudienceVisibilityFilter(dbUser?.role, userId);
 
   const where = {
     userId,

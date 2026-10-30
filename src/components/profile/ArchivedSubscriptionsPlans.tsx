@@ -46,18 +46,25 @@ export default function ArchivedSubscriptionsPlans(
   _props: ArchivedSubscriptionsPlansProps
 ) {
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-10 sm:p-14 shadow-sm text-center">
-      <div className="max-w-md mx-auto space-y-4">
-        <div className="w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto shadow-sm">
-          <Clock className="w-8 h-8" />
+    <section className="space-y-6">
+      <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 sm:p-16 text-center shadow-sm">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/25">
+          <Clock className="h-8 w-8" />
         </div>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 px-4 py-1 text-xs font-extrabold text-amber-800 dark:text-amber-300">
-          قسم الاشتراكات
+
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-950/80 px-4 py-1 text-xs font-black text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800 mb-4">
+          <Clock className="h-3.5 w-3.5" />
+          <span>سيأتي قريباً • Coming Soon</span>
         </span>
+
         <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-          سيأتي قريباً
+          قسم الاشتراكات والباقات
         </h2>
+
+        <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+          هذا القسم قيد الإعداد والتطوير وسيكون متاحاً لجميع الأعضاء قريباً.
+        </p>
       </div>
-    </div>
+    </section>
   );
 }

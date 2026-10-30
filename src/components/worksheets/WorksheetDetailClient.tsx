@@ -1,17 +1,5 @@
 "use client";
 
-/**
- * Worksheet Detail Client — Al-Musnad (المسند) v4.0
- *
- * Implements:
- * 1. Edit Publication Modal (`تعديل المنشور`):
- *    - If publisher edits only title, description, or audience, `isEndorsed` stays intact.
- *    - If publisher selects a new PDF file (`newFile`), displays a prominent warning alert
- *      before confirming: changing the file and its content will revoke the current endorsement badge!
- * 2. Report Publication Modal (`🚩 إبلاغ عن المنشور`).
- * 3. Inspector Endorsement toggle button.
- */
-
 import React, { useEffect, useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -78,7 +66,6 @@ export default function WorksheetDetailClient({
   const [endorseLoading, setEndorseLoading] = useState<boolean>(false);
   const [viewerRole, setViewerRole] = useState<string | null>(null);
   const [viewerId, setViewerId] = useState<string | null>(null);
-  const [viewerIsVerified, setViewerIsVerified] = useState<boolean>(false);
 
   const [downloadCount, setDownloadCount] = useState<number>(
     initialWorksheet.downloadCount
@@ -109,6 +96,50 @@ export default function WorksheetDetailClient({
   const [reportLoading, setReportLoading] = useState(false);
   const [reportSuccess, setReportSuccess] = useState(false);
 
+  // Auto-heal missing PDF thumbnail for existing worksheets (e.g. 596.pdf)
+  useEffect(() => {
+    let cancelled = false;
+    const lowerName = (worksheet.fileName || "").toLowerCase();
+    if (!lowerName.endsWith(".pdf") || worksheet.thumbnailUrl) return;
+
+    async function healMissingThumbnail() {
+      try {
+        const res = await fetch(
+          `/api/worksheets/${worksheet.id}/file?disposition=inline&stream=1`
+        );
+        if (!res.ok || cancelled) return;
+        const blob = await res.blob();
+        if (cancelled || blob.size === 0) return;
+
+        const pdfFile = new File([blob], worksheet.fileName || "document.pdf", {
+          type: "application/pdf",
+        });
+        const { extractPdfThumbnailAndPages } = await import(
+          "@/lib/utils/pdf-thumbnail"
+        );
+        const { thumbnailFile, pageCount } =
+          await extractPdfThumbnailAndPages(pdfFile);
+        if (cancelled) return;
+
+        const fd = new FormData();
+        fd.append("thumbnail", thumbnailFile);
+        if (pageCount > 0) fd.append("pageCount", String(pageCount));
+
+        await fetch(`/api/worksheets/${worksheet.id}/thumbnail`, {
+          method: "POST",
+          body: fd,
+        });
+      } catch {
+        // Silent background self-heal
+      }
+    }
+
+    healMissingThumbnail();
+    return () => {
+      cancelled = true;
+    };
+  }, [worksheet.id, worksheet.fileName, worksheet.thumbnailUrl]);
+
   useEffect(() => {
     let isMounted = true;
     async function checkViewerState() {
@@ -131,7 +162,6 @@ export default function WorksheetDetailClient({
           if (meJson.success && meJson.data && isMounted) {
             setViewerRole(meJson.data.role || null);
             setViewerId(meJson.data.id || null);
-            setViewerIsVerified(Boolean(meJson.data.isVerified));
           }
         }
       } catch {
@@ -318,7 +348,7 @@ export default function WorksheetDetailClient({
   const displayTitle = worksheet.titleAr || worksheet.title;
   const displayDesc = worksheet.descriptionAr || worksheet.description;
   const subjectColor = worksheet.subject?.color || "#2563EB";
-  const canEndorse = viewerRole === "ADMIN" || (viewerRole === "INSPECTOR" && viewerIsVerified);
+  const canEndorse = viewerRole === "INSPECTOR" || viewerRole === "ADMIN";
   const isOwnerOrAdmin =
     (viewerId && viewerId === worksheet.uploadedBy) || viewerRole === "ADMIN";
 
@@ -392,43 +422,94 @@ export default function WorksheetDetailClient({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Right Column: Embedded PDF Viewer & Reviews */}
         <section className="lg:col-span-8 flex flex-col gap-6">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
-            <div className="bg-slate-50 dark:bg-slate-800 px-5 py-3.5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-semibold text-sm">
-                <FileText className="w-4 h-4 text-blue-600" />
-                <span>معاينة مباشرة لملف النشرة ({worksheet.fileName})</span>
-              </div>
-              {worksheet.previewUrl && (
-                <a
-                  href={worksheet.previewUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs font-medium text-blue-600 hover:text-blue-800 inline-flex items-center gap-1"
-                >
-                  <span>فتح في نافذة مستقلة</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-              )}
-            </div>
+          {(() => {
+            // Route preview through our verified same-origin server endpoint
+            // which checks R2 via HeadObjectCommand and automatically falls back to Supabase Storage!
+            const effectivePreviewUrl = `/api/worksheets/${worksheet.id}/file?disposition=inline&stream=1`;
 
-            {worksheet.previewUrl ? (
-              <iframe
-                src={`${worksheet.previewUrl}#toolbar=0&navpanes=0`}
-                title={displayTitle}
-                className="w-full h-[680px] bg-slate-100"
-              />
-            ) : (
-              <div className="h-[450px] flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-800/40 p-8 text-center">
-                <FileText className="w-16 h-16 text-slate-400 mb-3" />
-                <p className="text-slate-700 dark:text-slate-200 font-semibold mb-1">
-                  المعاينة المباشرة جاهزة عند التحميل
-                </p>
-                <p className="text-sm text-slate-500 max-w-md mb-4">
-                  اضغط على زر &quot;تحميل مباشر (PDF)&quot; لتنزيل النسخة الكاملة عالية الدقة.
-                </p>
+            const lowerFileName = (worksheet.fileName || "").toLowerCase();
+            const isImageFile =
+              lowerFileName.endsWith(".png") ||
+              lowerFileName.endsWith(".jpg") ||
+              lowerFileName.endsWith(".jpeg") ||
+              lowerFileName.endsWith(".webp") ||
+              lowerFileName.endsWith(".gif");
+            const isPdfFile = lowerFileName.endsWith(".pdf") || (!isImageFile && !lowerFileName.endsWith(".doc") && !lowerFileName.endsWith(".docx"));
+
+            return (
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+                <div className="bg-slate-50 dark:bg-slate-800 px-5 py-3.5 border-b border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-semibold text-sm">
+                    <FileText className="w-4 h-4 text-blue-600" />
+                    <span>معاينة مباشرة لملف النشرة ({worksheet.fileName})</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={effectivePreviewUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-bold px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 hover:bg-blue-100 inline-flex items-center gap-1 transition"
+                    >
+                      <span>فتح في نافذة مستقلة</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                    <button
+                      type="button"
+                      onClick={handleDownload}
+                      disabled={downloading}
+                      className="text-xs font-bold px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white inline-flex items-center gap-1 transition cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>{downloading ? "جاري التحضير..." : "تحميل الملف"}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {isImageFile ? (
+                  <div className="p-4 sm:p-6 bg-slate-900 flex flex-col items-center justify-center min-h-[380px]">
+                    <img
+                      src={effectivePreviewUrl}
+                      alt={displayTitle}
+                      className="max-h-[680px] w-auto object-contain rounded-xl shadow-lg border border-slate-700 bg-white"
+                    />
+                  </div>
+                ) : isPdfFile ? (
+                  <div className="w-full h-[540px] sm:h-[680px] bg-slate-100">
+                    <object
+                      data={`${effectivePreviewUrl}#toolbar=1&navpanes=0`}
+                      type="application/pdf"
+                      className="w-full h-full"
+                    >
+                      <iframe
+                        src={`${effectivePreviewUrl}#toolbar=1&navpanes=0`}
+                        title={displayTitle}
+                        className="w-full h-full bg-slate-100"
+                      />
+                    </object>
+                  </div>
+                ) : (
+                  <div className="h-[420px] flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-800/40 p-8 text-center">
+                    <FileText className="w-16 h-16 text-slate-400 mb-3" />
+                    <p className="text-slate-700 dark:text-slate-200 font-semibold mb-1">
+                      هذا الملف بصيغة مستند ({worksheet.fileName})
+                    </p>
+                    <p className="text-sm text-slate-500 max-w-md mb-4">
+                      اضغط على زر &quot;تحميل الملف&quot; لتنزيل النسخة الكاملة على جهازك.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleDownload}
+                      disabled={downloading}
+                      className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold inline-flex items-center gap-2 transition cursor-pointer"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>تحميل الملف الآن</span>
+                    </button>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            );
+          })()}
 
           <ReviewSection
             worksheetId={worksheet.id}

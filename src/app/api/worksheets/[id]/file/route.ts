@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { canUserAccessWorksheet } from "@/services/worksheet.service";
-import { getFileStream, getSignedDownloadUrl } from "@/services/storage.service";
+import { getSignedDownloadUrl } from "@/services/storage.service";
 import { errorResponse } from "@/lib/utils/api-response";
 import {
   ForbiddenError,
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const [dbUser, worksheet] = await Promise.all([
       db.user.findUnique({
         where: { id: user.id },
-        select: { id: true, role: true, isVerified: true },
+        select: { id: true, role: true },
       }),
       db.worksheet.findUnique({
         where: { id },
@@ -69,53 +69,47 @@ export async function GET(request: NextRequest, context: RouteContext) {
       worksheet.status === "DRAFT" &&
       worksheet.uploadedBy !== dbUser.id &&
       dbUser.role !== "ADMIN" &&
-      !(dbUser.role === "INSPECTOR" && dbUser.isVerified)
+      dbUser.role !== "INSPECTOR"
     ) {
       throw new ForbiddenError(
         "هذا الملف قيد المراجعة وإعادة الصياغة إلى PDF من قِبل المشرف والمتفقد."
       );
     }
 
-    if (!canUserAccessWorksheet(worksheet, dbUser.role, dbUser.id, dbUser.isVerified)) {
-      if (canUserAccessWorksheet(worksheet, dbUser.role, dbUser.id, true) && !dbUser.isVerified) {
-        throw new ForbiddenError('عذراً، هذا الملف حساس وموجه داخلياً لفئة حسابك الموثقين فقط. يرجى إثبات وتوثيق هويتك أولاً للوصول إليه.');
-      }
+    if (!canUserAccessWorksheet(worksheet, dbUser.role, dbUser.id)) {
       throw new ForbiddenError(
         "غير مصرح لحسابك بمعاينة أو تحميل هذه النشرة حسب قيود الجمهور."
       );
     }
 
+    const signedUrl = await getSignedDownloadUrl(worksheet.fileUrl, 3600);
+    const shouldStream = request.nextUrl.searchParams.get("stream") === "1";
     const disposition =
       request.nextUrl.searchParams.get("disposition") === "attachment"
         ? "attachment"
         : "inline";
 
-    // Direct streaming from R2 / Supabase Storage with zero external redirects
-    const fileResult = await getFileStream(worksheet.fileUrl);
-    if (fileResult) {
-      const contentType = inferMimeType(worksheet.fileName) || fileResult.contentType || "application/pdf";
-      const encodedName = encodeURIComponent(worksheet.fileName || "document.pdf");
-      const headers: Record<string, string> = {
-        "Content-Type": contentType,
-        "Content-Disposition": `${disposition}; filename*=UTF-8''${encodedName}`,
-        "Cache-Control": "private, max-age=1800",
-      };
-      if (fileResult.contentLength) {
-        headers["Content-Length"] = String(fileResult.contentLength);
+    if (shouldStream) {
+      try {
+        const upstream = await fetch(signedUrl);
+        if (upstream.ok && upstream.body) {
+          const contentType = inferMimeType(worksheet.fileName);
+          const encodedName = encodeURIComponent(worksheet.fileName || "document.pdf");
+          return new NextResponse(upstream.body, {
+            status: 200,
+            headers: {
+              "Content-Type": contentType,
+              "Content-Disposition": `${disposition}; filename*=UTF-8''${encodedName}`,
+              "Cache-Control": "private, max-age=1800",
+            },
+          });
+        }
+      } catch {
+        // Fallback to redirect below
       }
-      return new NextResponse(fileResult.stream, {
-        status: 200,
-        headers,
-      });
     }
 
-    // Secondary fallback: generate verified signed download URL
-    try {
-      const signedUrl = await getSignedDownloadUrl(worksheet.fileUrl, 3600);
-      return NextResponse.redirect(signedUrl, { status: 302 });
-    } catch {
-      throw new NotFoundError("الملف المطلوب غير موجود في مساحة التخزين السحابية");
-    }
+    return NextResponse.redirect(signedUrl, { status: 302 });
   } catch (error) {
     return errorResponse(error);
   }

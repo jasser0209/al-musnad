@@ -1,10 +1,12 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Cairo } from "next/font/google";
 import Link from "next/link";
-import { Headphones, ShieldCheck, BookOpen, Scale } from "lucide-react";
+import { Headphones, ShieldCheck, BookOpen, Briefcase, FileCheck2 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import AuthRoleModal from "@/components/auth/AuthRoleModal";
+import InstallPwaBanner from "@/components/ui/InstallPwaBanner";
 import { AppPreferencesProvider } from "@/context/AppPreferencesContext";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 const cairo = Cairo({
@@ -14,7 +16,15 @@ const cairo = Cairo({
   display: "swap",
 });
 
+export const viewport: Viewport = {
+  themeColor: "#2563eb",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export const metadata: Metadata = {
+  metadataBase: new URL("https://al-musnad.vercel.app"),
   title: "المسند | المنصة التربوية والبيداغوجية المعتمدة",
   description:
     "منصة المسند التربوية والبيداغوجية المعتمدة للمؤسسات، المتفقدين، المعلمين، والتلاميذ لتصفح المستويات والمواد والوثائق الإدارية والنشرات التربوية.",
@@ -27,6 +37,29 @@ export const metadata: Metadata = {
     "امتحانات",
     "وثائق إدارية للمعلم",
   ],
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "المسند",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
+  verification: {
+    google: "cjjaOITGWrgejk9JVO2ns7HzP55iAtkWdTfmwvYFuCo",
+  },
+  alternates: {
+    canonical: "https://al-musnad.vercel.app",
+  },
 };
 
 export default function RootLayout({
@@ -46,6 +79,12 @@ export default function RootLayout({
 
           {/* Main Content Area */}
           <main className="flex-1">{children}</main>
+
+          {/* Vercel Speed Insights */}
+          <SpeedInsights />
+
+          {/* Smart PWA Install Banner */}
+          <InstallPwaBanner />
 
           {/* Global Bottom Footer with Technical Support & Customer Service at the bottom of the page */}
           <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 pt-12 pb-8 mt-16">
@@ -105,8 +144,9 @@ export default function RootLayout({
                       </Link>
                     </li>
                     <li>
-                      <Link href="/#learn-more" className="hover:text-blue-600 transition inline-flex items-center gap-1.5">
-                        <span>اعرف المزيد عن المنصة</span>
+                      <Link href="/#administration-section" className="hover:text-blue-600 transition inline-flex items-center gap-1.5">
+                        <Briefcase className="w-3.5 h-3.5" />
+                        <span>قسم الإدارة والمعاملات الإدارية</span>
                       </Link>
                     </li>
                     <li>
@@ -136,7 +176,7 @@ export default function RootLayout({
                     </li>
                     <li>
                       <Link href="/terms" className="hover:text-blue-600 transition inline-flex items-center gap-1.5">
-                        <Scale className="w-3.5 h-3.5" />
+                        <FileCheck2 className="w-3.5 h-3.5" />
                         <span>شروط الاستخدام والملكية</span>
                       </Link>
                     </li>
@@ -146,10 +186,11 @@ export default function RootLayout({
 
               <div className="pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-3">
                 <p>© {new Date().getFullYear()} منصة المسند التربوية. جميع الحقوق محفوظة.</p>
-                <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-4">
                   <Link href="/terms" className="hover:text-blue-600 font-semibold transition">
                     شروط الاستخدام والملكية
                   </Link>
+                  <span>•</span>
                   <Link href="/support" className="hover:text-blue-600 font-semibold transition">
                     الدعم الفني وخدمة العملاء
                   </Link>

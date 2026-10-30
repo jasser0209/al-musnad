@@ -1,15 +1,5 @@
 "use client";
 
-/**
- * Inspector Dedicated Dashboard (لوحة تحكم المتفقد التربوي) — Al-Musnad v10.0
- *
- * المستوى الأول في سلم الأولوية الرقابية والبيداغوجية (القاعدة):
- * - إذا دخل المشرف العام (`ADMIN`) إلى هذه اللوحة، يظهر له شريط التنقل العلوي `SupervisoryHierarchyBar`
- *   الذي يمكّنه بضغطة زر من الرجوع فوراً إلى «لوحة المشرف العام» أو الانتقال إلى «لوحة المسؤول».
- * - إذا دخل المتفقد التربوي (`INSPECTOR`)، يكتفي بالصلاحيات البيداغوجية الموجودة له فقط في هذه اللوحة الحصرية له
- *   دون أي قدرة على الانتقال إلى لوحة المسؤول أو لوحة المشرف العام.
- */
-
 import React, { useEffect, useState, useMemo, FormEvent } from "react";
 import Link from "next/link";
 import {
@@ -212,7 +202,7 @@ export default function InspectorDashboardPage() {
           currentDashboard="INSPECTOR"
         />
 
-        {/* Header & Priority Hierarchy Indicator */}
+        {/* Header */}
         <div className="mb-8 rounded-3xl border border-amber-200/80 bg-gradient-to-l from-amber-50 via-white to-amber-50/40 p-6 shadow-sm dark:border-amber-900/40 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/20">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>

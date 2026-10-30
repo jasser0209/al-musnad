@@ -308,6 +308,7 @@ export default function PublicPublisherProfilePage() {
           </div>
         </div>
 
+        {/* KPI Bar */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 text-center">
           <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-3.5">
             <span className="text-xs text-slate-500 block">النشرات</span>

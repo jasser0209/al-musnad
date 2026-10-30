@@ -1,20 +1,6 @@
 "use client";
 
-/**
- * WorksheetCard — Al-Musnad (المسند) v11.0
- *
- * Implements:
- * 1. Explicit File Metadata Badges on every card:
- *    - اسم المادة (`worksheet.subject?.nameAr`)
- *    - السنة الدراسية (`worksheet.grade?.nameAr`)
- *    - القسم التربوي (`worksheet.category?.nameAr`: درس، تمرين، امتحان، جذاذة، نشاط تفاعلي، أخرى)
- *    - نوع / صيغة الملف (`PDF` / `Word` / `صورة` via `getFileFormatInfo`)
- * 2. Publisher Avatar with Live Presence Dot (`UserAvatarWithPresence`):
- *    - Small green dot under the publisher avatar when connected (`ONLINE`),
- *      gray dot when disconnected (`OFFLINE` / `GHOST`).
- */
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BadgeCheck, Lock, Users, FileText, FolderOpen } from "lucide-react";
@@ -46,6 +32,66 @@ export default function WorksheetCard({
   );
   const [isFavorited, setIsFavorited] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
+  const [thumbError, setThumbError] = useState(false);
+  const [healedThumbUrl, setHealedThumbUrl] = useState<string | null>(null);
+
+  const rawThumb = healedThumbUrl || worksheet.thumbnailUrl || null;
+  const hasValidThumbnail = Boolean(
+    rawThumb &&
+      !thumbError &&
+      !(
+        rawThumb.includes("X-Amz-Credential=") &&
+        (rawThumb.split("X-Amz-Credential=")[1]?.split("%2F")[0]?.split("/")[0]
+          ?.length || 32) !== 32
+      )
+  );
+
+  // Auto-generate and persist Page 1 thumbnail if a PDF card lacks a valid thumbnail
+  useEffect(() => {
+    if (guestTitleOnly || hasValidThumbnail) return;
+    const lowerName = (worksheet.fileName || "").toLowerCase();
+    if (!lowerName.endsWith(".pdf")) return;
+
+    let cancelled = false;
+    async function autoExtractCardThumbnail() {
+      try {
+        const res = await fetch(
+          `/api/worksheets/${worksheet.id}/file?disposition=inline&stream=1`
+        );
+        if (!res.ok || cancelled) return;
+        const blob = await res.blob();
+        if (cancelled || blob.size === 0) return;
+
+        const pdfFile = new File([blob], worksheet.fileName || "document.pdf", {
+          type: "application/pdf",
+        });
+        const { extractPdfThumbnailAndPages } = await import(
+          "@/lib/utils/pdf-thumbnail"
+        );
+        const { thumbnailFile, thumbnailPreviewUrl, pageCount } =
+          await extractPdfThumbnailAndPages(pdfFile);
+        if (cancelled) return;
+
+        setHealedThumbUrl(thumbnailPreviewUrl);
+        setThumbError(false);
+
+        const fd = new FormData();
+        fd.append("thumbnail", thumbnailFile);
+        if (pageCount > 0) fd.append("pageCount", String(pageCount));
+        await fetch(`/api/worksheets/${worksheet.id}/thumbnail`, {
+          method: "POST",
+          body: fd,
+        });
+      } catch {
+        // Silent fallback to gradient card header
+      }
+    }
+
+    autoExtractCardThumbnail();
+    return () => {
+      cancelled = true;
+    };
+  }, [guestTitleOnly, hasValidThumbnail, worksheet.id, worksheet.fileName]);
 
   const title = worksheet.titleAr || worksheet.title;
   const subjectColor = worksheet.subject?.color || "#2563EB";
@@ -132,21 +178,21 @@ export default function WorksheetCard({
 
   return (
     <div
-      className={`group rounded-2xl transition-all duration-200 flex flex-col justify-between overflow-hidden ${
+      className={`group bg-white dark:bg-slate-900 rounded-2xl border transition-all duration-200 flex flex-col justify-between overflow-hidden ${
         worksheet.isEndorsed
-          ? "border-2 border-amber-400 ring-4 ring-amber-400/25 bg-gradient-to-b from-amber-50/45 via-white to-white dark:from-amber-950/35 dark:via-slate-900 dark:to-slate-900 shadow-lg shadow-amber-500/20"
-          : "bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-slate-300"
+          ? "border-2 border-amber-400 shadow-md shadow-amber-500/10"
+          : "border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-slate-300"
       }`}
     >
       <div>
         {worksheet.isEndorsed && (
-          <div className="bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-slate-950 px-3.5 py-2 text-[11px] font-black flex items-center justify-between shadow-sm">
+          <div className="bg-gradient-to-r from-amber-500 via-amber-600 to-orange-500 text-white px-3.5 py-1.5 text-[11px] font-extrabold flex items-center justify-between">
             <span className="flex items-center gap-1.5">
-              <BadgeCheck className="w-4 h-4 shrink-0 text-slate-950" />
-              <span>معتمد بيداغوجياً من المتفقد • في صدارة الترتيب</span>
+              <BadgeCheck className="w-4 h-4 shrink-0" />
+              <span>توثيق واعتماد بيداغوجي من المتفقد</span>
             </span>
-            <span className="bg-slate-950/15 px-2.5 py-0.5 rounded-full text-[10px] font-black">
-              ★ إطار ذهبي
+            <span className="bg-white/20 px-2 py-0.5 rounded-full text-[10px]">
+              معتمد ★
             </span>
           </div>
         )}
@@ -155,10 +201,11 @@ export default function WorksheetCard({
           href={`/worksheet/${worksheet.id}`}
           className="block relative overflow-hidden"
         >
-          {worksheet.thumbnailUrl ? (
+          {hasValidThumbnail ? (
             <img
-              src={worksheet.thumbnailUrl}
+              src={rawThumb!}
               alt={title}
+              onError={() => setThumbError(true)}
               className="w-full h-44 object-cover group-hover:scale-102 transition-transform duration-300"
             />
           ) : (

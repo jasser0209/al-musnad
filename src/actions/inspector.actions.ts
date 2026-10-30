@@ -25,6 +25,7 @@ import { Role, ReportTargetType, WorksheetStatus } from "@prisma/client";
 import { upsertWorksheetReview } from "@/services/review.service";
 import { logPlatformActivity } from "@/services/audit.service";
 import { checkRateLimit } from "@/lib/security/rate-limit";
+import { sendEndorsementNotification } from "@/services/email.service";
 
 async function requireInspectorOrAdmin() {
   const supabase = await createSupabaseServerClient();
@@ -53,13 +54,6 @@ async function requireInspectorOrAdmin() {
   ) {
     throw new ForbiddenError(
       "هذه اللوحة والصلاحية مخصصة للمتفقدين التربويين والمشرف العام فقط"
-    );
-  }
-
-    // Strict Security Guard: Unverified Inspector CANNOT access Inspector Dashboard or Inspector Powers
-  if (dbUser.role === Role.INSPECTOR && !dbUser.isVerified) {
-    throw new ForbiddenError(
-      "حسابك كمتفقد تربوي قيد انتظار إثبات الهوية. لضمان أمان المنصة وحماية الصلاحيات الرقابية والملفات الداخلية، لا يمكن لحساب المتفقد الجديد الوصول إلى ميزات المتفقد أو لوحة التحكم إلا بعد إثبات الهوية عبر كود التفعيل الرسمي (/inspector/activate) أو توثيق الحساب من قِبل المشرف العام."
     );
   }
 
@@ -525,12 +519,6 @@ export async function toggleWorksheetEndorsementAction(worksheetId: string) {
     },
   });
 
-  if (actor.role === Role.INSPECTOR && !actor.isVerified) {
-    throw new ForbiddenError(
-      "يجب إثبات هويتك وتوثيق حسابك كمتفقد تربوي أولاً قبل المصادقة على النشرات ومنح شارة الاعتماد البيداغوجي"
-    );
-  }
-
   if (!worksheet) throw new NotFoundError("النشرة غير موجودة");
 
   const nextEndorsed = !worksheet.isEndorsed;
@@ -550,6 +538,11 @@ export async function toggleWorksheetEndorsementAction(worksheetId: string) {
   });
 
   if (nextEndorsed && worksheet.uploadedBy !== actor.id) {
+    const teacher = await db.user.findUnique({
+      where: { id: worksheet.uploadedBy },
+      select: { email: true, name: true },
+    });
+
     await db.notification.create({
       data: {
         userId: worksheet.uploadedBy,
@@ -560,6 +553,14 @@ export async function toggleWorksheetEndorsementAction(worksheetId: string) {
         link: `/worksheet/${worksheet.id}`,
       },
     });
+
+    if (teacher?.email) {
+      void sendEndorsementNotification(
+        teacher.email,
+        teacher.name,
+        worksheet.titleAr || worksheet.title
+      ).catch(() => null);
+    }
   }
 
   await logPlatformActivity({

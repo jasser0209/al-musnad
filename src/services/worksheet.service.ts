@@ -1,26 +1,3 @@
-/**
- * Worksheet Service — Al-Musnad v10.0
- *
- * Implements:
- * 1. Automatic Taxonomy Initialization (`ensureOfficialTaxonomySeeded`):
- *    - Automatically verifies and seeds the 6 Grades, 10 Subjects, and 6 Categories in PostgreSQL.
- * 2. Guest Teaser Listing vs Authenticated Role-Based Listing:
- *    - Guests (`!viewerRole || !viewerUserId`) can list ONLY publications published
- *      with `audience === TargetAudience.ALL` («نشر للجميع»), and the returned items
- *      are sanitized to expose ONLY the file/lesson title and taxonomy badges
- *      (no fileUrl, no description, no previewUrl).
- *    - Guests are strictly blocked (`UnauthorizedError`) in `getWorksheetById`
- *      and `canUserAccessWorksheet` so they CANNOT enter, read, or download any file.
- *    - Logged-in users see all publications permitted for their specific account role.
- * 3. Strict DRAFT Worksheet Protection:
- *    - Non-PDF uploads (Word/Image) saved as `DRAFT` can ONLY be accessed by the owner,
- *      `ADMIN`, or `INSPECTOR`. Unprivileged users are blocked with `ForbiddenError`.
- * 4. PDF Conversion by Inspector / Admin:
- *    - When an `ADMIN` or `INSPECTOR` uploads a replacement PDF for a `DRAFT` worksheet,
- *      the status automatically transitions to `PUBLISHED`, and a notification
- *      (`PDF_CONVERSION_COMPLETED`) is sent to the uploader.
- */
-
 import { db } from "@/lib/db";
 import { Prisma, WorksheetStatus, Role, TargetAudience } from "@prisma/client";
 import { getPaginationParams, buildPaginationMeta } from "@/lib/utils/pagination";
@@ -35,7 +12,6 @@ import {
   CURRICULUM_SUBJECTS,
   SUBJECT_SUBDIVISIONS,
   ADMINISTRATIVE_CATEGORY,
-  SCHOOL_TRIMESTERS,
   isPdfUploadFile,
 } from "@/config/constants";
 import type {
@@ -198,8 +174,7 @@ export function canUserAccessWorksheet(
     uploader?: { role?: Role | string | null } | null;
   },
   viewerRole?: Role | string | null,
-  viewerUserId?: string | null,
-  viewerIsVerified?: boolean | null
+  viewerUserId?: string | null
 ): boolean {
   if (!viewerRole || !viewerUserId) {
     return false;
@@ -215,17 +190,6 @@ export function canUserAccessWorksheet(
 
   const audience = worksheet.audience;
   const uploaderRole = worksheet.uploader?.role;
-  const isVerifiedMember = Boolean(viewerIsVerified);
-
-  // Security Gate (v16.0): Unverified Inspector, Teacher, or Institution accounts CANNOT access
-  // sensitive internal role-restricted files (`TEACHERS_ONLY`, `INSTITUTIONS_ONLY`, `SAME_ROLE_ONLY`)
-  // until their identity is verified (`isVerified === true`).
-  if (!isVerifiedMember && (viewerRole === "INSPECTOR" || viewerRole === "TEACHER" || viewerRole === "INSTITUTION")) {
-    return (
-      audience === TargetAudience.ALL ||
-      audience === TargetAudience.TEACHERS_AND_STUDENTS
-    );
-  }
 
   switch (audience) {
     case TargetAudience.ALL:
@@ -235,18 +199,17 @@ export function canUserAccessWorksheet(
       return (
         viewerRole === "TEACHER" ||
         viewerRole === "STUDENT" ||
-        viewerRole === "INSPECTOR" ||
-        viewerRole === "INSTITUTION"
+        viewerRole === "INSPECTOR"
       );
 
     case TargetAudience.TEACHERS_ONLY:
-      return isVerifiedMember && (viewerRole === "TEACHER" || viewerRole === "INSPECTOR");
+      return viewerRole === "TEACHER" || viewerRole === "INSPECTOR";
 
     case TargetAudience.INSTITUTIONS_ONLY:
-      return isVerifiedMember && viewerRole === "INSTITUTION";
+      return viewerRole === "INSTITUTION";
 
     case TargetAudience.SAME_ROLE_ONLY:
-      return Boolean(isVerifiedMember && uploaderRole && viewerRole === uploaderRole);
+      return Boolean(uploaderRole && viewerRole === uploaderRole);
 
     default:
       return false;
@@ -258,8 +221,7 @@ export function canUserAccessWorksheet(
  */
 export function buildAudienceVisibilityFilter(
   viewerRole?: Role | string | null,
-  viewerUserId?: string | null,
-  viewerIsVerified?: boolean | null
+  viewerUserId?: string | null
 ): Prisma.WorksheetWhereInput {
   if (!viewerRole || !viewerUserId) {
     return { audience: TargetAudience.ALL };
@@ -267,24 +229,6 @@ export function buildAudienceVisibilityFilter(
 
   if (viewerRole === "ADMIN" || viewerRole === "MODERATOR") {
     return {};
-  }
-
-  // Security Gate (v16.0): Before identity verification (`!viewerIsVerified`),
-  // Inspector, Teacher, and Institution accounts are strictly prevented from accessing
-  // internal/sensitive role files (`TEACHERS_ONLY`, `INSTITUTIONS_ONLY`, `SAME_ROLE_ONLY`).
-  if (
-    !viewerIsVerified &&
-    (viewerRole === "INSPECTOR" ||
-      viewerRole === "TEACHER" ||
-      viewerRole === "INSTITUTION")
-  ) {
-    return {
-      OR: [
-        { uploadedBy: viewerUserId },
-        { audience: TargetAudience.ALL },
-        { audience: TargetAudience.TEACHERS_AND_STUDENTS },
-      ],
-    };
   }
 
   if (viewerRole === "INSPECTOR") {
@@ -359,25 +303,10 @@ export function buildAudienceVisibilityFilter(
 export async function listWorksheets(
   filters: WorksheetFilterInput,
   viewerRole?: Role | string | null,
-  viewerUserId?: string | null,
-  viewerIsVerified?: boolean | null
+  viewerUserId?: string | null
 ) {
   await ensureOfficialTaxonomySeeded();
   const isGuest = !viewerRole || !viewerUserId;
-
-  let resolvedVerified = viewerIsVerified;
-  if (!isGuest && resolvedVerified === undefined && viewerUserId) {
-    try {
-      const u = await db.user.findUnique({
-        where: { id: viewerUserId },
-        select: { isVerified: true, role: true },
-      });
-      resolvedVerified = Boolean(u?.isVerified || u?.role === "ADMIN" || u?.role === "MODERATOR");
-    } catch {
-      resolvedVerified = false;
-    }
-  }
-
   const { page, limit, search, grade, subject, category, trimester, audience, tags, sort } =
     filters;
   const {
@@ -387,7 +316,7 @@ export async function listWorksheets(
     limit: currentLimit,
   } = getPaginationParams(page, limit);
 
-  const audienceGuard = buildAudienceVisibilityFilter(viewerRole, viewerUserId, resolvedVerified);
+  const audienceGuard = buildAudienceVisibilityFilter(viewerRole, viewerUserId);
 
   const andConditions: Prisma.WorksheetWhereInput[] = [
     { status: WorksheetStatus.PUBLISHED },
@@ -397,26 +326,63 @@ export async function listWorksheets(
   if (grade) andConditions.push({ grade: { slug: grade } });
   if (subject) andConditions.push({ subject: { slug: subject } });
   if (category) andConditions.push({ category: { slug: category } });
-  if (trimester) {
-    const matchedTri = SCHOOL_TRIMESTERS.find(
-      (t) => t.slug === trimester || t.nameAr === trimester
-    );
-    const triKeywords = matchedTri ? [...matchedTri.keywords] : [trimester];
+
+  // School Trimester Filtering (الثلاثي المدرسي)
+  if (trimester && trimester.trim().length > 0) {
+    const rawVal = trimester.trim().toLowerCase();
+    let trimesterTerms: string[] = [];
+    if (
+      rawVal === "trimester-1" ||
+      rawVal === "1" ||
+      rawVal.includes("أول") ||
+      rawVal.includes("اول")
+    ) {
+      trimesterTerms = [
+        "الثلاثي الأول",
+        "الثلاثي الاول",
+        "الثلاثي 1",
+        "trimester-1",
+        "Trimestre 1",
+      ];
+    } else if (
+      rawVal === "trimester-2" ||
+      rawVal === "2" ||
+      rawVal.includes("ثاني")
+    ) {
+      trimesterTerms = [
+        "الثلاثي الثاني",
+        "الثلاثي 2",
+        "trimester-2",
+        "Trimestre 2",
+      ];
+    } else if (
+      rawVal === "trimester-3" ||
+      rawVal === "3" ||
+      rawVal.includes("ثالث")
+    ) {
+      trimesterTerms = [
+        "الثلاثي الثالث",
+        "الثلاثي 3",
+        "trimester-3",
+        "Trimestre 3",
+      ];
+    } else {
+      trimesterTerms = [trimester.trim()];
+    }
+
     andConditions.push({
       OR: [
-        { tags: { hasSome: triKeywords } },
-        ...triKeywords.map((kw) => ({
-          titleAr: { contains: kw, mode: "insensitive" as const },
-        })),
-        ...triKeywords.map((kw) => ({
-          title: { contains: kw, mode: "insensitive" as const },
-        })),
-        ...triKeywords.map((kw) => ({
-          descriptionAr: { contains: kw, mode: "insensitive" as const },
-        })),
+        { tags: { hasSome: trimesterTerms } },
+        ...trimesterTerms.flatMap((term) => [
+          { title: { contains: term, mode: "insensitive" as const } },
+          { titleAr: { contains: term, mode: "insensitive" as const } },
+          { description: { contains: term, mode: "insensitive" as const } },
+          { descriptionAr: { contains: term, mode: "insensitive" as const } },
+        ]),
       ],
     });
   }
+
   if (audience && !isGuest) andConditions.push({ audience });
   if (tags && tags.length > 0) andConditions.push({ tags: { hasSome: tags } });
 

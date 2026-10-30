@@ -61,7 +61,6 @@ export default function ReviewSection({
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
-  const [currentUserIsVerified, setCurrentUserIsVerified] = useState<boolean>(false);
 
   const [rating, setRating] = useState<number>(5);
   const [hoverRating, setHoverRating] = useState<number>(0);
@@ -97,10 +96,7 @@ export default function ReviewSection({
           const meJson = await meRes.json();
           if (meJson.success && meJson.data?.id) {
             myId = meJson.data.id;
-            if (isMounted) {
-              setCurrentUserRole(meJson.data.role || null);
-              setCurrentUserIsVerified(Boolean(meJson.data.isVerified));
-            }
+            if (isMounted) setCurrentUserRole(meJson.data.role || null);
           }
         }
 
@@ -157,7 +153,7 @@ export default function ReviewSection({
   };
 
   const isInspectorOrStaff =
-    (currentUserRole === "INSPECTOR" && currentUserIsVerified) ||
+    currentUserRole === "INSPECTOR" ||
     currentUserRole === "MODERATOR" ||
     currentUserRole === "ADMIN";
 
@@ -258,6 +254,7 @@ export default function ReviewSection({
         </div>
       </div>
 
+      {/* Add Comment Form */}
       {currentUserId ? (
         <form
           onSubmit={handleSubmit}
@@ -270,6 +267,7 @@ export default function ReviewSection({
                 : "أضف تعليقك أو أشر لناشر بـ @username"}
             </h3>
 
+            {/* Inspector / Staff Mode Selector */}
             {isInspectorOrStaff && (
               <div className="flex items-center gap-2">
                 <button
@@ -306,6 +304,7 @@ export default function ReviewSection({
             </div>
           )}
 
+          {/* Star Rating */}
           {!isPrivateToPublisher && (
             <div className="mt-3 flex items-center gap-1.5">
               {[1, 2, 3, 4, 5].map((star) => {
@@ -330,6 +329,7 @@ export default function ReviewSection({
             </div>
           )}
 
+          {/* Comment Textarea with @username Autocomplete */}
           <div className="relative mt-3">
             <textarea
               rows={3}
@@ -393,6 +393,7 @@ export default function ReviewSection({
         </form>
       ) : null}
 
+      {/* Comments List */}
       <div className="mt-6 space-y-4">
         {loading ? (
           <div className="flex items-center justify-center py-8 text-slate-400">

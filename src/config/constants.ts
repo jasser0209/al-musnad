@@ -1,11 +1,7 @@
-/**
- * Application Constants & Official Curriculum Structure — Al-Musnad (المسند) v12.0
- */
-
 export const APP_CONFIG = {
   name: "Al-Musnad",
   nameAr: "المسند",
-  version: "16.0.0",
+  version: "15.0.0",
   description:
     "Integrated educational platform for institutions, inspectors, teachers, and students.",
   descriptionAr:
@@ -180,331 +176,33 @@ export const AUDIENCE_LABELS: Record<string, { label: string; isRestricted: bool
   ALL: { label: "للعموم", isRestricted: false },
 };
 
-// ============================================================================
-// Private Local Test & Owner Admin Accounts (v14.0 — Hidden from public UI)
-// ============================================================================
-export interface DemoRoleAccount {
-  id: string;
-  role: "ADMIN" | "MODERATOR" | "INSPECTOR" | "INSTITUTION" | "TEACHER" | "STUDENT";
-  roleTitleAr: string;
-  badgeLabelAr: string;
-  name: string;
-  username: string;
-  email: string;
-  password: string;
-  school: string;
-  bio: string;
-  isVerified: boolean;
-  dashboardHref: string;
-}
-
-export const DEMO_ACCOUNT_DEFAULT_PASSWORD = "Musnad@2026";
-
-export const DEMO_ROLE_ACCOUNTS: readonly DemoRoleAccount[] = [
+// Official School Trimesters in Tunisia (الثلاثيات المدرسية التونسية) — v15.0
+export const SCHOOL_TRIMESTERS = [
   {
-    id: "00000000-0000-4000-8000-000000000000",
-    role: "ADMIN",
-    roleTitleAr: "المشرف العام",
-    badgeLabelAr: "مشرف عام",
-    name: "Jasser",
-    username: "jasser",
-    email: "bjasser123@gmail.com",
-    password: "Jasserbes1M",
-    school: "إدارة منصة المسند",
-    bio: "الحساب الرئيسي للمشرف العام على منصة المسند.",
-    isVerified: true,
-    dashboardHref: "/admin/dashboard",
-  },
-  {
-    id: "00000000-0000-4000-8000-000000000001",
-    role: "ADMIN",
-    roleTitleAr: "المشرف العام",
-    badgeLabelAr: "مشرف عام",
-    name: "عبد الرحمان المنصوري",
-    username: "admin",
-    email: "admin@musnad.tn",
-    password: DEMO_ACCOUNT_DEFAULT_PASSWORD,
-    school: "إدارة منصة المسند",
-    bio: "حساب المشرف العام للتجربة المحلية.",
-    isVerified: true,
-    dashboardHref: "/admin/dashboard",
-  },
-  {
-    id: "00000000-0000-4000-8000-000000000002",
-    role: "MODERATOR",
-    roleTitleAr: "المسؤول الإداري",
-    badgeLabelAr: "مسؤول",
-    name: "سلمى بن علي",
-    username: "moderator",
-    email: "moderator@musnad.tn",
-    password: DEMO_ACCOUNT_DEFAULT_PASSWORD,
-    school: "إدارة المتابعة والدعم الفني",
-    bio: "حساب المسؤول الإداري للتجربة المحلية.",
-    isVerified: true,
-    dashboardHref: "/moderator/dashboard",
-  },
-  {
-    id: "00000000-0000-4000-8000-000000000003",
-    role: "INSPECTOR",
-    roleTitleAr: "المتفقد التربوي",
-    badgeLabelAr: "متفقد",
-    name: "كمال الورتاني",
-    username: "inspector",
-    email: "inspector@musnad.tn",
-    password: DEMO_ACCOUNT_DEFAULT_PASSWORD,
-    school: "تفقدية التعليم الابتدائي",
-    bio: "حساب المتفقد التربوي للتجربة المحلية.",
-    isVerified: true,
-    dashboardHref: "/inspector/dashboard",
-  },
-  {
-    id: "00000000-0000-4000-8000-000000000004",
-    role: "INSTITUTION",
-    roleTitleAr: "المؤسسة التربوية",
-    badgeLabelAr: "مؤسسة",
-    name: "المدرسة الابتدائية النموذجية بالمسند",
-    username: "institution",
-    email: "institution@musnad.tn",
-    password: DEMO_ACCOUNT_DEFAULT_PASSWORD,
-    school: "المدرسة الابتدائية النموذجية بالمسند",
-    bio: "حساب المؤسسة التربوية للتجربة المحلية.",
-    isVerified: true,
-    dashboardHref: "/",
-  },
-  {
-    id: "00000000-0000-4000-8000-000000000005",
-    role: "TEACHER",
-    roleTitleAr: "المعلم",
-    badgeLabelAr: "معلم",
-    name: "محمد أمين التونسي",
-    username: "teacher",
-    email: "teacher@musnad.tn",
-    password: DEMO_ACCOUNT_DEFAULT_PASSWORD,
-    school: "مدرسة النجاح الابتدائية",
-    bio: "حساب المعلم للتجربة المحلية.",
-    isVerified: true,
-    dashboardHref: "/",
-  },
-  {
-    id: "00000000-0000-4000-8000-000000000006",
-    role: "STUDENT",
-    roleTitleAr: "التلميذ",
-    badgeLabelAr: "تلميذ",
-    name: "ياسين بن صالح",
-    username: "student",
-    email: "student@musnad.tn",
-    password: DEMO_ACCOUNT_DEFAULT_PASSWORD,
-    school: "مدرسة النجاح الابتدائية — السنة السادسة ابتدائي",
-    bio: "حساب التلميذ للتجربة المحلية.",
-    isVerified: false,
-    dashboardHref: "/",
-  },
-] as const;
-
-export function findDemoAccountByIdentifier(identifier: string): DemoRoleAccount | undefined {
-  const clean = identifier.trim().toLowerCase().replace(/^@/, "");
-  return DEMO_ROLE_ACCOUNTS.find(
-    (acc) =>
-      acc.email.toLowerCase() === clean ||
-      acc.username.toLowerCase() === clean ||
-      acc.id === clean ||
-      acc.role.toLowerCase() === clean
-  );
-}
-
-export const WHATSAPP_SUPPORT_CHANNELS = {
-  teachersAndStudents: {
-    titleAr: "الرقم العام للمعلمين والتلاميذ",
-    subtitleAr: "مخصص لتواصل المعلمين والتلاميذ مع الدعم الفني عبر الواتساب",
-    displayNumber: "27764985",
-    internationalNumber: "21627764985",
-    whatsappUrl:
-      "https://wa.me/21627764985?text=" +
-      encodeURIComponent("السلام عليكم، أتواصل معكم من منصة المسند: "),
-  },
-  institutionsAndInspectors: {
-    titleAr: "الرقم الخاص بالمؤسسات التربوية والمتفقدين",
-    subtitleAr: "مخصص لتواصل المؤسسات التربوية والسادة المتفقدين عبر الواتساب",
-    displayNumber: "46907101",
-    internationalNumber: "21646907101",
-    whatsappUrl:
-      "https://wa.me/21646907101?text=" +
-      encodeURIComponent("السلام عليكم، أتواصل معكم من منصة المسند (المؤسسات والمتفقدين): "),
-  },
-} as const;
-
-// ============================================================================
-// Tunisian School Trimesters (الثلاثيات المدرسية — السياق التربوي التونسي v15.0)
-// ============================================================================
-export interface SchoolTrimester {
-  slug: "trimester-1" | "trimester-2" | "trimester-3";
-  nameAr: string;
-  nameFr: string;
-  labelAr: string;
-  keywords: readonly string[];
-}
-
-export const SCHOOL_TRIMESTERS: readonly SchoolTrimester[] = [
-  {
-    slug: "trimester-1",
+    id: "t1",
+    name: "Trimestre 1",
     nameAr: "الثلاثي الأول",
-    nameFr: "Trimestre 1",
-    labelAr: "الثلاثي الأول (Trimestre 1)",
-    keywords: ["الثلاثي الأول", "الثلاثي الاول", "ثلاثي أول", "ثلاثي 1", "Trimestre 1", "trimester-1"],
+    slug: "trimester-1",
+    tag: "الثلاثي الأول",
+    sortOrder: 1,
   },
   {
-    slug: "trimester-2",
+    id: "t2",
+    name: "Trimestre 2",
     nameAr: "الثلاثي الثاني",
-    nameFr: "Trimestre 2",
-    labelAr: "الثلاثي الثاني (Trimestre 2)",
-    keywords: ["الثلاثي الثاني", "ثلاثي ثاني", "ثلاثي 2", "Trimestre 2", "trimester-2"],
+    slug: "trimester-2",
+    tag: "الثلاثي الثاني",
+    sortOrder: 2,
   },
   {
-    slug: "trimester-3",
+    id: "t3",
+    name: "Trimestre 3",
     nameAr: "الثلاثي الثالث",
-    nameFr: "Trimestre 3",
-    labelAr: "الثلاثي الثالث (Trimestre 3)",
-    keywords: ["الثلاثي الثالث", "ثلاثي ثالث", "ثلاثي 3", "Trimestre 3", "trimester-3"],
+    slug: "trimester-3",
+    tag: "الثلاثي الثالث",
+    sortOrder: 3,
   },
 ] as const;
 
-// ============================================================================
-// School Semesters & Lesson Grouping Engine (تنظيم السداسيات وتجميع نفس الدرس v16.0)
-// ============================================================================
-export interface SchoolSemester {
-  slug: "semester-1" | "semester-2";
-  nameAr: string;
-  nameFr: string;
-  labelAr: string;
-  keywords: readonly string[];
-}
+export type SchoolTrimesterSlug = (typeof SCHOOL_TRIMESTERS)[number]["slug"];
 
-export const SCHOOL_SEMESTERS: readonly SchoolSemester[] = [
-  {
-    slug: "semester-1",
-    nameAr: "السداسي الأول",
-    nameFr: "Semestre 1",
-    labelAr: "السداسي الأول (Semestre 1)",
-    keywords: [
-      "السداسي الأول",
-      "السداسي الاول",
-      "سداسي أول",
-      "سداسي 1",
-      "Semestre 1",
-      "semester-1",
-      "الثلاثي الأول",
-    ],
-  },
-  {
-    slug: "semester-2",
-    nameAr: "السداسي الثاني",
-    nameFr: "Semestre 2",
-    labelAr: "السداسي الثاني (Semestre 2)",
-    keywords: [
-      "السداسي الثاني",
-      "سداسي ثاني",
-      "سداسي 2",
-      "Semestre 2",
-      "semester-2",
-      "الثلاثي الثاني",
-      "الثلاثي الثالث",
-    ],
-  },
-] as const;
-
-/**
- * Normalizes a worksheet's Lesson/Topic title and detects its Semester (`السداسي الأول` / `السداسي الثاني`)
- * so that when multiple teachers upload the same lesson for the same Grade and Subject,
- * they are automatically grouped into a single organized Lesson Section.
- */
-export function extractLessonTopicAndSemester(ws: {
-  title?: string | null;
-  titleAr?: string | null;
-  descriptionAr?: string | null;
-  tags?: string[] | null;
-}): {
-  semesterSlug: "semester-1" | "semester-2" | "general";
-  semesterLabelAr: string;
-  lessonTopicKey: string;
-  lessonTopicTitleAr: string;
-} {
-  const tags = Array.isArray(ws.tags) ? ws.tags : [];
-  const combinedText = `${ws.titleAr || ""} ${ws.title || ""} ${ws.descriptionAr || ""} ${tags.join(" ")}`;
-
-  let semesterSlug: "semester-1" | "semester-2" | "general" = "general";
-  let semesterLabelAr = "جميع السداسيات";
-
-  for (const sem of SCHOOL_SEMESTERS) {
-    if (sem.keywords.some((kw) => combinedText.includes(kw))) {
-      semesterSlug = sem.slug;
-      semesterLabelAr = sem.nameAr;
-      break;
-    }
-  }
-
-  // Check if an explicit lesson tag `الدرس: ...` was provided during upload
-  const explicitLessonTag = tags.find(
-    (t) => t.startsWith("الدرس:") || t.startsWith("درس:") || t.startsWith("المحور:")
-  );
-
-  let rawTopic = explicitLessonTag
-    ? explicitLessonTag.replace(/^(الدرس:|درس:|المحور:)\s*/, "").trim()
-    : (ws.titleAr || ws.title || "درس عام").trim();
-
-  // Strip common prefixes/suffixes (teacher names, brackets, category prefixes) to unify identical lessons
-  const normalizedTopic = rawTopic
-    .replace(/^(درس|تمارين|تمرين|امتحان|فرض|جذاذة|نشاط تفاعلي|إصلاح)\s*(في|حول|درس)?\s*[:\-–—]?\s*/i, "")
-    .replace(/\s*[\(\[\-–—]\s*(الأستاذ|أستاذ|المعلم|معلم|مدرسة|إعداد).*$/i, "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  const finalTitle = normalizedTopic.length >= 2 ? normalizedTopic : rawTopic;
-  const lessonTopicKey = finalTitle
-    .toLowerCase()
-    .replace(/[أإآ]/g, "ا")
-    .replace(/ة/g, "ه")
-    .replace(/ى/g, "ي")
-    .replace(/[^a-z0-9؀-ۿ\s]/g, "")
-    .replace(/\s+/g, "-")
-    .trim();
-
-  return {
-    semesterSlug,
-    semesterLabelAr,
-    lessonTopicKey: lessonTopicKey || "general-lesson",
-    lessonTopicTitleAr: finalTitle,
-  };
-}
-
-/**
- * Differential Pedagogical Ranking (الترتيب التفاضلي للمنشورات داخل الدرس والمادة):
- * 1. Endorsed worksheets (`isEndorsed === true`) ALWAYS rise to the top.
- * 2. Then ordered by average rating (`ratingAvg`), downloads (`downloadCount`), and favorites (`favoriteCount`).
- */
-export function sortWorksheetsDifferentially<
-  T extends {
-    isEndorsed?: boolean | null;
-    ratingAvg?: number | null;
-    downloadCount?: number | null;
-    favoriteCount?: number | null;
-    createdAt?: Date | string | null;
-  }
->(items: T[]): T[] {
-  return [...items].sort((a, b) => {
-    const aEndorsed = a.isEndorsed ? 1 : 0;
-    const bEndorsed = b.isEndorsed ? 1 : 0;
-    if (bEndorsed !== aEndorsed) return bEndorsed - aEndorsed;
-
-    const aRating = Number(a.ratingAvg || 0);
-    const bRating = Number(b.ratingAvg || 0);
-    if (bRating !== aRating) return bRating - aRating;
-
-    const aPop = Number(a.downloadCount || 0) + Number(a.favoriteCount || 0) * 2;
-    const bPop = Number(b.downloadCount || 0) + Number(b.favoriteCount || 0) * 2;
-    if (bPop !== aPop) return bPop - aPop;
-
-    const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-    const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-    return bTime - aTime;
-  });
-}

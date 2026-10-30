@@ -30,7 +30,7 @@ export async function recordAndGetDownloadUrl(
   const [dbUser, worksheet] = await Promise.all([
     db.user.findUnique({
       where: { id: userId },
-      select: { id: true, role: true, isVerified: true },
+      select: { id: true, role: true },
     }),
     db.worksheet.findUnique({
       where: { id: worksheetId },
@@ -54,10 +54,7 @@ export async function recordAndGetDownloadUrl(
     throw new NotFoundError("Worksheet");
   }
 
-  if (!canUserAccessWorksheet(worksheet, dbUser.role, dbUser.id, dbUser.isVerified)) {
-    if (canUserAccessWorksheet(worksheet, dbUser.role, dbUser.id, true) && !dbUser.isVerified) {
-      throw new ForbiddenError('عذراً، هذا الملف مخصص داخلياً لفئة حسابك الموثقين فقط. يرجى إثبات وتوثيق هوية حسابك أولاً لتحميل الملفات الحساسة والخاصة بفئتك.');
-    }
+  if (!canUserAccessWorksheet(worksheet, dbUser.role, dbUser.id)) {
     throw new ForbiddenError(
       "غير مصرح لحسابك بتحميل هذه النشرة حسب قيود الجمهور التي حددها الناشر."
     );
@@ -125,10 +122,10 @@ export async function getUserDownloads(
 
   const dbUser = await db.user.findUnique({
     where: { id: userId },
-    select: { id: true, role: true, isVerified: true },
+    select: { id: true, role: true },
   });
 
-  const audienceGuard = buildAudienceVisibilityFilter(dbUser?.role, userId, dbUser?.isVerified);
+  const audienceGuard = buildAudienceVisibilityFilter(dbUser?.role, userId);
 
   const where = {
     userId,

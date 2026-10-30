@@ -259,8 +259,8 @@ function buildMarkdownForFiles(fileList, titleSuffix, footerNote) {
     let fileContent = fs.readFileSync(fullPath, "utf-8");
     if (relPath.endsWith(".ts") || relPath.endsWith(".tsx")) {
       fileContent = fileContent
-        .replace(/\/\*\*[\s\S]*?\*\/\s*/g, "")
-        .replace(/\{\/\*[\s\S]*?\*\/\}\s*/g, "");
+        .replace(/^\/\*\*[\s\S]*?\*\/\s*/, "")
+        .replace(/^("use client";\s*)\/\*\*[\s\S]*?\*\/\s*/, "$1");
     }
     const lang = getLanguage(relPath);
     md += `\n### File: \`${relPath}\`\n\n\`\`\`${lang}\n${fileContent}\n\`\`\`\n\n---\n`;

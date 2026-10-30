@@ -66,6 +66,7 @@ export default async function GradeLevelsPage() {
           )}
         </div>
 
+        {/* Approved Grade Levels Only */}
         <section className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center gap-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-700 text-white shadow-lg shadow-blue-700/20 shrink-0">

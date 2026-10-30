@@ -236,6 +236,9 @@ function buildCandidateKeys(rawPath: string): string[] {
   return Array.from(candidates);
 }
 
+/**
+ * Uploads a worksheet file to Cloudflare R2 (primary) AND/OR Supabase Storage (fallback).
+ */
 export async function uploadFile(
   file: File,
   userId: string
@@ -328,6 +331,12 @@ export async function uploadFile(
   };
 }
 
+/**
+ * Generates a verified pre-signed download/preview URL.
+ * Checks whether the object actually exists in Cloudflare R2 via `HeadObjectCommand`
+ * before returning an R2 URL. If the object is not in R2 (e.g. uploaded earlier to
+ * Supabase Storage fallback), automatically resolves the signed URL from Supabase Storage!
+ */
 export async function getSignedDownloadUrl(
   filePath: string,
   expiresInSeconds: number = 3600
@@ -410,60 +419,9 @@ export async function getSignedDownloadUrl(
   );
 }
 
-export async function getFileStream(filePath: string): Promise<{
-  stream: ReadableStream;
-  contentLength?: number;
-  contentType?: string;
-} | null> {
-  const candidateKeys = buildCandidateKeys(filePath);
-  const cfg = resolveR2Config();
-
-  // 1. Try Cloudflare R2
-  if (cfg.isValid) {
-    const r2Client = getR2Client();
-    for (const key of candidateKeys) {
-      try {
-        const res = await r2Client.send(
-          new GetObjectCommand({
-            Bucket: cfg.bucketName,
-            Key: key,
-          })
-        );
-        if (res.Body) {
-          return {
-            stream: res.Body.transformToWebStream(),
-            contentLength: res.ContentLength,
-            contentType: res.ContentType,
-          };
-        }
-      } catch {
-        // Try next candidate or fallback
-      }
-    }
-  }
-
-  // 2. Fallback to Supabase Storage
-  const supabase = createSupabaseAdminClient();
-  for (const key of candidateKeys) {
-    try {
-      const { data, error } = await supabase.storage
-        .from(SUPABASE_BUCKET_NAME)
-        .download(key);
-      if (!error && data) {
-        return {
-          stream: data.stream(),
-          contentLength: data.size,
-          contentType: data.type,
-        };
-      }
-    } catch {
-      // Try next
-    }
-  }
-
-  return null;
-}
-
+/**
+ * Returns direct public URL via Cloudflare R2 CDN if configured, or Supabase public URL.
+ */
 export function getPublicDownloadUrl(filePath: string): string {
   const cleanKey = normalizeStorageObjectPath(filePath);
   const cfg = resolveR2Config();
@@ -479,6 +437,9 @@ export function getPublicDownloadUrl(filePath: string): string {
   return data.publicUrl;
 }
 
+/**
+ * Deletes a file from both Cloudflare R2 and Supabase Storage.
+ */
 export async function deleteFile(filePath: string): Promise<void> {
   const candidateKeys = buildCandidateKeys(filePath);
   const cfg = resolveR2Config();
@@ -507,6 +468,12 @@ export async function deleteFile(filePath: string): Promise<void> {
   }
 }
 
+/**
+ * Uploads a PDF/Worksheet thumbnail.
+ * Converts compact WebP/PNG/JPEG thumbnails (< 250 KB) into permanent Data URIs
+ * (`data:image/webp;base64,...`) so they NEVER expire after S3's 7-day presign limit
+ * and never break with `NoSuchKey`, while also storing a copy in cloud storage.
+ */
 export async function uploadThumbnail(
   thumbnailFile: File,
   userId: string

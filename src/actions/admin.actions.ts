@@ -23,7 +23,6 @@ import {
   ValidationError,
 } from "@/lib/utils/errors";
 import { Role, WorksheetStatus, ProfileEditStatus, Prisma } from "@prisma/client";
-import { findDemoAccountByIdentifier } from "@/config/constants";
 
 async function requireAdmin() {
   const supabase = await createSupabaseServerClient();

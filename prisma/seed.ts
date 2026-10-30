@@ -1,23 +1,109 @@
-/**
- * Database Seed Script — Al-Musnad (المسند) v11.0
- *
- * Seeds:
- * 1. The 6 Primary Grade Levels: السنة الأولى ابتدائي .. السنة السادسة ابتدائي
- * 2. The 9 Academic Subjects + Administrative Section:
- *    الرياضيات، العلوم (الإيقاظ العلمي)، العربية، الفرنسية، الإنجليزية،
- *    التاريخ والجغرافيا، الفنون، التربية الإسلامية، التربية البدنية، والمعاملات الإدارية.
- * 3. The 5 Subject Sub-divisions + Administrative Category:
- *    درس، تمارين، امتحانات، جذاذات، أنشطة تفاعلية، ووثائق ومعاملات إدارية.
- *
- * Run with: npx prisma db seed
- */
-
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Role } from "@prisma/client";
+import { createClient } from "@supabase/supabase-js";
 
 const prisma = new PrismaClient();
 
+const supabaseUrl =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://fzokicsiqbdmwsdcuojz.supabase.co";
+const serviceRoleKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6b2tpY3NpcWJkbXdzZGN1b2p6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MzIyMDYzOSwiZXhwIjoyMTA4Nzk2NjM5fQ.hZOIvBQjQlpZMDBa6DUdjHAd1Q-73YiHmEJo5u42f7k";
+
+const supabase = createClient(supabaseUrl, serviceRoleKey, {
+  auth: { autoRefreshToken: false, persistSession: false },
+});
+
+interface SeedAccount {
+  email: string;
+  username: string;
+  password: string;
+  name: string;
+  role: Role;
+  bio?: string;
+  isVerified: boolean;
+  school?: string;
+  studentGrade?: string;
+  inspectorCode?: string;
+}
+
+const PRIMARY_ADMIN: SeedAccount = {
+  email: "bjasser123@gmail.com",
+  username: "bjasser",
+  password: "Jasserbes1M",
+  name: "Jasser (المشرف العام)",
+  role: Role.ADMIN,
+  bio: "حساب المشرف العام الأساسي لمنصة المسند — إدارة النظام وصلاحيات الهرم الرقابي.",
+  isVerified: true,
+  school: "الإدارة العامة لمنصة المسند",
+};
+
+const DEV_DEMO_ACCOUNTS: SeedAccount[] = [
+  {
+    email: "admin@musnad.tn",
+    username: "admin",
+    password: "Musnad@2026",
+    name: "المشرف العام",
+    role: Role.ADMIN,
+    bio: "حساب المشرف العام القيادي لمنصة المسند — إدارة النظام وصلاحيات الهرم الرقابي.",
+    isVerified: true,
+    school: "الإدارة العامة لمنصة المسند",
+  },
+  {
+    email: "moderator@musnad.tn",
+    username: "moderator",
+    password: "Musnad@2026",
+    name: "المسؤول الإداري",
+    role: Role.MODERATOR,
+    bio: "حساب المسؤول الإداري — معالجة البلاغات، مراجعة النشرات، وإدارة الدعم الفني.",
+    isVerified: true,
+    school: "مكتب الإدارة والمتابعة",
+  },
+  {
+    email: "inspector@musnad.tn",
+    username: "inspector",
+    password: "Musnad@2026",
+    name: "المتفقد التربوي",
+    role: Role.INSPECTOR,
+    bio: "متفقد تربوي معتمد — اعتماد المنشورات البيداغوجية ومنح شارة الاعتماد ★.",
+    isVerified: true,
+    school: "الدائرة البيداغوجية والتفقد",
+    inspectorCode: "INSP-DEMO-2026",
+  },
+  {
+    email: "institution@musnad.tn",
+    username: "institution",
+    password: "Musnad@2026",
+    name: "مؤسسة المسند التربوية",
+    role: Role.INSTITUTION,
+    bio: "مؤسسة تربوية نموذجية — فضاء رسمي للتنسيق وتبادل المبادرات والنماذج الإدارية.",
+    isVerified: true,
+    school: "المدرسة الابتدائية النموذجية المسند",
+  },
+  {
+    email: "teacher@musnad.tn",
+    username: "teacher",
+    password: "Musnad@2026",
+    name: "الأستاذ أحمد المسند",
+    role: Role.TEACHER,
+    bio: "معلم متميز ناشر — إعداد وتوزيع الجذاذات والفروض والأنشطة التفاعلية.",
+    isVerified: true,
+    school: "مدرسة المسند الابتدائية",
+  },
+  {
+    email: "student@musnad.tn",
+    username: "student",
+    password: "Musnad@2026",
+    name: "التلميذ يوسف المسند",
+    role: Role.STUDENT,
+    bio: "تلميذ مجتهد بالمسند — فضاء المراجعة والأنشطة البيداغوجية.",
+    isVerified: false,
+    school: "مدرسة المسند الابتدائية",
+    studentGrade: "السنة الخامسة ابتدائي",
+  },
+];
+
 async function main() {
-  console.log("🌱 Seeding Al-Musnad v11.0 taxonomy...");
+  console.log("🌱 Seeding Al-Musnad v13.0 taxonomy & 6 demo accounts...");
 
   const grades = [
     { name: "Grade 1", nameAr: "السنة الأولى ابتدائي", slug: "grade-1", sortOrder: 1 },
@@ -88,7 +174,95 @@ async function main() {
   }
   console.log(`  ✅ ${categories.length} categories/sub-divisions seeded`);
 
-  console.log("\n🎉 Al-Musnad v11.0 seeding complete!");
+  // Seed Accounts (Primary Admin is always seeded, Demo accounts only in development)
+  const isProduction = process.env.NODE_ENV === "production";
+  const accountsToSeed = [
+    PRIMARY_ADMIN,
+    ...(isProduction ? [] : DEV_DEMO_ACCOUNTS),
+  ];
+
+  console.log(`🌱 Seeding accounts (${accountsToSeed.length} accounts, Environment isProduction: ${isProduction})...`);
+  try {
+    const { data: listData } = await supabase.auth.admin.listUsers({ page: 1, perPage: 100 });
+    const authUsers = listData?.users || [];
+
+    for (const acc of accountsToSeed) {
+      let authUser = authUsers.find((u) => u.email?.toLowerCase() === acc.email.toLowerCase());
+
+      if (authUser) {
+        await supabase.auth.admin.updateUserById(authUser.id, {
+          password: acc.password,
+          email_confirm: true,
+          user_metadata: { name: acc.name, username: acc.username, role: acc.role },
+        });
+      } else {
+        const { data: created } = await supabase.auth.admin.createUser({
+          email: acc.email,
+          password: acc.password,
+          email_confirm: true,
+          user_metadata: { name: acc.name, username: acc.username, role: acc.role },
+        });
+        if (created?.user) authUser = created.user;
+      }
+
+      if (authUser) {
+        await prisma.user.upsert({
+          where: { email: acc.email },
+          update: {
+            id: authUser.id,
+            username: acc.username,
+            name: acc.name,
+            role: acc.role,
+            school: acc.school || null,
+            bio: acc.bio || null,
+            isVerified: acc.isVerified,
+            studentGrade: acc.studentGrade || null,
+            inspectorCode: acc.inspectorCode || null,
+            isBanned: false,
+            failedLoginAttempts: 0,
+          },
+          create: {
+            id: authUser.id,
+            email: acc.email,
+            username: acc.username,
+            name: acc.name,
+            role: acc.role,
+            school: acc.school || null,
+            bio: acc.bio || null,
+            isVerified: acc.isVerified,
+            studentGrade: acc.studentGrade || null,
+            inspectorCode: acc.inspectorCode || null,
+            isBanned: false,
+            failedLoginAttempts: 0,
+            presenceStatus: "ONLINE",
+          },
+        });
+        console.log(`  ✅ [${acc.role}] ${acc.name} (@${acc.username}) seeded.`);
+      }
+    }
+  } catch (authErr) {
+    console.warn("⚠️ Could not contact Supabase Admin API, seeding directly to Prisma:", authErr);
+    for (const acc of accountsToSeed) {
+      await prisma.user.upsert({
+        where: { email: acc.email },
+        update: {
+          username: acc.username,
+          name: acc.name,
+          role: acc.role,
+          isVerified: acc.isVerified,
+        },
+        create: {
+          email: acc.email,
+          username: acc.username,
+          name: acc.name,
+          role: acc.role,
+          isVerified: acc.isVerified,
+        },
+      });
+    }
+  }
+
+  console.log("\n🎉 Al-Musnad v13.0 complete seeding finished!");
 }
 
 main()

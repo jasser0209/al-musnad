@@ -15,6 +15,9 @@ interface SendEmailParams {
   text?: string;
 }
 
+/**
+ * Base email dispatcher with graceful fallback.
+ */
 export async function sendEmail({
   to,
   subject,
@@ -53,6 +56,9 @@ export async function sendEmail({
   }
 }
 
+/**
+ * Wraps content in Al-Musnad's branded HTML layout.
+ */
 function createEmailTemplate({
   title,
   preheader,
@@ -194,6 +200,10 @@ function createEmailTemplate({
   `;
 }
 
+/**
+ * 1. sendWelcomeEmail(to, name, roleTitle)
+ * Sends an elegant welcome email upon new user registration.
+ */
 export async function sendWelcomeEmail(
   to: string,
   name: string,
@@ -226,6 +236,10 @@ export async function sendWelcomeEmail(
   return sendEmail({ to, subject, html });
 }
 
+/**
+ * 2. sendSupportReplyNotification(to, name, ticketSubject, replyText)
+ * Notifies the user when an admin or moderator replies to their support ticket.
+ */
 export async function sendSupportReplyNotification(
   to: string,
   name: string,
@@ -257,6 +271,10 @@ export async function sendSupportReplyNotification(
   return sendEmail({ to, subject, html });
 }
 
+/**
+ * 3. sendEndorsementNotification(to, teacherName, worksheetTitle)
+ * Notifies the teacher when an inspector pedagogically endorses their published worksheet.
+ */
 export async function sendEndorsementNotification(
   to: string,
   teacherName: string,

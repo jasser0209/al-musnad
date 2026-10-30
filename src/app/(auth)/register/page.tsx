@@ -1,19 +1,5 @@
 "use client";
 
-/**
- * Upgraded Multi-Role Registration Page — Al-Musnad (المسند) v6.0
- *
- * Implements all Project Manager v6.0 Directives:
- * 1. Removed all verification code alerts, banners, and code activation links
- *    from the registration form so the user creates their account normally.
- * 2. After registration succeeds, displays a dedicated Thank You screen thanking
- *    the user for registering and informing them that identity verification
- *    (which grants broader privileges and the official verification badge)
- *    takes place after communicating with the Administrator (`المشرف`).
- * 3. Preserves Show/Hide password toggle, mandatory Student Grade Level,
- *    mandatory Terms & Conditions checkbox, and zero example names in placeholders.
- */
-
 import React, { useState, useEffect, FormEvent, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -90,24 +76,39 @@ function RegisterContent() {
       setGoogleLoading(true);
       setError(null);
       const supabase = createSupabaseBrowserClient();
-      const { error: oauthErr } = await supabase.auth.signInWithOAuth({
+      const callbackUrl = `${window.location.origin}/api/auth/callback?role=${encodeURIComponent(
+        selectedRole
+      )}&next=/`;
+
+      const { data, error: oauthErr } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/api/auth/callback?role=${encodeURIComponent(
-            selectedRole
-          )}&next=/`,
+          redirectTo: callbackUrl,
+          skipBrowserRedirect: true,
           queryParams: {
             access_type: "offline",
             prompt: "select_account",
           },
         },
       });
+
       if (oauthErr) {
-        setError("تعذر الاتصال بخدمة حسابات Google حالياً. يرجى المحاولة مرة أخرى.");
+        setError(
+          "مزود Google غير مفعّل في إعدادات Supabase الحالية أو تعذر الاتصال به. يرجى إنشاء الحساب باستخدام النموذج المباشر أدناه."
+        );
         setGoogleLoading(false);
+        return;
+      }
+
+      if (data?.url) {
+        if (window.top && window.top !== window.self) {
+          window.top.location.href = data.url;
+        } else {
+          window.location.href = data.url;
+        }
       }
     } catch {
-      setError("تعذر بدء التسجيل باستخدام حساب Google.");
+      setError("تعذر بدء التسجيل بحساب Google. يرجى إكمال التسجيل بالنموذج المباشر أدناه.");
       setGoogleLoading(false);
     }
   };
@@ -168,7 +169,7 @@ function RegisterContent() {
         `${parsed.data.email.split("@")[0].toLowerCase().replace(/[^a-z0-9_.]/g, "")}`;
 
       const supabase = createSupabaseBrowserClient();
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      const { error: signUpError } = await supabase.auth.signUp({
         email: parsed.data.email,
         password: parsed.data.password,
         options: {
@@ -182,23 +183,7 @@ function RegisterContent() {
         },
       });
 
-      // Set immediate session cookie so Navbar displays the user's colored box & role right away
-      await fetch("/api/auth/demo-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customUser: {
-            id: signUpData?.user?.id || "00000000-0000-4000-8000-000000000099",
-            name: parsed.data.name,
-            email: parsed.data.email,
-            username: fallbackUname,
-            role: selectedRole,
-            school: parsed.data.school,
-          },
-        }),
-      }).catch(() => null);
-
-      if (signUpError && !signUpError.message.includes("fetch")) {
+      if (signUpError) {
         setError(signUpError.message);
         return;
       }
@@ -432,7 +417,7 @@ function RegisterContent() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="example@mail.com"
+                placeholder="أدخل البريد الإلكتروني"
                 className="w-full ps-10 pe-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:border-blue-600"
               />
             </div>

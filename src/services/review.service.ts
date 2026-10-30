@@ -1,12 +1,3 @@
-/**
- * Review & Rating Service — Al-Musnad v8.0
- *
- * Implements:
- * 1. Pinned official directives for inspectors/admins (`isOfficialDirective`).
- * 2. Private direct comments for worksheet publishers (`isPrivateToPublisher`).
- * 3. Automatic `@username` mention detection and notifications (`dispatchMentionNotifications`).
- */
-
 import { db } from "@/lib/db";
 import {
   NotFoundError,
@@ -100,21 +91,12 @@ export async function listWorksheetReviews(
     throw new NotFoundError("Worksheet");
   }
 
-  let viewerVerified = false;
-  if (viewerUserId && viewerRole === Role.INSPECTOR) {
-    const vUser = await db.user.findUnique({
-      where: { id: viewerUserId },
-      select: { isVerified: true },
-    }).catch(() => null);
-    viewerVerified = Boolean(vUser?.isVerified);
-  }
-
-  // Can view private comments only if creator, admin, moderator, or VERIFIED inspector
+  // Can view private comments only if creator, admin, moderator, or inspector
   const canSeePrivate =
     Boolean(viewerUserId && viewerUserId === worksheet.uploadedBy) ||
     viewerRole === Role.ADMIN ||
     viewerRole === Role.MODERATOR ||
-    (viewerRole === Role.INSPECTOR && viewerVerified);
+    viewerRole === Role.INSPECTOR;
 
   const whereCondition: Prisma.ReviewWhereInput = {
     worksheetId,
@@ -166,24 +148,21 @@ export async function upsertWorksheetReview(
     throw new NotFoundError("Worksheet");
   }
 
-  const actor = await db.user.findUnique({
-    where: { id: userId },
-    select: { id: true, name: true, username: true, role: true, isVerified: true },
-  });
-
-  if (!canUserAccessWorksheet(worksheet, userRole, userId, actor?.isVerified)) {
+  if (!canUserAccessWorksheet(worksheet, userRole, userId)) {
     throw new ForbiddenError(
-      "غير مصرح لك بإضافة تعليق على هذه النشرة قبل إثبات الهوية وتوثيق الحساب"
+      "غير مصرح لك بإضافة تعليق على هذه النشرة وفق شروط الجمهور المحدد لها"
     );
   }
 
-  const isVerifiedInspectorOrAdmin =
-    userRole === Role.ADMIN ||
-    (userRole === Role.INSPECTOR && Boolean(actor?.isVerified));
+  const actor = await db.user.findUnique({
+    where: { id: userId },
+    select: { id: true, name: true, username: true, role: true },
+  });
 
   const isOfficialDirective =
-    isVerifiedInspectorOrAdmin &&
-    (input.isOfficialDirective ?? !input.isPrivateToPublisher);
+    input.isOfficialDirective ??
+    (!input.isPrivateToPublisher &&
+      (userRole === Role.INSPECTOR || userRole === Role.ADMIN));
 
   const isPrivate = Boolean(input.isPrivateToPublisher);
 

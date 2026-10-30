@@ -348,6 +348,7 @@ function ProfileWorkspaceContent() {
 
   return (
     <main className="max-w-6xl mx-auto px-4 py-8" dir="rtl">
+      {/* Header Profile Card */}
       <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
         <div className="flex items-center gap-4">
           <UserAvatarWithPresence
@@ -507,6 +508,7 @@ function ProfileWorkspaceContent() {
         </div>
       )}
 
+      {/* Navigation Tabs */}
       <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-200 dark:border-slate-800 mb-6 pb-2">
         <button
           onClick={() => setActiveTab("uploads")}
@@ -580,6 +582,7 @@ function ProfileWorkspaceContent() {
           <span>الاشتراكات</span>
         </button>
 
+        {/* قسم التوثيق مباشرة تحت/بجانب خانة الاشتراكات */}
         <button
           onClick={() => setActiveTab("verification")}
           className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition cursor-pointer ${
@@ -605,6 +608,7 @@ function ProfileWorkspaceContent() {
         </button>
       </div>
 
+      {/* TAB: VERIFICATION (قسم التوثيق للمؤسسات والمعلمين والمتفقدين) */}
       {activeTab === "verification" && (
         <section className="max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
           <div className="flex items-start justify-between gap-4 border-b pb-4 border-slate-100 dark:border-slate-800">
@@ -649,6 +653,7 @@ function ProfileWorkspaceContent() {
                 </div>
               )}
 
+              {/* Step 1: Request Code from Admin */}
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="space-y-1">
                   <p className="text-xs font-extrabold text-slate-900 dark:text-white">
@@ -672,6 +677,7 @@ function ProfileWorkspaceContent() {
                 </button>
               </div>
 
+              {/* Step 2: Enter Code */}
               <form
                 onSubmit={handleActivateVerificationCode}
                 className="space-y-4 pt-2"
@@ -709,6 +715,7 @@ function ProfileWorkspaceContent() {
         </section>
       )}
 
+      {/* TAB: EDIT PROFILE */}
       {activeTab === "edit" && (
         <section className="max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm space-y-5">
           <div>
@@ -808,6 +815,7 @@ function ProfileWorkspaceContent() {
         </section>
       )}
 
+      {/* TAB: SUBSCRIPTIONS (Copied/Preserved & Marked Coming Soon / سيأتي قريباً) */}
       {activeTab === "subscriptions" && (
         <ArchivedSubscriptionsPlans
           currentPlan={profile.subscriptionPlan || "STANDARD"}
@@ -816,6 +824,7 @@ function ProfileWorkspaceContent() {
         />
       )}
 
+      {/* TAB: SETTINGS & ACCOUNT DELETION */}
       {activeTab === "settings" && (
         <section className="max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
           <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
@@ -869,6 +878,7 @@ function ProfileWorkspaceContent() {
             </div>
           </div>
 
+          {/* Delete Publisher Account Section */}
           <div className="p-5 rounded-2xl bg-red-50/70 dark:bg-red-950/30 border border-red-200 dark:border-red-900 space-y-3">
             <div className="flex items-center gap-2 text-red-700 dark:text-red-400 font-extrabold text-sm">
               <AlertTriangle className="w-5 h-5 shrink-0" />
@@ -894,6 +904,7 @@ function ProfileWorkspaceContent() {
         </section>
       )}
 
+      {/* TAB: FAVORITE PUBLISHERS */}
       {activeTab === "favorite_publishers" && (
         <section>
           {loadingItems ? (
@@ -953,6 +964,7 @@ function ProfileWorkspaceContent() {
         </section>
       )}
 
+      {/* TABS: UPLOADS / FAVORITES / DOWNLOADS */}
       {(activeTab === "uploads" ||
         activeTab === "favorites" ||
         activeTab === "downloads") && (

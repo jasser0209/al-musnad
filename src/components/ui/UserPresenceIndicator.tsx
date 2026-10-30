@@ -155,6 +155,7 @@ export function UserAvatarWithPresence({
         </div>
       )}
 
+      {/* Small green/gray indicator dot centered right at the bottom of the user picture */}
       <span
         className={`absolute ${dotDims} rounded-full border-white dark:border-slate-900 ${presence.dotColorClass}`}
       />

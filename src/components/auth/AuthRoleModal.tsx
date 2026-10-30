@@ -92,6 +92,7 @@ export default function AuthRoleModal() {
       className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-xl flex flex-col justify-between overflow-y-auto animate-fadeIn p-4 sm:p-8"
       dir={t.dir}
     >
+      {/* Top Bar */}
       <div className="max-w-7xl w-full mx-auto flex items-center justify-between py-2">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center font-black text-xl shadow-lg shadow-blue-500/30">
@@ -115,6 +116,7 @@ export default function AuthRoleModal() {
         </button>
       </div>
 
+      {/* Center Content: 4 Full-Screen Portals */}
       <div className="max-w-7xl w-full mx-auto my-auto py-8 space-y-8">
         <div className="text-center space-y-3 max-w-2xl mx-auto">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-200 text-xs font-bold">

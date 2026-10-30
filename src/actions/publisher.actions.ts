@@ -1,5 +1,12 @@
 "use server";
 
+/**
+ * Publisher Social & Bookmark Actions — Al-Musnad v5.0
+ *
+ * Enforces strict authentication AND filters publisher publications so that
+ * the viewing account ONLY sees publications the publisher made available to its role.
+ */
+
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -168,7 +175,7 @@ export async function getPublicPublisherProfileData(publisherId: string) {
 
   const vUser = await db.user.findUnique({
     where: { id: viewerAuth.id },
-    select: { id: true, role: true, isVerified: true },
+    select: { id: true, role: true },
   });
 
   if (!vUser) {
@@ -206,7 +213,7 @@ export async function getPublicPublisherProfileData(publisherId: string) {
   const audienceGuard =
     viewerAuth.id === publisherId
       ? {}
-      : buildAudienceVisibilityFilter(viewerRole, viewerAuth.id, vUser.isVerified);
+      : buildAudienceVisibilityFilter(viewerRole, viewerAuth.id);
 
   const [worksheets, followRecord, favRecord] = await Promise.all([
     db.worksheet.findMany({
