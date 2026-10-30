@@ -2,6 +2,7 @@ import {
   S3Client,
   PutObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -77,9 +78,6 @@ export function getR2Diagnostics() {
   };
 }
 
-// Compatibility aliases
-export const uploadWorksheetFile = uploadFile;
-export const deleteWorksheetFile = deleteFile;
 
 export function getR2Client(): S3Client {
   const accountId = process.env.R2_ACCOUNT_ID!.trim();
@@ -175,15 +173,52 @@ export async function uploadFile(
 /**
  * Generates a presigned or public download URL with R2 and Supabase fallback.
  */
+/**
+ * Automatically syncs a missing file from Supabase Storage to Cloudflare R2 in background.
+ */
+export async function syncFileFromSupabaseToR2(filePath: string): Promise<boolean> {
+  if (!isR2Configured()) return false;
+  try {
+    const supabase = createSupabaseAdminClient();
+    const { data, error } = await supabase.storage.from(SUPABASE_BUCKET_NAME).download(filePath);
+    if (error || !data) return false;
+
+    const buffer = Buffer.from(await data.arrayBuffer());
+    const r2Client = getR2Client();
+    const r2Bucket = process.env.R2_BUCKET_NAME ?? "musnad-worksheets";
+    await r2Client.send(
+      new PutObjectCommand({
+        Bucket: r2Bucket,
+        Key: filePath,
+        Body: buffer,
+        ContentType: data.type || (filePath.endsWith(".pdf") ? "application/pdf" : "application/octet-stream"),
+      })
+    );
+    console.log(`✅ [Storage Auto-Sync] File copied from Supabase to R2: ${filePath}`);
+    return true;
+  } catch (err: any) {
+    console.warn(`⚠️ [Storage Auto-Sync] Sync failed for ${filePath}:`, err?.message || err);
+    return false;
+  }
+}
+
 export async function getSignedDownloadUrl(
   filePath: string,
   expiresInSeconds: number = 3600
 ): Promise<string> {
-  // 1. Try Cloudflare R2
+  // 1. Try Cloudflare R2 (verifying existence with HeadObjectCommand to prevent NoSuchKey XML errors)
   if (isR2Configured()) {
     try {
       const r2Client = getR2Client();
       const r2Bucket = process.env.R2_BUCKET_NAME ?? "musnad-worksheets";
+
+      await r2Client.send(
+        new HeadObjectCommand({
+          Bucket: r2Bucket,
+          Key: filePath,
+        })
+      );
+
       const command = new GetObjectCommand({
         Bucket: r2Bucket,
         Key: filePath,
@@ -193,38 +228,40 @@ export async function getSignedDownloadUrl(
         expiresIn: expiresInSeconds,
       });
       return signedUrl;
-    } catch (r2Error) {
-      console.warn("⚠️ [R2 Storage] Error generating R2 signed URL, falling back to public or Supabase:", r2Error);
-      if (process.env.R2_PUBLIC_URL) {
-        const cleanBase = process.env.R2_PUBLIC_URL.replace(/\/$/, "");
-        return `${cleanBase}/${filePath}`;
-      }
+    } catch (r2Error: any) {
+      console.warn(
+        "⚠️ [R2 Storage] Object not in R2 or check failed. Falling back to Supabase:",
+        r2Error?.message || r2Error
+      );
+      // Auto-trigger background copy so subsequent requests hit R2
+      syncFileFromSupabaseToR2(filePath).catch(() => {});
     }
-  }
-
-  // If R2 Public URL is explicitly configured, use direct fast CDN link
-  if (process.env.R2_PUBLIC_URL && isR2Configured()) {
-    const cleanBase = process.env.R2_PUBLIC_URL.replace(/\/$/, "");
-    return `${cleanBase}/${filePath}`;
   }
 
   // 2. Fallback to Supabase Storage
-  const supabase = createSupabaseAdminClient();
-  const { data, error } = await supabase.storage
-    .from(SUPABASE_BUCKET_NAME)
-    .createSignedUrl(filePath, expiresInSeconds);
+  try {
+    const supabase = createSupabaseAdminClient();
+    const { data, error } = await supabase.storage
+      .from(SUPABASE_BUCKET_NAME)
+      .createSignedUrl(filePath, expiresInSeconds);
 
-  if (error || !data?.signedUrl) {
-    console.error("Signed URL error (Supabase):", error);
-    // As a last-resort fallback, if public URL is configured
-    if (process.env.R2_PUBLIC_URL) {
-      const cleanBase = process.env.R2_PUBLIC_URL.replace(/\/$/, "");
-      return `${cleanBase}/${filePath}`;
+    if (!error && data?.signedUrl) {
+      return data.signedUrl;
     }
-    throw new AppError("Failed to generate download URL", "DOWNLOAD_FAILED", 500);
+    if (error) {
+      console.warn("⚠️ [Supabase Storage] Signed URL notice:", error.message);
+    }
+  } catch (supabaseErr: any) {
+    console.warn("⚠️ [Supabase Storage] Fallback error:", supabaseErr?.message || supabaseErr);
   }
 
-  return data.signedUrl;
+  // 3. Fallback: If R2 Public URL is configured
+  if (process.env.R2_PUBLIC_URL) {
+    const cleanBase = process.env.R2_PUBLIC_URL.replace(/\/+$/, "");
+    return `${cleanBase}/${filePath}`;
+  }
+
+  throw new AppError("Failed to generate download URL", "DOWNLOAD_FAILED", 500);
 }
 
 /**
@@ -340,3 +377,7 @@ export async function uploadThumbnail(
   const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
   return getSignedDownloadUrl(thumbPath, ONE_YEAR_SECONDS);
 }
+
+// Compatibility aliases
+export const uploadWorksheetFile = uploadFile;
+export const deleteWorksheetFile = deleteFile;
