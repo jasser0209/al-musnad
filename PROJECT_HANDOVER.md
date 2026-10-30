@@ -1,7 +1,7 @@
 # 🏛️ Project Handover & Master Technical Audit — Al-Musnad (v16.0) (Complete Single-File Edition < 1 MB)
 **Project:** Al-Musnad (المسند) — Integrated Educational & Pedagogical Platform  
 **Architecture:** Next.js 15 (App Router) + TypeScript + Prisma ORM + PostgreSQL (Supabase) + Cloudflare R2 + Tailwind CSS + Lucide Icons  
-**Version:** 15.0.0 (Optimized Handover Archive — Complete Source Code, Security Configs & Commands)  
+**Version:** 16.0.0 (Master Production Handover — Complete Source Code, Security Configs & Commands)  
 **Date:** October 2026  
 **Primary Admin Account:** `bjasser123@gmail.com` (Password: `Jasserbes1M` — Role: `ADMIN`)  
 **Live Production URL:** [https://al-musnad.vercel.app](https://al-musnad.vercel.app)  
@@ -11,11 +11,11 @@
 
 ## 🤖 القواعد الصارمة والتعليمات الإلزامية للمشروع (PROJECT ARCHITECTURE & RULES)
 
-أنت المهندس المعماري المسؤول عن تطوير وصيانة منصة **«المسند» (Al-Musnad v15.0)**. عند قراءة هذا الملف أو تنفيذ أي تعديل مستقبلي، **يجب الالتزام الصارم بالقواعد التالية**:
+أنت المهندس المعماري المسؤول عن تطوير وصيانة منصة **«المسند» (Al-Musnad v16.0)**. عند قراءة هذا الملف أو تنفيذ أي تعديل مستقبلي، **يجب الالتزام الصارم بالقواعد التالية**:
 
 1. **قاعدة الحجم الأقصى (< 1 MB) ومنع التكرار**:
    - الحجم الأقصى لملف `PROJECT_HANDOVER.md` يجب أن يبقى دائماً **أقل من 1 ميجابايت (1,000 KB)**.
-   - عدم تضمين حزم JSON الضخمة المكررة داخل الملف للحفاظ على خفته وسرعة معالجته.
+   - عدم تضمين حزم JSON الضخمة المكررة داخل الملف للحفاظ على خفته وسرعة معالجته من قبل أدوات الذكاء الاصطناعي الخارجية.
 2. **منع اختصار الأكواد (Zero Truncation Policy)**:
    - يُمنع استخدام تعليقات الاختصار مثل `// ... rest of code`. جميع الأكواد المضمنة كاملة وقابلة للتشغيل الفوري.
 3. **شروط الاستخدام والملكية الفكرية وحماية المؤلف (/terms)**:
@@ -53,12 +53,24 @@
     - المشرف العام (`ADMIN`): قمة الهرم والتحكم الإداري الكامل والتبديل بين اللوحات.
     - المسؤول الإداري (`MODERATOR`): محصور في `/moderator/dashboard`.
     - المتفقد التربوي (`INSPECTOR`): محصور في `/inspector/dashboard`.
+12. **حصرية شارات المتفقد والمؤسسة والظهور الفوري للمعلم والتلميذ (v16.0)**:
+    - شارة «متفقد معتمد» وشارة «مؤسسة معتمدة» والإطار الذهبي والأرجواني محظورة تماماً على الحسابات غير الموثقة (`isVerified: false`).
+    - شارة «معلم» و«تلميذ» تظهر فورياً بمجرد تسجيل الدخول لتعزيز الهوية التربوية.
+13. **إلغاء تنشيط وحذف الحسابات وتأمين إعادة الدخول (v16.0)**:
+    - عند قيام المستخدم بحذف حسابه، يُمسح فورياً من `public.users` ومن `auth.users` لمنع الدخول بحساب ملغى.
+    - صفحة تسجيل الدخول `/login` ترصد الحسابات المحذوفة وترفض إعادة إنشائها تلقائياً وتوجه المستخدم إلى `/register` لإنشاء حساب شرعي جديد.
+14. **لوحة تحكم الإدارة ومؤشرات الأداء KPI (v16.0)**:
+    - إحصائية «إجمالي الحسابات في الموقع» (`totalUsers`) معروضة في قمة لوحة المشرف العام إلى جانب الحسابات الموثقة والمنشورات.
+15. **استقرار تسجيل الخروج وعزل الـ CSS (v16.0)**:
+    - استبدال التوجيه المتزامن بـ `window.location.replace("/login")` لضمان مسح الذاكرة العشوائية وعدم سقوط الـ CSS.
+16. **تحصين فضاءات الأدوار المتخصصة (Role Personalized Hubs - v16.0)**:
+    - عزل أقسام المتفقدين والمؤسسات والمعلمين أمام الحسابات غير الموثقة واستبدالها برابط طلب التوثيق.
 
 ---
 
 ## 🛠️ أوامر التشغيل والترقية الرسمية (Official CLI Commands)
 
-- **1. تشغيل سكريبت ترقية الإصدار 15.0 الشامل:**
+- **1. تشغيل سكريبت ترقية الإصدار 16.0 الشامل:**
   ```bash
   node apply-musnad-v16-upgrade.mjs
   ```
@@ -139,7 +151,6 @@
     "typescript": "^5.6.0"
   }
 }
-
 ```
 
 ---
@@ -174,7 +185,6 @@
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
 }
-
 ```
 
 ---
@@ -285,7 +295,6 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
-
 ```
 
 ---
@@ -328,7 +337,6 @@ const config: Config = {
 };
 
 export default config;
-
 ```
 
 ---
@@ -344,7 +352,6 @@ const config = {
 };
 
 export default config;
-
 ```
 
 ---
@@ -387,7 +394,6 @@ RESEND_FROM_EMAIL="منصة المسند <onboarding@resend.dev>"
 # 5. إعدادات حساب المشرف العام الرئيسي (Admin Seed Credentials)
 ADMIN_EMAIL="oussamamrz18@gmail.com"
 ADMIN_NAME="الأستاذ أسامة مرزوقي — المشرف العام"
-
 ```
 
 ---
@@ -395,7 +401,7 @@ ADMIN_NAME="الأستاذ أسامة مرزوقي — المشرف العام"
 ### File: `README.md`
 
 ```markdown
-﻿# منصة المسند التربوية والبيداغوجية (Al-Musnad) — v16.0
+# منصة المسند التربوية والبيداغوجية (Al-Musnad) — v16.0
 
 منصة تربوية وبيداغوجية متكاملة للمؤسسات التعليمية، المتفقدين التربويين، المعلمين، والتلاميذ؛ لتبادل واعتماد النشرات والوثائق البيداغوجية والإدارية في إطار منظومة تربوية حديثة وآمنة.
 
@@ -420,8 +426,6 @@ ADMIN_NAME="الأستاذ أسامة مرزوقي — المشرف العام"
    - تمييز المنشورات المعتمدة بإطار ذهبي بصري فائق الأناقة دون كتابة العبارة نصياً.
    - تنظيف صندوق اسم المستخدم في الهيدر والبطاقات.
    - توحيد أرقام الدعم الفني الرسمية عبر واتساب (27764985 للمعلمين والتلاميذ، و46907101 للمؤسسات والمتفقدين).
-
-
 ```
 
 ---
@@ -452,7 +456,6 @@ try {
 } catch (err) {
   console.warn("⚠️ يرجى التأكد من اتصال قاعدة البيانات وتشغيل `npx prisma generate` و `npm run build`.");
 }
-
 ```
 
 ---
@@ -493,7 +496,6 @@ for (const file of inputFiles) {
 }
 
 console.log(`✅ تم استخراج وتثبيت ${totalExtracted} ملفاً برمجياً بنجاح 100%!`);
-
 ```
 
 ---
@@ -664,23 +666,23 @@ function getLanguage(filePath) {
 }
 
 const strictHeader = (titleSuffix = "") => `# 🏛️ Project Handover & Master Technical Audit — Al-Musnad (v16.0) ${titleSuffix}
-**Project:** Al-Musnad (المسند) — Integrated Educational & Pedagogical Platform  
-**Architecture:** Next.js 15 (App Router) + TypeScript + Prisma ORM + PostgreSQL (Supabase) + Cloudflare R2 + Tailwind CSS + Lucide Icons  
-**Version:** 15.0.0 (Optimized Handover Archive — Complete Source Code, Security Configs & Commands)  
-**Date:** October 2026  
-**Primary Admin Account:** \`bjasser123@gmail.com\` (Password: \`Jasserbes1M\` — Role: \`ADMIN\`)  
-**Live Production URL:** [https://al-musnad.vercel.app](https://al-musnad.vercel.app)  
-**GitHub Repository:** [https://github.com/jasser0209/al-musnad.git](https://github.com/jasser0209/al-musnad.git)  
+**Project:** Al-Musnad (المسند) — Integrated Educational & Pedagogical Platform
+**Architecture:** Next.js 15 (App Router) + TypeScript + Prisma ORM + PostgreSQL (Supabase) + Cloudflare R2 + Tailwind CSS + Lucide Icons
+**Version:** 16.0.0 (Master Production Handover — Complete Source Code, Security Configs & Commands)
+**Date:** October 2026
+**Primary Admin Account:** \`bjasser123@gmail.com\` (Password: \`Jasserbes1M\` — Role: \`ADMIN\`)
+**Live Production URL:** [https://al-musnad.vercel.app](https://al-musnad.vercel.app)
+**GitHub Repository:** [https://github.com/jasser0209/al-musnad.git](https://github.com/jasser0209/al-musnad.git)
 
 ---
 
 ## 🤖 القواعد الصارمة والتعليمات الإلزامية للمشروع (PROJECT ARCHITECTURE & RULES)
 
-أنت المهندس المعماري المسؤول عن تطوير وصيانة منصة **«المسند» (Al-Musnad v15.0)**. عند قراءة هذا الملف أو تنفيذ أي تعديل مستقبلي، **يجب الالتزام الصارم بالقواعد التالية**:
+أنت المهندس المعماري المسؤول عن تطوير وصيانة منصة **«المسند» (Al-Musnad v16.0)**. عند قراءة هذا الملف أو تنفيذ أي تعديل مستقبلي، **يجب الالتزام الصارم بالقواعد التالية**:
 
 1. **قاعدة الحجم الأقصى (< 1 MB) ومنع التكرار**:
    - الحجم الأقصى لملف \`PROJECT_HANDOVER.md\` يجب أن يبقى دائماً **أقل من 1 ميجابايت (1,000 KB)**.
-   - عدم تضمين حزم JSON الضخمة المكررة داخل الملف للحفاظ على خفته وسرعة معالجته.
+   - عدم تضمين حزم JSON الضخمة المكررة داخل الملف للحفاظ على خفته وسرعة معالجته من قبل أدوات الذكاء الاصطناعي الخارجية.
 2. **منع اختصار الأكواد (Zero Truncation Policy)**:
    - يُمنع استخدام تعليقات الاختصار مثل \`// ... rest of code\`. جميع الأكواد المضمنة كاملة وقابلة للتشغيل الفوري.
 3. **شروط الاستخدام والملكية الفكرية وحماية المؤلف (/terms)**:
@@ -718,12 +720,24 @@ const strictHeader = (titleSuffix = "") => `# 🏛️ Project Handover & Master 
     - المشرف العام (\`ADMIN\`): قمة الهرم والتحكم الإداري الكامل والتبديل بين اللوحات.
     - المسؤول الإداري (\`MODERATOR\`): محصور في \`/moderator/dashboard\`.
     - المتفقد التربوي (\`INSPECTOR\`): محصور في \`/inspector/dashboard\`.
+12. **حصرية شارات المتفقد والمؤسسة والظهور الفوري للمعلم والتلميذ (v16.0)**:
+    - شارة «متفقد معتمد» وشارة «مؤسسة معتمدة» والإطار الذهبي والأرجواني محظورة تماماً على الحسابات غير الموثقة (\`isVerified: false\`).
+    - شارة «معلم» و«تلميذ» تظهر فورياً بمجرد تسجيل الدخول لتعزيز الهوية التربوية.
+13. **إلغاء تنشيط وحذف الحسابات وتأمين إعادة الدخول (v16.0)**:
+    - عند قيام المستخدم بحذف حسابه، يُمسح فورياً من \`public.users\` ومن \`auth.users\` لمنع الدخول بحساب ملغى.
+    - صفحة تسجيل الدخول \`/login\` ترصد الحسابات المحذوفة وترفض إعادة إنشائها تلقائياً وتوجه المستخدم إلى \`/register\` لإنشاء حساب شرعي جديد.
+14. **لوحة تحكم الإدارة ومؤشرات الأداء KPI (v16.0)**:
+    - إحصائية «إجمالي الحسابات في الموقع» (\`totalUsers\`) معروضة في قمة لوحة المشرف العام إلى جانب الحسابات الموثقة والمنشورات.
+15. **استقرار تسجيل الخروج وعزل الـ CSS (v16.0)**:
+    - استبدال التوجيه المتزامن بـ \`window.location.replace("/login")\` لضمان مسح الذاكرة العشوائية وعدم سقوط الـ CSS.
+16. **تحصين فضاءات الأدوار المتخصصة (Role Personalized Hubs - v16.0)**:
+    - عزل أقسام المتفقدين والمؤسسات والمعلمين أمام الحسابات غير الموثقة واستبدالها برابط طلب التوثيق.
 
 ---
 
 ## 🛠️ أوامر التشغيل والترقية الرسمية (Official CLI Commands)
 
-- **1. تشغيل سكريبت ترقية الإصدار 15.0 الشامل:**
+- **1. تشغيل سكريبت ترقية الإصدار 16.0 الشامل:**
   \`\`\`bash
   node apply-musnad-v16-upgrade.mjs
   \`\`\`
@@ -760,11 +774,13 @@ function buildMarkdownForFiles(fileList, titleSuffix, footerNote) {
       continue;
     }
     let fileContent = fs.readFileSync(fullPath, "utf-8");
+    fileContent = fileContent.replace(/\r\n/g, "\n").replace(/[ \t]+$/gm, "");
     if (relPath.endsWith(".ts") || relPath.endsWith(".tsx")) {
       fileContent = fileContent
         .replace(/^\/\*\*[\s\S]*?\*\/\s*/, "")
         .replace(/^("use client";\s*)\/\*\*[\s\S]*?\*\/\s*/, "$1");
     }
+    fileContent = fileContent.replace(/\n\s*\n+/g, "\n\n").trim();
     const lang = getLanguage(relPath);
     md += `\n### File: \`${relPath}\`\n\n\`\`\`${lang}\n${fileContent}\n\`\`\`\n\n---\n`;
     count++;
@@ -776,7 +792,7 @@ function buildMarkdownForFiles(fileList, titleSuffix, footerNote) {
 const fullMd = buildMarkdownForFiles(
   allFiles,
   "(Complete Single-File Edition < 1 MB)",
-  "End of Master Project Handover Document (v12.0 Complete Single-File Edition)"
+  "End of Master Project Handover Document (v16.0 Complete Single-File Edition)"
 );
 const part1Md = buildMarkdownForFiles(
   part1Files,
@@ -796,7 +812,6 @@ fs.writeFileSync(outputPart2, part2Md, "utf-8");
 console.log(`✅ PROJECT_HANDOVER.md (Complete): ${(Buffer.byteLength(fullMd, "utf8") / 1024).toFixed(1)} KB`);
 console.log(`✅ PROJECT_HANDOVER_PART1.md (Backend/Core): ${(Buffer.byteLength(part1Md, "utf8") / 1024).toFixed(1)} KB`);
 console.log(`✅ PROJECT_HANDOVER_PART2.md (Frontend/UI): ${(Buffer.byteLength(part2Md, "utf8") / 1024).toFixed(1)} KB`);
-
 ```
 
 ---
@@ -841,7 +856,6 @@ if (secretKey) {
   console.log(`✅ R2_SECRET_ACCESS_KEY: الطول = ${secretKey.length} حرفاً ${secretKey.length === 64 ? "(صحيح 100%)" : "⚠️ (يجب أن يكون 64 حرفاً!)"}`);
 }
 console.log("====================================================================");
-
 ```
 
 ---
@@ -893,7 +907,6 @@ main()
     process.exit(1);
   })
   .finally(() => prisma.$disconnect());
-
 ```
 
 ---
@@ -1295,7 +1308,6 @@ model AuditLog {
   @@index([createdAt(sort: Desc)])
   @@map("audit_logs")
 }
-
 ```
 
 ---
@@ -1591,7 +1603,6 @@ main()
     await prisma.$disconnect();
     process.exit(1);
   });
-
 ```
 
 ---
@@ -1771,7 +1782,6 @@ DROP POLICY IF EXISTS "Service role full access to audit_logs" ON audit_logs;
 CREATE POLICY "Service role full access to audit_logs"
   ON audit_logs FOR ALL
   USING (auth.role() = 'service_role');
-
 ```
 
 ---
@@ -1890,7 +1900,6 @@ CREATE TRIGGER set_updated_at_worksheets
   BEFORE UPDATE ON worksheets
   FOR EACH ROW
   EXECUTE FUNCTION public.update_updated_at();
-
 ```
 
 ---
@@ -2026,7 +2035,6 @@ ALTER TABLE public.users ADD COLUMN IF NOT EXISTS locked_at TIMESTAMPTZ DEFAULT 
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS lock_reason TEXT DEFAULT NULL;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS presence_status VARCHAR(20) DEFAULT 'ONLINE';
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ DEFAULT NOW();
-
 ```
 
 ---
@@ -2350,7 +2358,6 @@ export function sortWorksheetsDifferentially<
     return bTime - aTime;
   });
 }
-
 ```
 
 ---
@@ -2617,8 +2624,6 @@ export interface SchoolTrimester {
   tag: string;
   sortOrder: number;
 }
-
-
 ```
 
 ---
@@ -2627,7 +2632,6 @@ export interface SchoolTrimester {
 
 ```typescript
 export * from "./api";
-
 ```
 
 ---
@@ -2653,7 +2657,6 @@ export const db =
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = db;
 }
-
 ```
 
 ---
@@ -2722,7 +2725,6 @@ export function checkRateLimit(
     retryAfterSeconds: 0,
   };
 }
-
 ```
 
 ---
@@ -2740,7 +2742,6 @@ export function createSupabaseBrowserClient() {
 
   return createBrowserClient(supabaseUrl, supabaseAnonKey);
 }
-
 ```
 
 ---
@@ -2804,7 +2805,6 @@ export function createSupabaseAdminClient() {
     },
   });
 }
-
 ```
 
 ---
@@ -3023,7 +3023,6 @@ export function errorResponse(
 
   return NextResponse.json(fallbackBody, { status: fallbackStatus });
 }
-
 ```
 
 ---
@@ -3099,7 +3098,6 @@ export class InvalidFileTypeError extends AppError {
     );
   }
 }
-
 ```
 
 ---
@@ -3159,7 +3157,6 @@ export function buildPaginationMeta(
     totalPages,
   };
 }
-
 ```
 
 ---
@@ -3241,7 +3238,6 @@ export async function extractPdfThumbnailAndPages(
     pageCount,
   };
 }
-
 ```
 
 ---
@@ -3311,7 +3307,6 @@ export const updateProfileSchema = z.object({
 export type SignUpInput = z.infer<typeof signUpSchema>;
 export type SignInInput = z.infer<typeof signInSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
-
 ```
 
 ---
@@ -3380,7 +3375,6 @@ export const searchSchema = z
   .trim()
   .min(1, { message: "Search term cannot be empty" })
   .max(200, { message: "Search term must be 200 characters or fewer" });
-
 ```
 
 ---
@@ -3473,7 +3467,6 @@ export const upsertReviewSchema = z.object({
 });
 
 export type UpsertReviewInput = z.infer<typeof upsertReviewSchema>;
-
 ```
 
 ---
@@ -4373,7 +4366,6 @@ export async function getUserUploads(
     meta: buildPaginationMeta(total, page, limit),
   };
 }
-
 ```
 
 ---
@@ -4921,7 +4913,6 @@ export async function uploadThumbnail(
 // Backward-compatible aliases
 export const uploadWorksheetFile = uploadFile;
 export const deleteWorksheetFile = deleteFile;
-
 ```
 
 ---
@@ -5117,8 +5108,8 @@ function createEmailTemplate({
     <div class="footer">
       <p style="margin: 0 0 8px 0;">
         هذه الرسالة تم إرسالها تلقائياً من خوادم <strong>منصة المسند</strong>.<br>
-        للدعم الفني والاستفسار، تواصل معنا عبر واتساب: 
-        <a href="https://wa.me/21627764985">27764985</a> أو 
+        للدعم الفني والاستفسار، تواصل معنا عبر واتساب:
+        <a href="https://wa.me/21627764985">27764985</a> أو
         <a href="https://wa.me/21646907101">46907101</a>
       </p>
       <p style="margin: 0; color: #94a3b8;">
@@ -5236,7 +5227,6 @@ export async function sendEndorsementNotification(
 
   return sendEmail({ to, subject, html });
 }
-
 ```
 
 ---
@@ -5867,7 +5857,6 @@ export async function deleteWorksheetReview(
     };
   });
 }
-
 ```
 
 ---
@@ -5955,7 +5944,6 @@ export async function listAuditLogs(options?: {
     return { logs: [], total: 0 };
   }
 }
-
 ```
 
 ---
@@ -5983,7 +5971,6 @@ export const config = {
     "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|xml|txt|webmanifest|json)$).*)",
   ],
 };
-
 ```
 
 ---
@@ -6028,7 +6015,6 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
   };
 }
-
 ```
 
 ---
@@ -6071,7 +6057,6 @@ export default function robots(): MetadataRoute.Robots {
     sitemap: `${BASE_URL}/sitemap.xml`,
   };
 }
-
 ```
 
 ---
@@ -6199,7 +6184,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [...staticRoutes, ...gradeRoutes, ...worksheetRoutes];
 }
-
 ```
 
 ---
@@ -6451,7 +6435,6 @@ export async function GET(request: Request) {
 
   return NextResponse.redirect(`${origin}/login?error=auth-code-error`);
 }
-
 ```
 
 ---
@@ -6618,7 +6601,6 @@ export async function GET() {
     return errorResponse(error);
   }
 }
-
 ```
 
 ---
@@ -6676,7 +6658,6 @@ export async function POST(request: NextRequest) {
     return errorResponse(error);
   }
 }
-
 ```
 
 ---
@@ -7019,7 +7000,6 @@ export async function POST(request: NextRequest) {
     return errorResponse(error);
   }
 }
-
 ```
 
 ---
@@ -7092,7 +7072,6 @@ export async function POST(request: NextRequest) {
     return errorResponse(error);
   }
 }
-
 ```
 
 ---
@@ -7428,7 +7407,6 @@ export async function GET(
     return errorResponse(error);
   }
 }
-
 ```
 
 ---
@@ -7552,7 +7530,6 @@ export async function GET(request: NextRequest, context: RouteContext) {
     return errorResponse(error);
   }
 }
-
 ```
 
 ---
@@ -7623,7 +7600,6 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return errorResponse(error);
   }
 }
-
 ```
 
 ---
@@ -7668,7 +7644,6 @@ export async function POST(
     return errorResponse(error);
   }
 }
-
 ```
 
 ---
@@ -7677,7 +7652,6 @@ export async function POST(
 
 ```typescript
 export { GET, POST, DELETE } from "../reviews/route";
-
 ```
 
 ---
@@ -7816,7 +7790,6 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     return errorResponse(error);
   }
 }
-
 ```
 
 ---
@@ -7843,7 +7816,6 @@ export async function GET() {
     return errorResponse(error);
   }
 }
-
 ```
 
 ---
@@ -7870,7 +7842,6 @@ export async function GET() {
     return errorResponse(error);
   }
 }
-
 ```
 
 ---
@@ -7897,7 +7868,6 @@ export async function GET() {
     return errorResponse(error);
   }
 }
-
 ```
 
 ---
@@ -7928,7 +7898,6 @@ export async function GET(request: NextRequest) {
     return errorResponse(error);
   }
 }
-
 ```
 
 ---
@@ -7959,7 +7928,6 @@ export async function GET(request: NextRequest) {
     return errorResponse(error);
   }
 }
-
 ```
 
 ---
@@ -7990,7 +7958,6 @@ export async function GET(request: NextRequest) {
     return errorResponse(error);
   }
 }
-
 ```
 
 ---
@@ -8063,7 +8030,6 @@ export async function PATCH(request: NextRequest) {
     return errorResponse(error);
   }
 }
-
 ```
 
 ---
@@ -8203,7 +8169,6 @@ export async function GET() {
     timestamp: new Date().toISOString(),
   });
 }
-
 ```
 
 ---
@@ -8260,7 +8225,6 @@ export async function archiveWorksheetAction(id: string) {
   revalidatePath("/profile");
   return result;
 }
-
 ```
 
 ---
@@ -8300,7 +8264,6 @@ export async function toggleFavoriteAction(worksheetId: string) {
 
   return { success: true, data: result };
 }
-
 ```
 
 ---
@@ -9202,7 +9165,6 @@ export async function unlockUserAccountAdminAction(targetUserId: string) {
   revalidatePath("/moderator/dashboard");
   return updated;
 }
-
 ```
 
 ---
@@ -9733,7 +9695,6 @@ export async function unlockUserAccountModeratorAction(targetUserId: string) {
   revalidatePath("/admin/dashboard");
   return updated;
 }
-
 ```
 
 ---
@@ -11010,7 +10971,6 @@ html.dark ::-webkit-scrollbar-thumb {
 html.dark ::-webkit-scrollbar-thumb:hover {
   background: #475569;
 }
-
 ```
 
 ---
@@ -11272,7 +11232,6 @@ export default function NotFound() {
     </div>
   );
 }
-
 ```
 
 ---
@@ -11333,7 +11292,6 @@ export default function GlobalError({
     </div>
   );
 }
-
 ```
 
 ---
@@ -11993,7 +11951,6 @@ export default function AuthRoleModal() {
     </div>
   );
 }
-
 ```
 
 ---
@@ -13174,7 +13131,6 @@ export default function Navbar() {
     </header>
   );
 }
-
 ```
 
 ---
@@ -13274,7 +13230,6 @@ export default function SupervisoryHierarchyBar({
   // Case 2: Moderator or Inspector — Strictly isolated without permission disclosure
   return null;
 }
-
 ```
 
 ---
@@ -13425,7 +13380,6 @@ export default function InspectorBadge({
 
   return null;
 }
-
 ```
 
 ---
@@ -13604,7 +13558,6 @@ export default function InstallPwaBanner() {
     </div>
   );
 }
-
 ```
 
 ---
@@ -13872,7 +13825,6 @@ export function UserPresenceBadge({
     </span>
   );
 }
-
 ```
 
 ---
@@ -13945,7 +13897,6 @@ export default function SubjectIcon({
       return <Sparkles className={className} />;
   }
 }
-
 ```
 
 ---
@@ -14585,7 +14536,6 @@ export default function RolePersonalizedHub({
     </section>
   );
 }
-
 ```
 
 ---
@@ -14997,7 +14947,6 @@ export default function PlatformIdentityAndFaqSection() {
     </div>
   );
 }
-
 ```
 
 ---
@@ -15075,7 +15024,6 @@ export default function ArchivedSubscriptionsPlans(
     </section>
   );
 }
-
 ```
 
 ---
@@ -15303,8 +15251,6 @@ export default function FilterBar({ grades, subjects, categories }: FilterBarPro
 }
 
 export { FilterBar };
-
-
 ```
 
 ---
@@ -15659,7 +15605,6 @@ export default function WorksheetCard({
     </div>
   );
 }
-
 ```
 
 ---
@@ -16638,7 +16583,6 @@ export default function WorksheetDetailClient({
     </main>
   );
 }
-
 ```
 
 ---
@@ -17345,7 +17289,6 @@ export default function CurriculumAndAdminExplorer({
     </div>
   );
 }
-
 ```
 
 ---
@@ -17747,7 +17690,6 @@ export default async function HomePage(props: HomePageProps) {
 
   return (
     <div className="space-y-12 pb-16">
-      
 
       {/* Hero Section: المسند */}
       <section className="relative overflow-hidden bg-gradient-to-b from-blue-700 via-indigo-800 to-slate-900 text-white pt-14 pb-16 px-4 sm:px-6 lg:px-8">
@@ -18014,7 +17956,6 @@ export default async function HomePage(props: HomePageProps) {
     </div>
   );
 }
-
 ```
 
 ---
@@ -18233,7 +18174,6 @@ export default function TermsAndIpPolicyPage() {
     </div>
   );
 }
-
 ```
 
 ---
@@ -18260,7 +18200,6 @@ export default async function BrowsePage(props: BrowseProps) {
   const query = params.toString();
   redirect(`/${query ? `?${query}#catalog` : "#catalog"}`);
 }
-
 ```
 
 ---
@@ -18388,7 +18327,6 @@ export default async function GradeLevelsPage() {
     </div>
   );
 }
-
 ```
 
 ---
@@ -18553,7 +18491,6 @@ export default async function GradeSubjectsPage(props: GradeSubjectsPageProps) {
     </div>
   );
 }
-
 ```
 
 ---
@@ -19005,7 +18942,6 @@ export default async function SubjectPublicationsPage(
     </div>
   );
 }
-
 ```
 
 ---
@@ -22132,7 +22068,6 @@ export default function SupportAndCustomerServicePage() {
     </main>
   );
 }
-
 ```
 
 ---
@@ -22245,7 +22180,6 @@ export default function InspectorActivatePage() {
     </main>
   );
 }
-
 ```
 
 ---
@@ -22254,7 +22188,6 @@ export default function InspectorActivatePage() {
 
 ```typescript
 export { default } from "@/app/(auth)/register/inspector/page";
-
 ```
 
 ---
@@ -22931,7 +22864,6 @@ export default function LoginPage() {
     </main>
   );
 }
-
 ```
 
 ---
@@ -23549,7 +23481,6 @@ import { redirect } from "next/navigation";
 export default function InspectorRegisterRedirectPage() {
   redirect("/register?role=INSPECTOR");
 }
-
 ```
 
 ---
@@ -26538,4 +26469,4 @@ export default function AdminDashboardPage() {
 
 ---
 
-*End of Master Project Handover Document (v12.0 Complete Single-File Edition) — Total included files: 115.*
+*End of Master Project Handover Document (v16.0 Complete Single-File Edition) — Total included files: 115.*
