@@ -57,6 +57,12 @@ async function requireInspectorOrAdmin() {
     );
   }
 
+  if (dbUser.role === Role.INSPECTOR && !dbUser.isVerified) {
+    throw new ForbiddenError(
+      "حساب المتفقد الجديد يتطلب إثبات الهوية أولاً: يرجى تفعيل كود التوثيق في ملفك الشخصي أو التواصل مع المشرف العام لتوثيق هويتك قبل الوصول إلى ميزات ولوحة تحكم المتفقد."
+    );
+  }
+
   return dbUser;
 }
 
@@ -501,10 +507,11 @@ export async function toggleWorksheetEndorsementAction(worksheetId: string) {
 
   if (
     !actor ||
-    (actor.role !== Role.INSPECTOR && actor.role !== Role.ADMIN)
+    (actor.role !== Role.INSPECTOR && actor.role !== Role.ADMIN) ||
+    (actor.role === Role.INSPECTOR && !actor.isVerified)
   ) {
     throw new ForbiddenError(
-      "هذه الميزة مخصصة للمتفقدين المعتمدين فقط للمصادقة على صحة النشرات علمياً وبيداغوجياً"
+      "هذه الميزة مخصصة للمتفقدين الموثقين فقط بعد إثبات الهوية لدى المشرف العام"
     );
   }
 

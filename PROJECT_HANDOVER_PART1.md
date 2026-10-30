@@ -461,25 +461,11 @@ import { execSync } from "node:child_process";
 const rootDir = process.cwd();
 console.log("🚀 بدء تطبيق وفحص الإصدار v16.0 لمنصة «المسند»...");
 
-// 1. If PROJECT_HANDOVER.md exists, extract all files automatically
 if (fs.existsSync(path.join(rootDir, "scripts/extract-handover.mjs")) && fs.existsSync(path.join(rootDir, "PROJECT_HANDOVER.md"))) {
   execSync("node scripts/extract-handover.mjs PROJECT_HANDOVER.md", { stdio: "inherit" });
 }
 
-// 2. Check and auto-fix 2_SECRET_ACCESS_KEY typo in .env
-const envPath = path.join(rootDir, ".env");
-if (fs.existsSync(envPath)) {
-  let envContent = fs.readFileSync(envPath, "utf8");
-  if (envContent.includes("2_SECRET_ACCESS_KEY") && !envContent.includes("R2_SECRET_ACCESS_KEY")) {
-    envContent = envContent.replace(/\b2_SECRET_ACCESS_KEY\b/g, "R2_SECRET_ACCESS_KEY");
-    fs.writeFileSync(envPath, envContent, "utf8");
-    console.log("🔧 تم تصحيح اسم المتغير في .env تلقائياً من 2_SECRET_ACCESS_KEY إلى R2_SECRET_ACCESS_KEY");
-  }
-}
-
-// 3. Run verification & TypeScript check
 try {
-  execSync("node scripts/verify-and-connect.mjs", { stdio: "inherit" });
   execSync("npx prisma generate", { stdio: "inherit" });
   execSync("npx tsc --noEmit", { stdio: "inherit" });
   console.log("✅ اكتملت ترقية وفحص منصة «المسند» v16.0 بنجاح 100%!");
@@ -1369,7 +1355,7 @@ const PRIMARY_ADMIN: SeedAccount = {
   email: "bjasser123@gmail.com",
   username: "bjasser",
   password: "Jasserbes1M",
-  name: "Jasser (المشرف العام)",
+  name: "Jasser",
   role: Role.ADMIN,
   bio: "حساب المشرف العام الأساسي لمنصة المسند — إدارة النظام وصلاحيات الهرم الرقابي.",
   isVerified: true,
@@ -1422,7 +1408,7 @@ const DEV_DEMO_ACCOUNTS: SeedAccount[] = [
     email: "teacher@musnad.tn",
     username: "teacher",
     password: "Musnad@2026",
-    name: "الأستاذ أحمد المسند",
+    name: "أحمد المسند",
     role: Role.TEACHER,
     bio: "معلم متميز ناشر — إعداد وتوزيع الجذاذات والفروض والأنشطة التفاعلية.",
     isVerified: true,
@@ -1432,7 +1418,7 @@ const DEV_DEMO_ACCOUNTS: SeedAccount[] = [
     email: "student@musnad.tn",
     username: "student",
     password: "Musnad@2026",
-    name: "التلميذ يوسف المسند",
+    name: "يوسف المسند",
     role: Role.STUDENT,
     bio: "تلميذ مجتهد بالمسند — فضاء المراجعة والأنشطة البيداغوجية.",
     isVerified: false,
@@ -1601,7 +1587,19 @@ async function main() {
     }
   }
 
-  console.log("\n🎉 Al-Musnad v13.0 complete seeding finished!");
+  console.log("\n🎉 Al-Musnad v16.0 complete seeding finished!");
+  try {
+    await prisma.user.updateMany({
+      where: { role: Role.TEACHER, inspectorPending: true },
+      data: { role: Role.INSPECTOR },
+    });
+  } catch {}
+  try {
+    await prisma.user.updateMany({
+      where: { role: Role.TEACHER, inspectorPending: true },
+      data: { role: Role.INSPECTOR },
+    });
+  } catch {}
 }
 
 main()
@@ -1830,7 +1828,7 @@ BEGIN
   ELSIF raw_role = 'STUDENT' THEN
     assigned_role := 'STUDENT'::public."Role";
   ELSIF raw_role = 'INSPECTOR' THEN
-    assigned_role := 'TEACHER'::public."Role";
+    assigned_role := 'INSPECTOR'::public."Role";
     is_insp_pending := true;
   ELSE
     assigned_role := 'TEACHER'::public."Role";
@@ -1880,6 +1878,7 @@ BEGIN
     username = COALESCE(public.users.username, EXCLUDED.username),
     school = COALESCE(EXCLUDED.school, public.users.school),
     student_grade = COALESCE(EXCLUDED.student_grade, public.users.student_grade),
+    role = EXCLUDED.role,
     inspector_pending = EXCLUDED.inspector_pending;
 
   RETURN NEW;
@@ -1978,7 +1977,7 @@ BEGIN
   ELSIF raw_role = 'STUDENT' THEN
     assigned_role := 'STUDENT'::public."Role";
   ELSIF raw_role = 'INSPECTOR' THEN
-    assigned_role := 'TEACHER'::public."Role";
+    assigned_role := 'INSPECTOR'::public."Role";
     is_insp_pending := true;
   ELSE
     assigned_role := 'TEACHER'::public."Role";
@@ -2028,6 +2027,7 @@ BEGIN
     username = COALESCE(public.users.username, EXCLUDED.username),
     school = COALESCE(EXCLUDED.school, public.users.school),
     student_grade = COALESCE(EXCLUDED.student_grade, public.users.student_grade),
+    role = EXCLUDED.role,
     inspector_pending = EXCLUDED.inspector_pending;
 
   RETURN NEW;
@@ -2057,7 +2057,7 @@ ALTER TABLE public.users ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ DEFAU
 export const APP_CONFIG = {
   name: "Al-Musnad",
   nameAr: "المسند",
-  version: "15.0.0",
+  version: "16.0.0",
   description:
     "Integrated educational platform for institutions, inspectors, teachers, and students.",
   descriptionAr:
@@ -2225,7 +2225,7 @@ export const ROLE_LABELS: Record<string, string> = {
 
 // Audience display labels
 export const AUDIENCE_LABELS: Record<string, { label: string; isRestricted: boolean }> = {
-  TEACHERS_ONLY: { label: "للمعلمين فقط (حجب عن التلاميذ)", isRestricted: true },
+  TEACHERS_ONLY: { label: "خاص بالمعلمين", isRestricted: true },
   SAME_ROLE_ONLY: { label: "لنفس فئة الناشر فقط", isRestricted: true },
   INSTITUTIONS_ONLY: { label: "للمؤسسات فقط", isRestricted: true },
   TEACHERS_AND_STUDENTS: { label: "للمعلمين والتلاميذ", isRestricted: false },
@@ -2262,6 +2262,114 @@ export const SCHOOL_TRIMESTERS = [
 
 export type SchoolTrimesterSlug = (typeof SCHOOL_TRIMESTERS)[number]["slug"];
 
+// Official School Semesters in Tunisia (السداسيات المدرسية) — v16.0
+export const SCHOOL_SEMESTERS = [
+  {
+    id: "sem1",
+    name: "Semestre 1",
+    nameAr: "السداسي الأول",
+    slug: "semester-1",
+    tag: "السداسي الأول",
+    keywords: ["السداسي الأول", "السداسي الاول", "سداسي أول", "سداسي 1", "Semestre 1", "semester-1", "الثلاثي الأول"],
+    sortOrder: 1,
+  },
+  {
+    id: "sem2",
+    name: "Semestre 2",
+    nameAr: "السداسي الثاني",
+    slug: "semester-2",
+    tag: "السداسي الثاني",
+    keywords: ["السداسي الثاني", "سداسي ثاني", "سداسي 2", "Semestre 2", "semester-2", "الثلاثي الثاني", "الثلاثي الثالث"],
+    sortOrder: 2,
+  },
+] as const;
+
+export type SchoolSemesterSlug = (typeof SCHOOL_SEMESTERS)[number]["slug"];
+
+export function extractLessonTopicAndSemester(ws: {
+  title?: string | null;
+  titleAr?: string | null;
+  descriptionAr?: string | null;
+  tags?: string[] | null;
+}): {
+  semesterSlug: "semester-1" | "semester-2" | "general";
+  semesterLabelAr: string;
+  lessonTopicKey: string;
+  lessonTopicTitleAr: string;
+} {
+  const tags = Array.isArray(ws.tags) ? ws.tags : [];
+  const combinedText = `${ws.titleAr || ""} ${ws.title || ""} ${ws.descriptionAr || ""} ${tags.join(" ")}`;
+
+  let semesterSlug: "semester-1" | "semester-2" | "general" = "general";
+  let semesterLabelAr = "جميع السداسيات";
+
+  for (const sem of SCHOOL_SEMESTERS) {
+    if (sem.keywords.some((kw) => combinedText.includes(kw))) {
+      semesterSlug = sem.slug;
+      semesterLabelAr = sem.nameAr;
+      break;
+    }
+  }
+
+  const explicitLessonTag = tags.find(
+    (t) => t.startsWith("الدرس:") || t.startsWith("درس:") || t.startsWith("المحور:")
+  );
+
+  const rawTopic = explicitLessonTag
+    ? explicitLessonTag.replace(/^(الدرس:|درس:|المحور:)\s*/, "").trim()
+    : (ws.titleAr || ws.title || "درس عام").trim();
+
+  const normalizedTopic = rawTopic
+    .replace(/^(درس|تمارين|تمرين|امتحان|فرض|جذاذة|نشاط تفاعلي|إصلاح)\s*(في|حول|درس)?\s*[:\-–—]?\s*/i, "")
+    .replace(/\s*[\(\[\-–—]\s*(الأستاذ|أستاذ|المعلم|معلم|مدرسة|إعداد).*$/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const finalTitle = normalizedTopic.length >= 2 ? normalizedTopic : rawTopic;
+  const lessonTopicKey = finalTitle
+    .toLowerCase()
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ة/g, "ه")
+    .replace(/ى/g, "ي")
+    .replace(/[^a-z0-9\u0600-\u06FF\s]/g, "")
+    .replace(/\s+/g, "-")
+    .trim();
+
+  return {
+    semesterSlug,
+    semesterLabelAr,
+    lessonTopicKey: lessonTopicKey || "general-lesson",
+    lessonTopicTitleAr: finalTitle,
+  };
+}
+
+export function sortWorksheetsDifferentially<
+  T extends {
+    isEndorsed?: boolean | null;
+    ratingAvg?: number | null;
+    downloadCount?: number | null;
+    favoriteCount?: number | null;
+    createdAt?: Date | string | null;
+  }
+>(items: T[]): T[] {
+  return [...items].sort((a, b) => {
+    const aEndorsed = a.isEndorsed ? 1 : 0;
+    const bEndorsed = b.isEndorsed ? 1 : 0;
+    if (bEndorsed !== aEndorsed) return bEndorsed - aEndorsed;
+
+    const aRating = Number(a.ratingAvg || 0);
+    const bRating = Number(b.ratingAvg || 0);
+    if (bRating !== aRating) return bRating - aRating;
+
+    const aPop = Number(a.downloadCount || 0) + Number(a.favoriteCount || 0) * 2;
+    const bPop = Number(b.downloadCount || 0) + Number(b.favoriteCount || 0) * 2;
+    if (bPop !== aPop) return bPop - aPop;
+
+    const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return bTime - aTime;
+  });
+}
 
 ```
 
@@ -3569,7 +3677,8 @@ export function canUserAccessWorksheet(
     uploader?: { role?: Role | string | null } | null;
   },
   viewerRole?: Role | string | null,
-  viewerUserId?: string | null
+  viewerUserId?: string | null,
+  viewerIsVerified?: boolean | null
 ): boolean {
   if (!viewerRole || !viewerUserId) {
     return false;
@@ -3585,6 +3694,17 @@ export function canUserAccessWorksheet(
 
   const audience = worksheet.audience;
   const uploaderRole = worksheet.uploader?.role;
+  const isVerifiedMember = Boolean(viewerIsVerified);
+
+  // Strict Identity Verification Gate (v16.0):
+  // Unverified Inspector, Teacher, or Institution accounts CANNOT access internal/sensitive
+  // role-restricted files (`TEACHERS_ONLY`, `INSTITUTIONS_ONLY`, `SAME_ROLE_ONLY`) until verified!
+  if (!isVerifiedMember) {
+    return (
+      audience === TargetAudience.ALL ||
+      audience === TargetAudience.TEACHERS_AND_STUDENTS
+    );
+  }
 
   switch (audience) {
     case TargetAudience.ALL:
@@ -3594,17 +3714,18 @@ export function canUserAccessWorksheet(
       return (
         viewerRole === "TEACHER" ||
         viewerRole === "STUDENT" ||
-        viewerRole === "INSPECTOR"
+        viewerRole === "INSPECTOR" ||
+        viewerRole === "INSTITUTION"
       );
 
     case TargetAudience.TEACHERS_ONLY:
-      return viewerRole === "TEACHER" || viewerRole === "INSPECTOR";
+      return isVerifiedMember && (viewerRole === "TEACHER" || viewerRole === "INSPECTOR");
 
     case TargetAudience.INSTITUTIONS_ONLY:
-      return viewerRole === "INSTITUTION";
+      return isVerifiedMember && viewerRole === "INSTITUTION";
 
     case TargetAudience.SAME_ROLE_ONLY:
-      return Boolean(uploaderRole && viewerRole === uploaderRole);
+      return Boolean(isVerifiedMember && uploaderRole && viewerRole === uploaderRole);
 
     default:
       return false;
@@ -3616,7 +3737,8 @@ export function canUserAccessWorksheet(
  */
 export function buildAudienceVisibilityFilter(
   viewerRole?: Role | string | null,
-  viewerUserId?: string | null
+  viewerUserId?: string | null,
+  viewerIsVerified?: boolean | null
 ): Prisma.WorksheetWhereInput {
   if (!viewerRole || !viewerUserId) {
     return { audience: TargetAudience.ALL };
@@ -3624,6 +3746,19 @@ export function buildAudienceVisibilityFilter(
 
   if (viewerRole === "ADMIN" || viewerRole === "MODERATOR") {
     return {};
+  }
+
+  // Strict Identity Verification Gate (v16.0):
+  // Unverified Inspector, Teacher, or Institution accounts can only list public/general files
+  // and their own uploads until their identity is verified (`isVerified === true`).
+  if (!viewerIsVerified) {
+    return {
+      OR: [
+        { uploadedBy: viewerUserId },
+        { audience: TargetAudience.ALL },
+        { audience: TargetAudience.TEACHERS_AND_STUDENTS },
+      ],
+    };
   }
 
   if (viewerRole === "INSPECTOR") {
@@ -3698,10 +3833,27 @@ export function buildAudienceVisibilityFilter(
 export async function listWorksheets(
   filters: WorksheetFilterInput,
   viewerRole?: Role | string | null,
-  viewerUserId?: string | null
+  viewerUserId?: string | null,
+  viewerIsVerified?: boolean | null
 ) {
   await ensureOfficialTaxonomySeeded();
   const isGuest = !viewerRole || !viewerUserId;
+
+  let resolvedVerified = viewerIsVerified;
+  if (!isGuest && resolvedVerified === undefined && viewerUserId) {
+    try {
+      const u = await db.user.findUnique({
+        where: { id: viewerUserId },
+        select: { isVerified: true, role: true },
+      });
+      resolvedVerified = Boolean(
+        u?.isVerified || u?.role === "ADMIN" || u?.role === "MODERATOR"
+      );
+    } catch {
+      resolvedVerified = false;
+    }
+  }
+
   const { page, limit, search, grade, subject, category, trimester, audience, tags, sort } =
     filters;
   const {
@@ -3711,7 +3863,11 @@ export async function listWorksheets(
     limit: currentLimit,
   } = getPaginationParams(page, limit);
 
-  const audienceGuard = buildAudienceVisibilityFilter(viewerRole, viewerUserId);
+  const audienceGuard = buildAudienceVisibilityFilter(
+    viewerRole,
+    viewerUserId,
+    resolvedVerified
+  );
 
   const andConditions: Prisma.WorksheetWhereInput[] = [
     { status: WorksheetStatus.PUBLISHED },
@@ -3849,12 +4005,28 @@ export async function listWorksheets(
 export async function getWorksheetById(
   id: string,
   viewerRole?: Role | string | null,
-  viewerUserId?: string | null
+  viewerUserId?: string | null,
+  viewerIsVerified?: boolean | null
 ) {
   if (!viewerRole || !viewerUserId) {
     throw new UnauthorizedError(
       "يرجى تسجيل الدخول بحسابك لقراءة أو تحميل هذا الملف"
     );
+  }
+
+  let resolvedVerified = viewerIsVerified;
+  if (resolvedVerified === undefined) {
+    try {
+      const u = await db.user.findUnique({
+        where: { id: viewerUserId },
+        select: { isVerified: true, role: true },
+      });
+      resolvedVerified = Boolean(
+        u?.isVerified || u?.role === "ADMIN" || u?.role === "MODERATOR"
+      );
+    } catch {
+      resolvedVerified = false;
+    }
   }
 
   const worksheet = await db.worksheet.findUnique({
@@ -3866,19 +4038,29 @@ export async function getWorksheetById(
     throw new NotFoundError("Worksheet");
   }
 
-  // DRAFT Isolation: Only uploader, ADMIN, or INSPECTOR can access DRAFT files
+  // DRAFT Isolation: Only uploader, ADMIN, or VERIFIED INSPECTOR can access DRAFT files
   if (
     worksheet.status === WorksheetStatus.DRAFT &&
     worksheet.uploadedBy !== viewerUserId &&
     viewerRole !== "ADMIN" &&
-    viewerRole !== "INSPECTOR"
+    !(viewerRole === "INSPECTOR" && resolvedVerified)
   ) {
     throw new ForbiddenError(
-      "هذا الملف قيد المراجعة وإعادة الصياغة إلى PDF من قِبل المشرف والمتفقد ولا يمكن عرضه حالياً."
+      "هذا الملف قيد المراجعة وإعادة الصياغة إلى PDF من قِبل المشرف والمتفقد الموثق."
     );
   }
 
-  if (!canUserAccessWorksheet(worksheet, viewerRole, viewerUserId)) {
+  if (!canUserAccessWorksheet(worksheet, viewerRole, viewerUserId, resolvedVerified)) {
+    if (
+      !resolvedVerified &&
+      (viewerRole === "INSPECTOR" ||
+        viewerRole === "TEACHER" ||
+        viewerRole === "INSTITUTION")
+    ) {
+      throw new ForbiddenError(
+        "هذا الملف مخصص داخلياً للأعضاء الموثقين في هذه الفئة. يرجى إثبات هويتك وتوثيق حسابك من المشرف العام للوصول إلى الملفات الخاصة."
+      );
+    }
     throw new ForbiddenError(
       "عذراً، قام الناشر بتقييد صلاحية الوصول لهذه النشرة لفئة حسابات أخرى غير فئة حسابك."
     );
@@ -3912,7 +4094,7 @@ export async function createWorksheet(data: CreateWorksheetData) {
 
   const uploader = await db.user.findUnique({
     where: { id: data.uploadedBy },
-    select: { role: true, isBanned: true, banReason: true },
+    select: { role: true, isVerified: true, isBanned: true, banReason: true },
   });
 
   if (uploader?.isBanned) {
@@ -3951,7 +4133,14 @@ export async function createWorksheet(data: CreateWorksheetData) {
       fileSize: data.fileSize,
       thumbnailUrl: data.thumbnailUrl ?? null,
       pageCount: data.pageCount ?? null,
-      audience: data.audience ?? TargetAudience.TEACHERS_AND_STUDENTS,
+      audience:
+        uploader?.isVerified ||
+        uploader?.role === Role.ADMIN ||
+        uploader?.role === Role.MODERATOR
+          ? data.audience ?? TargetAudience.TEACHERS_AND_STUDENTS
+          : data.audience === TargetAudience.ALL
+          ? TargetAudience.ALL
+          : TargetAudience.TEACHERS_AND_STUDENTS,
       tags: data.tags ?? [],
       status: initialStatus,
     },
@@ -4950,7 +5139,7 @@ function createEmailTemplate({
         هذه الرسالة تم إرسالها تلقائياً من خوادم <strong>منصة المسند</strong>.<br>
         للدعم الفني والاستفسار، تواصل معنا عبر واتساب: 
         <a href="https://wa.me/21627764985">27764985</a> أو 
-        <a href="https://wa.me/21676907101">76907101</a>
+        <a href="https://wa.me/21646907101">46907101</a>
       </p>
       <p style="margin: 0; color: #94a3b8;">
         جميع الحقوق محفوظة © 2026 منصة المسند التربوية
@@ -5269,7 +5458,7 @@ export async function recordAndGetDownloadUrl(
   const [dbUser, worksheet] = await Promise.all([
     db.user.findUnique({
       where: { id: userId },
-      select: { id: true, role: true },
+      select: { id: true, role: true, isVerified: true },
     }),
     db.worksheet.findUnique({
       where: { id: worksheetId },
@@ -5293,7 +5482,7 @@ export async function recordAndGetDownloadUrl(
     throw new NotFoundError("Worksheet");
   }
 
-  if (!canUserAccessWorksheet(worksheet, dbUser.role, dbUser.id)) {
+  if (!canUserAccessWorksheet(worksheet, dbUser.role, dbUser.id, dbUser.isVerified)) {
     throw new ForbiddenError(
       "غير مصرح لحسابك بتحميل هذه النشرة حسب قيود الجمهور التي حددها الناشر."
     );
@@ -5361,10 +5550,10 @@ export async function getUserDownloads(
 
   const dbUser = await db.user.findUnique({
     where: { id: userId },
-    select: { id: true, role: true },
+    select: { id: true, role: true, isVerified: true },
   });
 
-  const audienceGuard = buildAudienceVisibilityFilter(dbUser?.role, userId);
+  const audienceGuard = buildAudienceVisibilityFilter(dbUser?.role, userId, dbUser?.isVerified);
 
   const where = {
     userId,
@@ -5496,12 +5685,20 @@ export async function listWorksheetReviews(
     throw new NotFoundError("Worksheet");
   }
 
-  // Can view private comments only if creator, admin, moderator, or inspector
+  let viewerVerified = false;
+  if (viewerUserId && viewerRole === Role.INSPECTOR) {
+    const vUser = await db.user
+      .findUnique({ where: { id: viewerUserId }, select: { isVerified: true } })
+      .catch(() => null);
+    viewerVerified = Boolean(vUser?.isVerified);
+  }
+
+  // Can view private comments only if creator, admin, moderator, or VERIFIED inspector
   const canSeePrivate =
     Boolean(viewerUserId && viewerUserId === worksheet.uploadedBy) ||
     viewerRole === Role.ADMIN ||
     viewerRole === Role.MODERATOR ||
-    viewerRole === Role.INSPECTOR;
+    (viewerRole === Role.INSPECTOR && viewerVerified);
 
   const whereCondition: Prisma.ReviewWhereInput = {
     worksheetId,
@@ -5553,21 +5750,24 @@ export async function upsertWorksheetReview(
     throw new NotFoundError("Worksheet");
   }
 
-  if (!canUserAccessWorksheet(worksheet, userRole, userId)) {
+  const actor = await db.user.findUnique({
+    where: { id: userId },
+    select: { id: true, name: true, username: true, role: true, isVerified: true },
+  });
+
+  if (!canUserAccessWorksheet(worksheet, userRole, userId, actor?.isVerified)) {
     throw new ForbiddenError(
-      "غير مصرح لك بإضافة تعليق على هذه النشرة وفق شروط الجمهور المحدد لها"
+      "غير مصرح لك بالوصول إلى هذه النشرة قبل إثبات الهوية وتوثيق الحساب"
     );
   }
 
-  const actor = await db.user.findUnique({
-    where: { id: userId },
-    select: { id: true, name: true, username: true, role: true },
-  });
+  const isVerifiedInspectorOrAdmin =
+    userRole === Role.ADMIN ||
+    (userRole === Role.INSPECTOR && Boolean(actor?.isVerified));
 
   const isOfficialDirective =
-    input.isOfficialDirective ??
-    (!input.isPrivateToPublisher &&
-      (userRole === Role.INSPECTOR || userRole === Role.ADMIN));
+    isVerifiedInspectorOrAdmin &&
+    (input.isOfficialDirective ?? !input.isPrivateToPublisher);
 
   const isPrivate = Boolean(input.isPrivateToPublisher);
 
@@ -6034,11 +6234,22 @@ import { Role } from "@prisma/client";
 import { MAX_LOGIN_PASSWORD_ATTEMPTS } from "@/config/constants";
 import { sendWelcomeEmail } from "@/services/email.service";
 
+const VALID_PORTAL_ROLES = ["INSTITUTION", "INSPECTOR", "TEACHER", "STUDENT"] as const;
+
+function resolveAllowedPublicRole(rawRoleInput?: string | null): Role {
+  const clean = String(rawRoleInput || "TEACHER").trim().toUpperCase();
+  if (clean === "INSTITUTION") return Role.INSTITUTION;
+  if (clean === "INSPECTOR") return Role.INSPECTOR;
+  if (clean === "STUDENT") return Role.STUDENT;
+  return Role.TEACHER;
+}
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/";
-  const requestedRoleParam = (searchParams.get("role") || "").toUpperCase();
+  const requestedRoleParam = (searchParams.get("role") || "").trim().toUpperCase();
+  const modeParam = (searchParams.get("mode") || "").trim().toLowerCase();
 
   if (code) {
     const supabase = await createSupabaseServerClient();
@@ -6046,21 +6257,83 @@ export async function GET(request: Request) {
 
     if (!error && data?.user) {
       const authUser = data.user;
+      const metaRole = String(authUser.user_metadata?.role || "").trim().toUpperCase();
 
       try {
-        const existingUser = await db.user.findUnique({
+        let existingUser = await db.user.findUnique({
           where: { id: authUser.id },
         });
+
+        // If trigger created user moments ago as TEACHER while role was INSPECTOR/INSTITUTION/STUDENT, fix immediately
+        if (existingUser) {
+          const intendedRole =
+            metaRole && VALID_PORTAL_ROLES.includes(metaRole as any)
+              ? resolveAllowedPublicRole(metaRole)
+              : existingUser.inspectorPending && existingUser.role === Role.TEACHER
+              ? Role.INSPECTOR
+              : null;
+
+          const createdRecently =
+            Date.now() - new Date(existingUser.createdAt).getTime() < 60_000;
+
+          if (
+            !existingUser.isVerified &&
+            existingUser.role === Role.TEACHER &&
+            (intendedRole === Role.INSPECTOR ||
+              (createdRecently &&
+                requestedRoleParam &&
+                VALID_PORTAL_ROLES.includes(requestedRoleParam as any) &&
+                requestedRoleParam !== "TEACHER"))
+          ) {
+            const correctedRole =
+              intendedRole && intendedRole !== Role.TEACHER
+                ? intendedRole
+                : resolveAllowedPublicRole(requestedRoleParam);
+
+            existingUser = await db.user.update({
+              where: { id: existingUser.id },
+              data: {
+                role: correctedRole,
+                inspectorPending: correctedRole === Role.INSPECTOR,
+              },
+            });
+          }
+        }
 
         if (existingUser) {
           const isLocked =
             Boolean(existingUser.lockedAt) ||
             (existingUser.failedLoginAttempts ?? 0) >= MAX_LOGIN_PASSWORD_ATTEMPTS;
 
-          if (isLocked) {
+          if (isLocked || existingUser.isBanned) {
             await supabase.auth.signOut();
             return NextResponse.redirect(
               `${origin}/login?error=account-locked`
+            );
+          }
+
+          // Strict Portal-Specific Login Check:
+          // Only ADMIN and MODERATOR can log in from any portal.
+          // INSTITUTION, INSPECTOR, TEACHER, and STUDENT must log in from their own portal.
+          const isStaff =
+            existingUser.role === Role.ADMIN ||
+            existingUser.role === Role.MODERATOR ||
+            existingUser.email.toLowerCase() === "bjasser123@gmail.com";
+
+          if (
+            !isStaff &&
+            modeParam !== "register" &&
+            requestedRoleParam &&
+            VALID_PORTAL_ROLES.includes(requestedRoleParam as any) &&
+            existingUser.role !== requestedRoleParam
+          ) {
+            await supabase.auth.signOut();
+            return NextResponse.redirect(
+              `${origin}/login?role=${encodeURIComponent(
+                requestedRoleParam
+              )}&error=portal-mismatch&actualRole=${encodeURIComponent(
+                existingUser.role
+              )}`
             );
           }
 
@@ -6075,22 +6348,39 @@ export async function GET(request: Request) {
               lastSeenAt: new Date(),
             },
           });
+
+          const dest =
+            existingUser.role === Role.ADMIN
+              ? "/admin/dashboard"
+              : existingUser.role === Role.MODERATOR
+              ? "/moderator/dashboard"
+              : existingUser.role === Role.INSPECTOR
+              ? existingUser.isVerified
+                ? "/inspector/dashboard"
+                : "/#inspectors-hub"
+              : existingUser.role === Role.INSTITUTION
+              ? "/#institutions-hub"
+              : existingUser.role === Role.TEACHER
+              ? "/#teachers-hub"
+              : next.startsWith("/")
+              ? next
+              : "/";
+
+          return NextResponse.redirect(`${origin}${dest}`);
         } else if (authUser.email) {
           const rawRole =
             requestedRoleParam ||
-            String(authUser.user_metadata?.role || "TEACHER").toUpperCase();
+            metaRole ||
+            "TEACHER";
 
-          // Prevent privilege escalation: only INSTITUTION, STUDENT, or TEACHER allowed on public signup
           const assignedRole: Role =
-            rawRole === "INSTITUTION"
-              ? Role.INSTITUTION
-              : rawRole === "STUDENT"
-              ? Role.STUDENT
-              : Role.TEACHER;
+            authUser.email.toLowerCase() === "bjasser123@gmail.com"
+              ? Role.ADMIN
+              : resolveAllowedPublicRole(rawRole);
 
           const isInspectorPending =
             Boolean(authUser.user_metadata?.inspector_pending) ||
-            rawRole === "INSPECTOR";
+            assignedRole === Role.INSPECTOR;
 
           const baseUsername = authUser.email
             .split("@")[0]
@@ -6112,13 +6402,22 @@ export async function GET(request: Request) {
                 (authUser.user_metadata?.picture as string) ||
                 null,
               role: assignedRole,
+              isVerified: assignedRole === Role.ADMIN,
               inspectorPending: isInspectorPending,
               presenceStatus: "ONLINE",
               lastSeenAt: new Date(),
             },
           });
 
-          // Send welcome email gracefully (non-blocking)
+          await supabase.auth
+            .updateUser({
+              data: {
+                role: assignedRole,
+                inspector_pending: isInspectorPending,
+              },
+            })
+            .catch(() => null);
+
           const roleTitles: Record<string, string> = {
             TEACHER: "معلم",
             INSTITUTION: "مؤسسة تربوية",
@@ -6134,6 +6433,17 @@ export async function GET(request: Request) {
             userName,
             roleTitles[assignedRole] || assignedRole
           ).catch(() => null);
+
+          const dest =
+            assignedRole === Role.INSPECTOR
+              ? "/#inspectors-hub"
+              : assignedRole === Role.INSTITUTION
+              ? "/#institutions-hub"
+              : assignedRole === Role.TEACHER
+              ? "/#teachers-hub"
+              : "/";
+
+          return NextResponse.redirect(`${origin}${dest}`);
         }
       } catch {
         // Proceed even if DB sync encountered a transient issue
@@ -6160,6 +6470,21 @@ import { successResponse, errorResponse } from "@/lib/utils/api-response";
 import { UnauthorizedError } from "@/lib/utils/errors";
 import { Role } from "@prisma/client";
 
+function cleanStoredDisplayName(rawName: string): string {
+  if (!rawName) return rawName;
+  return rawName
+    .replace(/\s*\((المشرف العام|مشرف عام|مشرف|مسؤول إداري|مسؤول|متفقد تربوي|متفقد|معلم|تلميذ|مؤسسة تربوية|مؤسسة)\)\s*$/g, "")
+    .trim();
+}
+
+function resolveAllowedPublicRole(rawRoleInput?: string | null): Role {
+  const clean = String(rawRoleInput || "TEACHER").trim().toUpperCase();
+  if (clean === "INSTITUTION") return Role.INSTITUTION;
+  if (clean === "INSPECTOR") return Role.INSPECTOR;
+  if (clean === "STUDENT") return Role.STUDENT;
+  return Role.TEACHER;
+}
+
 export async function GET() {
   try {
     const supabase = await createSupabaseServerClient();
@@ -6184,32 +6509,32 @@ export async function GET() {
       },
     });
 
+    const rawMetaRole = String(user.user_metadata?.role || "").trim().toUpperCase();
+
     if (!profile) {
-      const rawRole = String(user.user_metadata?.role || "TEACHER").toUpperCase();
-      // Security: Never allow self-assigned ADMIN or MODERATOR from user_metadata
       const safeRole: Role =
-        rawRole === "INSTITUTION"
-          ? Role.INSTITUTION
-          : rawRole === "STUDENT"
-          ? Role.STUDENT
-          : Role.TEACHER;
+        user.email?.toLowerCase() === "bjasser123@gmail.com"
+          ? Role.ADMIN
+          : resolveAllowedPublicRole(rawMetaRole || "TEACHER");
 
       const isInspectorPending =
-        Boolean(user.user_metadata?.inspector_pending) || rawRole === "INSPECTOR";
+        Boolean(user.user_metadata?.inspector_pending) || safeRole === Role.INSPECTOR;
 
       const defaultUsername =
         (user.user_metadata?.username as string) ||
         `${user.email!.split("@")[0].toLowerCase().replace(/[^a-z0-9_.]/g, "")}_${user.id.slice(0, 4)}`;
+
+      const rawFullName =
+        (user.user_metadata?.full_name as string) ||
+        (user.user_metadata?.name as string) ||
+        user.email!.split("@")[0];
 
       profile = await db.user.create({
         data: {
           id: user.id,
           email: user.email!,
           username: defaultUsername,
-          name:
-            (user.user_metadata?.full_name as string) ||
-            (user.user_metadata?.name as string) ||
-            user.email!.split("@")[0],
+          name: cleanStoredDisplayName(rawFullName),
           avatarUrl:
             (user.user_metadata?.avatar_url as string) ||
             (user.user_metadata?.picture as string) ||
@@ -6217,7 +6542,7 @@ export async function GET() {
           school: (user.user_metadata?.school as string) || null,
           studentGrade: (user.user_metadata?.student_grade as string) || null,
           role: safeRole,
-          isVerified: false,
+          isVerified: safeRole === Role.ADMIN,
           inspectorPending: isInspectorPending,
           presenceStatus: "ONLINE",
           lastSeenAt: new Date(),
@@ -6240,7 +6565,31 @@ export async function GET() {
           .toLowerCase()
           .replace(/[^a-z0-9_.]/g, "")}_${profile.id.slice(0, 4)}`;
       }
-      // Refresh lastSeenAt automatically when user is browsing in ONLINE mode
+
+      const cleanedName = cleanStoredDisplayName(profile.name);
+      if (cleanedName && cleanedName !== profile.name) {
+        updates.name = cleanedName;
+      }
+
+      // Auto-heal accounts that were created as INSPECTOR / INSTITUTION / STUDENT
+      // but were mapped to TEACHER by the legacy database trigger
+      if (
+        !profile.isVerified &&
+        profile.role === Role.TEACHER &&
+        (profile.inspectorPending ||
+          ["INSPECTOR", "INSTITUTION", "STUDENT"].includes(rawMetaRole))
+      ) {
+        const healedRole = profile.inspectorPending
+          ? Role.INSPECTOR
+          : resolveAllowedPublicRole(rawMetaRole);
+        if (healedRole !== profile.role) {
+          updates.role = healedRole;
+          if (healedRole === Role.INSPECTOR) {
+            updates.inspectorPending = true;
+          }
+        }
+      }
+
       if ((profile.presenceStatus || "ONLINE") === "ONLINE") {
         updates.lastSeenAt = new Date();
       }
@@ -6266,7 +6615,10 @@ export async function GET() {
     }
 
     const { inspectorCode: _inspectorCode, ...safeProfile } = profile;
-    return successResponse(safeProfile);
+    return successResponse({
+      ...safeProfile,
+      name: cleanStoredDisplayName(safeProfile.name),
+    });
   } catch (error) {
     return errorResponse(error);
   }
@@ -6343,13 +6695,31 @@ import { successResponse, errorResponse } from "@/lib/utils/api-response";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 import { MAX_LOGIN_PASSWORD_ATTEMPTS } from "@/config/constants";
 import { logPlatformActivity } from "@/services/audit.service";
+import { sendWelcomeEmail } from "@/services/email.service";
 import { Role } from "@prisma/client";
+
+const PORTAL_NAMES_AR: Record<string, string> = {
+  INSTITUTION: "فضاء المؤسسات التربوية",
+  INSPECTOR: "فضاء المتفقد التربوي",
+  TEACHER: "فضاء المعلم والأستاذ",
+  STUDENT: "فضاء التلميذ والولي",
+  MODERATOR: "لوحة المسؤول الإداري",
+  ADMIN: "لوحة المشرف العام",
+};
+
+function resolveAllowedPublicRole(rawRoleInput?: string | null): Role {
+  const clean = String(rawRoleInput || "TEACHER").trim().toUpperCase();
+  if (clean === "INSTITUTION") return Role.INSTITUTION;
+  if (clean === "INSPECTOR") return Role.INSPECTOR;
+  if (clean === "STUDENT") return Role.STUDENT;
+  return Role.TEACHER;
+}
 
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request);
     const rl = checkRateLimit(`login-guard:${ip}`, {
-      maxRequests: 30,
+      maxRequests: 35,
       windowMs: 60_000,
     });
 
@@ -6368,7 +6738,86 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json().catch(() => ({}));
     const action = String(body.action || "PRECHECK").toUpperCase();
+
+    // REGISTER_SYNC: Immediately persists the exact selected account category in PostgreSQL upon signup
+    if (action === "REGISTER_SYNC") {
+      const userId = String(body.userId || "").trim();
+      const email = String(body.email || "").trim().toLowerCase();
+      const name = String(body.name || "").trim();
+      const rawUsername = String(body.username || "").trim().toLowerCase().replace(/[^a-z0-9_.]/g, "");
+      const school = body.school ? String(body.school).trim() : null;
+      const studentGrade = body.studentGrade ? String(body.studentGrade).trim() : null;
+      const requestedRole = String(body.role || "TEACHER").trim().toUpperCase();
+
+      if (!userId || !email) {
+        return successResponse({ synced: false });
+      }
+
+      const assignedRole: Role =
+        email === "bjasser123@gmail.com"
+          ? Role.ADMIN
+          : resolveAllowedPublicRole(requestedRole);
+
+      const isInspectorPending = assignedRole === Role.INSPECTOR;
+      const baseUname = rawUsername.length >= 3 ? rawUsername : email.split("@")[0].replace(/[^a-z0-9_.]/g, "") || "user";
+      let finalUsername = baseUname;
+
+      const existingUname = await db.user.findFirst({
+        where: { username: { equals: finalUsername, mode: "insensitive" }, id: { not: userId } },
+        select: { id: true },
+      });
+      if (existingUname) {
+        finalUsername = `${baseUname}_${userId.replace(/-/g, "").slice(0, 4)}`;
+      }
+
+      const syncedUser = await db.user.upsert({
+        where: { id: userId },
+        update: {
+          email,
+          name: name || email.split("@")[0],
+          username: finalUsername,
+          school,
+          studentGrade,
+          role: assignedRole,
+          isVerified: assignedRole === Role.ADMIN,
+          inspectorPending: isInspectorPending,
+        },
+        create: {
+          id: userId,
+          email,
+          name: name || email.split("@")[0],
+          username: finalUsername,
+          school,
+          studentGrade,
+          role: assignedRole,
+          isVerified: assignedRole === Role.ADMIN,
+          inspectorPending: isInspectorPending,
+          presenceStatus: "ONLINE",
+          lastSeenAt: new Date(),
+        },
+      });
+
+      const roleTitles: Record<string, string> = {
+        TEACHER: "معلم",
+        INSTITUTION: "مؤسسة تربوية",
+        STUDENT: "تلميذ",
+        INSPECTOR: "متفقد تربوي",
+      };
+      void sendWelcomeEmail(
+        email,
+        syncedUser.name,
+        roleTitles[assignedRole] || assignedRole
+      ).catch(() => null);
+
+      return successResponse({
+        synced: true,
+        role: syncedUser.role,
+        isVerified: syncedUser.isVerified,
+      });
+    }
+
     const rawIdentifier = String(body.identifier || "").trim().toLowerCase();
+    const selectedRole = String(body.selectedRole || "").trim().toUpperCase();
 
     if (!rawIdentifier) {
       return successResponse({ exists: false });
@@ -6393,7 +6842,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const user = await db.user.findFirst({
+    let user = await db.user.findFirst({
       where: isUsername
         ? { username: { equals: cleanUsername, mode: "insensitive" } }
         : { email: { equals: rawIdentifier, mode: "insensitive" } },
@@ -6403,6 +6852,8 @@ export async function POST(request: NextRequest) {
         name: true,
         username: true,
         role: true,
+        isVerified: true,
+        inspectorPending: true,
         isBanned: true,
         banReason: true,
         failedLoginAttempts: true,
@@ -6421,21 +6872,71 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Auto-heal accounts that were created as INSPECTOR but saved as TEACHER by legacy trigger
+    if (!user.isVerified && user.role === Role.TEACHER && user.inspectorPending) {
+      try {
+        user = await db.user.update({
+          where: { id: user.id },
+          data: { role: Role.INSPECTOR },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            username: true,
+            role: true,
+            isVerified: true,
+            inspectorPending: true,
+            isBanned: true,
+            banReason: true,
+            failedLoginAttempts: true,
+            lockedAt: true,
+            lockReason: true,
+          },
+        });
+      } catch {
+        // ignore
+      }
+    }
+
     const currentFailed = user.failedLoginAttempts ?? 0;
     const isAccountLocked =
       Boolean(user.lockedAt) || currentFailed >= MAX_LOGIN_PASSWORD_ATTEMPTS;
 
     if (action === "PRECHECK") {
+      // Check Portal-Specific Login Rule:
+      // ADMIN and MODERATOR can log in from ANY portal.
+      // INSTITUTION, INSPECTOR, TEACHER, and STUDENT can ONLY log in from their own portal.
+      const isStaff =
+        user.role === Role.ADMIN ||
+        user.role === Role.MODERATOR ||
+        user.email.toLowerCase() === "bjasser123@gmail.com";
+
+      const isStandardPortal = ["INSTITUTION", "INSPECTOR", "TEACHER", "STUDENT"].includes(
+        selectedRole
+      );
+
+      const portalMismatch =
+        !isStaff && isStandardPortal && user.role !== selectedRole;
+
+      const actualPortalName = PORTAL_NAMES_AR[user.role] || user.role;
+      const selectedPortalName = PORTAL_NAMES_AR[selectedRole] || selectedRole;
+
       return successResponse({
         exists: true,
         resolvedEmail: user.email,
         role: user.role,
+        isVerified: user.isVerified,
         isLocked: isAccountLocked,
         isBanned: user.isBanned,
+        portalMismatch,
+        actualRole: user.role,
+        portalMismatchMessage: portalMismatch
+          ? `عذراً، هذا الحساب مسجل في «${actualPortalName}» ولا يمكنه تسجيل الدخول من «${selectedPortalName}». يجب على كل فئة تسجيل الدخول من الفضاء المخصص لها فقط.`
+          : null,
         failedAttempts: currentFailed,
         remainingAttempts: Math.max(0, MAX_LOGIN_PASSWORD_ATTEMPTS - currentFailed),
         lockMessage: isAccountLocked
-          ? "🔒 تم قفل حسابك لتجاوز الحد الأقصى لمحاولات كلمة المرور (6 محاولات خاطئة). رجاءً تواصل مع المسؤول أو المشرف العام لفك غلق الحساب."
+          ? "تم تعليق الدخول مؤقتاً لحماية الحساب. يرجى التواصل مع الدعم الفني لتفعيل الحساب."
           : user.isBanned
           ? `🚫 هذا الحساب موقوف حالياً من قِبل الإدارة (${user.banReason || "يرجى التواصل مع المسؤول أو المشرف العام"}).`
           : null,
@@ -6453,11 +6954,11 @@ export async function POST(request: NextRequest) {
           failedLoginAttempts: nextAttempts,
           lockedAt: shouldLock ? new Date() : user.lockedAt,
           lockReason: shouldLock
-            ? "قفل أمني تلقائي بعد 6 محاولات خاطئة لإدخال كلمة المرور"
+            ? "قفل أمني تلقائي لتجاوز محاولات كلمة المرور"
             : user.lockReason,
           isBanned: shouldLock ? true : user.isBanned,
           banReason: shouldLock
-            ? "🔒 حساب مقفل تلقائياً بسبب استنفاد 6 محاولات خاطئة لكلمة المرور"
+            ? "🔒 حساب مقفل تلقائياً لحماية الحساب"
             : user.banReason,
         },
       });
@@ -6470,11 +6971,10 @@ export async function POST(request: NextRequest) {
           action: "USER_ACCOUNT_LOCKED",
           targetType: "USER",
           targetId: user.id,
-          details: `تم قفل الحساب (@${user.username || user.email}) تلقائياً بعد 6 محاولات خاطئة لكلمة المرور`,
+          details: `تم قفل الحساب (@${user.username || user.email}) تلقائياً لحماية الحساب`,
           ipAddress: ip,
         });
 
-        // Notify Admin and Moderators so they can unlock the account when contacted
         const staff = await db.user.findMany({
           where: { role: { in: [Role.ADMIN, Role.MODERATOR] } },
           select: { id: true, role: true },
@@ -6484,8 +6984,8 @@ export async function POST(request: NextRequest) {
           await db.notification.createMany({
             data: staff.map((s) => ({
               userId: s.id,
-              title: "🔒 قفل حساب عضو بعد 6 محاولات كلمة مرور خاطئة",
-              message: `تم قفل حساب (${user.name} — ${user.email}) تلقائياً لتجاوز 6 محاولات لكلمة المرور. يمكنك فك قفل الحساب من لوحة التحكم.`,
+              title: "🔒 قفل حساب عضو تلقائياً",
+              message: `تم قفل حساب (${user.name} — ${user.email}) تلقائياً. يمكنك فك قفل الحساب من لوحة التحكم.`,
               link:
                 s.role === Role.ADMIN
                   ? "/admin/dashboard?tab=teachers"
@@ -6501,8 +7001,8 @@ export async function POST(request: NextRequest) {
         failedAttempts: nextAttempts,
         remainingAttempts: remaining,
         message: shouldLock
-          ? "🔒 تم قفل الحساب بعد استنفاد 6 محاولات خاطئة لكلمة المرور. رجاءً تواصل مع المسؤول أو المشرف العام لفك غلق الحساب."
-          : `❌ البريد الإلكتروني مسجل في المنصة ولكن كلمة المرور التي أدخلتها خاطئة! تنبيه: لديك فرصة 6 مرات فقط لكتابة كلمة المرور (المحاولة ${nextAttempts} من 6 — متبقي ${remaining} محاولات قبل قفل الحساب).`,
+          ? "تم تعليق الدخول مؤقتاً لحماية الحساب. يرجى التواصل مع الدعم الفني لتفعيل الحساب."
+          : "كلمة المرور المدخلة غير صحيحة، يرجى المحاولة مرة أخرى.",
       });
     }
 
@@ -6984,7 +7484,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const [dbUser, worksheet] = await Promise.all([
       db.user.findUnique({
         where: { id: user.id },
-        select: { id: true, role: true },
+        select: { id: true, role: true, isVerified: true },
       }),
       db.worksheet.findUnique({
         where: { id },
@@ -7012,14 +7512,14 @@ export async function GET(request: NextRequest, context: RouteContext) {
       worksheet.status === "DRAFT" &&
       worksheet.uploadedBy !== dbUser.id &&
       dbUser.role !== "ADMIN" &&
-      dbUser.role !== "INSPECTOR"
+      !(dbUser.role === "INSPECTOR" && dbUser.isVerified)
     ) {
       throw new ForbiddenError(
         "هذا الملف قيد المراجعة وإعادة الصياغة إلى PDF من قِبل المشرف والمتفقد."
       );
     }
 
-    if (!canUserAccessWorksheet(worksheet, dbUser.role, dbUser.id)) {
+    if (!canUserAccessWorksheet(worksheet, dbUser.role, dbUser.id, dbUser.isVerified)) {
       throw new ForbiddenError(
         "غير مصرح لحسابك بمعاينة أو تحميل هذه النشرة حسب قيود الجمهور."
       );
@@ -9297,6 +9797,12 @@ async function requireInspectorOrAdmin() {
     );
   }
 
+  if (dbUser.role === Role.INSPECTOR && !dbUser.isVerified) {
+    throw new ForbiddenError(
+      "حساب المتفقد الجديد يتطلب إثبات الهوية أولاً: يرجى تفعيل كود التوثيق في ملفك الشخصي أو التواصل مع المشرف العام لتوثيق هويتك قبل الوصول إلى ميزات ولوحة تحكم المتفقد."
+    );
+  }
+
   return dbUser;
 }
 
@@ -9741,10 +10247,11 @@ export async function toggleWorksheetEndorsementAction(worksheetId: string) {
 
   if (
     !actor ||
-    (actor.role !== Role.INSPECTOR && actor.role !== Role.ADMIN)
+    (actor.role !== Role.INSPECTOR && actor.role !== Role.ADMIN) ||
+    (actor.role === Role.INSPECTOR && !actor.isVerified)
   ) {
     throw new ForbiddenError(
-      "هذه الميزة مخصصة للمتفقدين المعتمدين فقط للمصادقة على صحة النشرات علمياً وبيداغوجياً"
+      "هذه الميزة مخصصة للمتفقدين الموثقين فقط بعد إثبات الهوية لدى المشرف العام"
     );
   }
 
@@ -10005,7 +10512,7 @@ export async function getPublicPublisherProfileData(publisherId: string) {
 
   const vUser = await db.user.findUnique({
     where: { id: viewerAuth.id },
-    select: { id: true, role: true },
+    select: { id: true, role: true, isVerified: true },
   });
 
   if (!vUser) {
@@ -10043,7 +10550,7 @@ export async function getPublicPublisherProfileData(publisherId: string) {
   const audienceGuard =
     viewerAuth.id === publisherId
       ? {}
-      : buildAudienceVisibilityFilter(viewerRole, viewerAuth.id);
+      : buildAudienceVisibilityFilter(viewerRole, viewerAuth.id, vUser.isVerified);
 
   const [worksheets, followRecord, favRecord] = await Promise.all([
     db.worksheet.findMany({

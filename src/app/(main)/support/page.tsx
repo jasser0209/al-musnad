@@ -29,9 +29,9 @@ const QUICK_SUPPORT_CARDS = [
   {
     id: "unlock",
     category: "TECHNICAL",
-    title: "🔓 طلب فك قفل الحساب (6 محاولات كلمة مرور)",
-    desc: "إذا قُفل حسابك بعد 6 محاولات خاطئة لكلمة المرور، اضغط هنا لمراسلة المشرف أو المسؤول لفك القفل.",
-    defaultSubject: "طلب فك قفل حسابي بعد استنفاد محاولات كلمة المرور",
+    title: "🔓 مساعدة في تسجيل الدخول واستعادة الحساب",
+    desc: "إذا واجهت صعوبة في تسجيل الدخول إلى حسابك، اضغط هنا لمراسلة الإدارة لتفعيل حسابك.",
+    defaultSubject: "طلب مساعدة في تسجيل الدخول وتفعيل الحساب",
     icon: Unlock,
     badgeClass: "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800",
   },
@@ -66,7 +66,7 @@ const QUICK_SUPPORT_CARDS = [
 
 const SUPPORT_INSTANT_ANSWERS = [
   {
-    q: "كيف أستعيد الدخول إذا تم قفل حسابي بعد 6 محاولات كلمة مرور؟",
+    q: "كيف أستعيد الدخول إذا تعذر عليّ تسجيل الدخول إلى حسابي؟",
     a: "اختر بطاقة «طلب فك قفل الحساب» أعلاه واكتب بريدك الإلكتروني أو معرفك @username، وسيقوم المشرف العام أو المسؤول الإداري بفك غلق حسابك وتصفير العداد فوراً من لوحة التحكم.",
   },
   {
@@ -218,10 +218,10 @@ export default function SupportAndCustomerServicePage() {
               </a>
             )}
 
-            {/* Channel 2: Institutions & Inspectors (76907101) */}
+            {/* Channel 2: Institutions & Inspectors (46907101) */}
             {showInstitution && (
               <a
-                href="https://wa.me/21676907101?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%20%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9%20%D9%85%D9%86%D8%B5%D8%A9%20%D8%A7%D9%84%D9%85%D8%B3%D9%86%D8%AF%D8%8C%20%D8%A3%D8%AA%D9%88%D8%A7%D8%B5%D9%84%20%D9%85%D8%B9%D9%83%D9%85%20%D8%B9%D8%A8%D8%B1%20%D8%AE%D8%B7%20%D8%A7%D9%84%D9%85%D8%A4%D8%B3%D8%B3%D8%A7%D8%AA%20%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%88%D9%8A%D8%A9%20%D9%88%D8%A7%D9%84%D9%85%D8%AA%D9%81%D9%82%D8%AF%D9%8A%D9%86%3A"
+                href="https://wa.me/21646907101?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%20%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9%20%D9%85%D9%86%D8%B5%D8%A9%20%D8%A7%D9%84%D9%85%D8%B3%D9%86%D8%AF%D8%8C%20%D8%A3%D8%AA%D9%88%D8%A7%D8%B5%D9%84%20%D9%85%D8%B9%D9%83%D9%85%20%D8%B9%D8%A8%D8%B1%20%D8%AE%D8%B7%20%D8%A7%D9%84%D9%85%D8%A4%D8%B3%D8%B3%D8%A7%D8%AA%20%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%88%D9%8A%D8%A9%20%D9%88%D8%A7%D9%84%D9%85%D8%AA%D9%81%D9%82%D8%AF%D9%8A%D9%86%3A"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group relative overflow-hidden rounded-3xl border-2 border-indigo-300 dark:border-indigo-800/80 bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-indigo-950/40 dark:via-slate-900 dark:to-purple-950/20 p-6 shadow-sm hover:shadow-md hover:border-indigo-500 transition flex items-start gap-4"
@@ -247,7 +247,7 @@ export default function SupportAndCustomerServicePage() {
                   <div className="pt-2 flex items-center gap-2 text-sm font-black text-indigo-700 dark:text-indigo-300" dir="ltr">
                     <span>+216 46 907 101</span>
                     <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-950 text-indigo-800 dark:text-indigo-300">
-                      WhatsApp: 76907101
+                      WhatsApp: 46907101
                     </span>
                   </div>
                 </div>

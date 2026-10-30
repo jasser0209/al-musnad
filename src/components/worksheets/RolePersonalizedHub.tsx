@@ -24,6 +24,7 @@ interface RolePersonalizedHubProps {
   viewerRole: string | null;
   viewerName?: string | null;
   viewerStudentGrade?: string | null;
+  viewerIsVerified?: boolean;
 }
 
 type HubRoleTab = "INSTITUTION" | "INSPECTOR" | "TEACHER" | "STUDENT";
@@ -33,6 +34,7 @@ export default function RolePersonalizedHub({
   viewerRole,
   viewerName,
   viewerStudentGrade,
+  viewerIsVerified = false,
 }: RolePersonalizedHubProps) {
   const isStaff = viewerRole === "ADMIN" || viewerRole === "MODERATOR";
 
@@ -150,6 +152,59 @@ export default function RolePersonalizedHub({
 
   if (!viewerRole) return null;
 
+  const requiresIdentityVerification =
+    !isStaff &&
+    !viewerIsVerified &&
+    (viewerRole === "INSPECTOR" ||
+      viewerRole === "TEACHER" ||
+      viewerRole === "INSTITUTION");
+
+  if (requiresIdentityVerification) {
+    const roleTitleAr =
+      viewerRole === "INSPECTOR"
+        ? "المتفقد التربوي"
+        : viewerRole === "INSTITUTION"
+        ? "المؤسسة التربوية"
+        : "المعلم";
+    return (
+      <section
+        id="role-personalized-hub"
+        dir="rtl"
+        className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 scroll-mt-24"
+      >
+        <div className="rounded-3xl border-2 border-amber-300 bg-gradient-to-l from-amber-50 via-white to-amber-50/40 p-6 sm:p-8 shadow-sm dark:border-amber-800/80 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/30">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+            <div className="space-y-2 max-w-3xl">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3.5 py-1 text-xs font-extrabold text-amber-900 dark:bg-amber-950 dark:text-amber-300">
+                🔒 توثيق الهوية مطلوب للوصول للفضاء المهني الداخلي
+              </span>
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+                فضاء «{roleTitleAr}» والملفات الداخلية الخاصة تُفتح بعد إثبات الهوية
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                لضمان الأمان داخل المنصة وحماية الملفات الخاصة بفئة ({roleTitleAr})، يتطلب الوصول إلى المنشورات الداخلية وميزات الفئة إثبات الهوية عبر إدخال كود التوثيق في ملفك الشخصي أو التواصل مع المشرف العام.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 shrink-0">
+              <Link
+                href="/profile?tab=verification"
+                className="rounded-xl bg-amber-500 hover:bg-amber-600 px-5 py-3 text-xs font-black text-slate-950 shadow-sm transition"
+              >
+                إدخال كود التوثيق ←
+              </Link>
+              <Link
+                href="/support"
+                className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 transition"
+              >
+                التواصل مع المشرف
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section
       id="role-personalized-hub"
@@ -161,7 +216,7 @@ export default function RolePersonalizedHub({
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-purple-200 bg-purple-50/70 px-4 py-3 dark:border-purple-900/60 dark:bg-purple-950/30">
           <div className="flex items-center gap-2 text-xs font-extrabold text-purple-900 dark:text-purple-200">
             <ShieldCheck className="h-4 w-4 text-purple-600" />
-            <span>معاينة الفضاءات المخصصة حسب فئة المستخدم (صلاحية المشرف/المسؤول):</span>
+            <span>تصفح فضاءات المنصة:</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {(
@@ -386,7 +441,7 @@ export default function RolePersonalizedHub({
                     مستودع منشورات ومذكرات المعلمين
                   </h2>
                   <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">
-                    يجمع هذا القسم كافة المنشورات التي تخص المعلمين (الجذاذات البيداغوجية، إصلاح الفروض والامتحانات المحجوبة عن التلاميذ، والتوزيعات السنوية).
+                    يجمع هذا القسم الجذاذات البيداغوجية، مذكرات الدروس، إصلاح الفروض والامتحانات، والتوزيعات السنوية.
                   </p>
                 </div>
               </div>
@@ -397,15 +452,9 @@ export default function RolePersonalizedHub({
                   className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-extrabold text-white shadow-sm transition hover:bg-blue-700"
                 >
                   <Plus className="h-4 w-4" />
-                  <span>نشر جذاذة أو إصلاح (خاص بالمعلمين)</span>
+                  <span>نشر ملف جديد للمعلمين</span>
                 </Link>
-                <a
-                  href="#administration-section"
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                >
-                  <Briefcase className="h-3.5 w-3.5 text-amber-600" />
-                  <span>الوثائق الإدارية للمعلم</span>
-                </a>
+
               </div>
             </div>
 
@@ -430,7 +479,7 @@ export default function RolePersonalizedHub({
                     : "bg-white text-slate-700 hover:bg-blue-50 dark:bg-slate-800 dark:text-slate-300"
                 }`}
               >
-                🔒 خاص بالمعلمين فقط (محجوب عن التلاميذ)
+                خاص بالمعلمين
               </button>
               <button
                 type="button"

@@ -17,6 +17,7 @@ import {
   HelpCircle,
   Eye,
   EyeOff,
+  ArrowLeft,
 } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { signInSchema } from "@/lib/validators/auth";
@@ -24,6 +25,15 @@ import { useAppPreferences } from "@/context/AppPreferencesContext";
 import { ROLE_VISUAL_CARDS } from "@/components/auth/AuthRoleModal";
 import { MAX_LOGIN_PASSWORD_ATTEMPTS } from "@/config/constants";
 import type { AccountRoleOption } from "@/types/api";
+
+const PORTAL_NAMES_AR: Record<string, string> = {
+  INSTITUTION: "فضاء المؤسسات التربوية",
+  INSPECTOR: "فضاء المتفقد التربوي",
+  TEACHER: "فضاء المعلم والأستاذ",
+  STUDENT: "فضاء التلميذ والولي",
+  MODERATOR: "لوحة المسؤول الإداري",
+  ADMIN: "لوحة المشرف العام",
+};
 
 function GoogleIcon() {
   return (
@@ -54,16 +64,13 @@ function LoginContent() {
   const redirectTo = searchParams?.get("redirectTo") || "/";
   const errorParam = searchParams?.get("error");
   const roleParam = searchParams?.get("role");
+  const actualRoleParam = searchParams?.get("actualRole");
 
   const { t } = useAppPreferences();
 
   const [selectedRole, setSelectedRole] = useState<string | null>(
-    roleParam || null
+    roleParam ? roleParam.toUpperCase() : null
   );
-
-  useEffect(() => {
-    if (roleParam) setSelectedRole(roleParam);
-  }, [roleParam]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -71,23 +78,53 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [suggestedPortalRole, setSuggestedPortalRole] = useState<string | null>(null);
 
   const [isAccountLocked, setIsAccountLocked] = useState<boolean>(
     errorParam === "account-locked"
   );
-  const [remainingAttempts, setRemainingAttempts] = useState<number>(
+  const [, setRemainingAttempts] = useState<number>(
     MAX_LOGIN_PASSWORD_ATTEMPTS
   );
 
-  const executeLogin = async (overrideEmail?: string, overridePassword?: string, overrideRole?: string) => {
+  useEffect(() => {
+    if (roleParam) setSelectedRole(roleParam.toUpperCase());
+  }, [roleParam]);
+
+  useEffect(() => {
+    if (errorParam === "portal-mismatch" && actualRoleParam) {
+      const actualUpper = actualRoleParam.toUpperCase();
+      setSuggestedPortalRole(actualUpper);
+      setError(
+        `عذراً، هذا الحساب مسجل في «${
+          PORTAL_NAMES_AR[actualUpper] || actualUpper
+        }» ولا يمكنه تسجيل الدخول من هذا الفضاء. يجب على كل فئة تسجيل الدخول من الفضاء الخاص بها فقط.`
+      );
+    } else if (errorParam === "account-locked") {
+      setIsAccountLocked(true);
+      setError("تم تعليق الدخول مؤقتاً لحماية الحساب. يرجى التواصل مع الدعم الفني لتفعيل الحساب.");
+    }
+  }, [errorParam, actualRoleParam]);
+
+  const executeLogin = async (
+    overrideEmail?: string,
+    overridePassword?: string,
+    overrideRole?: string
+  ) => {
     if (loading) return;
     setError(null);
+    setSuggestedPortalRole(null);
+
+    const portalRole = (overrideRole || selectedRole || "").toUpperCase();
+    if (!portalRole) {
+      setError("يرجى اختيار الفضاء المخصص لنوع حسابك أولاً.");
+      return;
+    }
 
     const emailToUse = overrideEmail || email;
     const passwordToUse = overridePassword || password;
     const rawInput = emailToUse.trim().toLowerCase();
 
-    // In production, restrict demo accounts (@musnad.tn) strictly to development environment
     const isProduction = process.env.NODE_ENV === "production";
     const isMusnadDemo =
       rawInput.endsWith("@musnad.tn") ||
@@ -102,20 +139,11 @@ function LoginContent() {
       return;
     }
 
-    const isPrimaryAdmin =
-      rawInput === "bjasser123@gmail.com" ||
-      rawInput === "@bjasser" ||
-      rawInput === "bjasser";
-
-    const roleToUse = isPrimaryAdmin
-      ? "ADMIN"
-      : overrideRole || selectedRole || "TEACHER";
-
     const parsed = signInSchema.safeParse({
       email: emailToUse,
       password: passwordToUse,
-      role: ["INSTITUTION", "INSPECTOR", "TEACHER", "STUDENT"].includes(roleToUse)
-        ? (roleToUse as any)
+      role: ["INSTITUTION", "INSPECTOR", "TEACHER", "STUDENT"].includes(portalRole)
+        ? (portalRole as any)
         : undefined,
     });
 
@@ -128,9 +156,11 @@ function LoginContent() {
       setLoading(true);
       const rawIdentifier = parsed.data.email.trim();
 
-      // Step 1: Pre-check if email/username is registered and whether account is locked
+      // Step 1: Pre-check if email/username is registered, whether account is locked,
+      // and whether the user is logging in from their rightful portal!
       let loginEmail = rawIdentifier;
-      let resolvedRole = roleToUse;
+      let resolvedRole = portalRole;
+      let resolvedVerified = false;
       let existsInDb = false;
 
       try {
@@ -140,6 +170,7 @@ function LoginContent() {
           body: JSON.stringify({
             action: "PRECHECK",
             identifier: rawIdentifier,
+            selectedRole: portalRole,
           }),
         });
         const preJson = await preRes.json();
@@ -151,6 +182,7 @@ function LoginContent() {
           if (preJson.data.role) {
             resolvedRole = preJson.data.role;
           }
+          resolvedVerified = Boolean(preJson.data.isVerified);
           if (typeof preJson.data.remainingAttempts === "number") {
             setRemainingAttempts(preJson.data.remainingAttempts);
           }
@@ -158,7 +190,20 @@ function LoginContent() {
             setIsAccountLocked(true);
             setError(
               preJson.data.lockMessage ||
-                "🔒 هذا الحساب مقفل حالياً. رجاءً تواصل مع المسؤول أو المشرف العام لفك قفل الحساب."
+                "هذا الحساب موقوف مؤقتاً. يرجى التواصل مع الدعم الفني."
+            );
+            return;
+          }
+
+          // Strict Portal-Specific Login Enforcement:
+          // Only ADMIN and MODERATOR can log in from any portal.
+          if (preJson.data.portalMismatch) {
+            if (preJson.data.actualRole) {
+              setSuggestedPortalRole(preJson.data.actualRole);
+            }
+            setError(
+              preJson.data.portalMismatchMessage ||
+                "عذراً، لا يمكنك تسجيل الدخول من هذا الفضاء. يرجى الدخول من الفضاء المخصص لنوع حسابك."
             );
             return;
           }
@@ -193,7 +238,7 @@ function LoginContent() {
               }
               setError(
                 failJson.data.message ||
-                  "❌ كلمة المرور خاطئة لهذا الحساب المسجل. تنبيه: لديك 6 محاولات كحد أقصى قبل قفل الحساب."
+                  "كلمة المرور غير صحيحة، يرجى المحاولة مرة أخرى."
               );
               return;
             }
@@ -201,7 +246,7 @@ function LoginContent() {
             // fallback
           }
           setError(
-            "❌ البريد الإلكتروني مسجل في المنصة ولكن كلمة المرور خاطئة! تنبيه: لديك فرصة 6 مرات فقط لكتابة كلمة المرور قبل قفل الحساب."
+            "كلمة المرور المدخلة غير صحيحة، يرجى المحاولة مرة أخرى."
           );
           return;
         }
@@ -212,7 +257,43 @@ function LoginContent() {
         return;
       }
 
-      // Step 3: Reset failed attempts counter on successful login
+      // Step 3: Verify synced profile role from /api/auth/me (catches accounts that were not in DB before login)
+      try {
+        const meRes = await fetch("/api/auth/me", { cache: "no-store" });
+        if (meRes.ok) {
+          const meJson = await meRes.json();
+          if (meJson.success && meJson.data) {
+            resolvedRole = meJson.data.role || resolvedRole;
+            resolvedVerified = Boolean(meJson.data.isVerified);
+
+            const isStaff =
+              resolvedRole === "ADMIN" ||
+              resolvedRole === "MODERATOR" ||
+              loginEmail.toLowerCase() === "bjasser123@gmail.com";
+
+            if (
+              !isStaff &&
+              ["INSTITUTION", "INSPECTOR", "TEACHER", "STUDENT"].includes(portalRole) &&
+              resolvedRole !== portalRole
+            ) {
+              await supabase.auth.signOut();
+              setSuggestedPortalRole(resolvedRole);
+              setError(
+                `عذراً، هذا الحساب مسجل في «${
+                  PORTAL_NAMES_AR[resolvedRole] || resolvedRole
+                }» ولا يمكنه تسجيل الدخول من «${
+                  PORTAL_NAMES_AR[portalRole] || portalRole
+                }». يجب على كل حساب تسجيل الدخول من الفضاء المخصص لفئته فقط.`
+              );
+              return;
+            }
+          }
+        }
+      } catch {
+        // ignore
+      }
+
+      // Step 4: Reset failed attempts counter on successful login
       await fetch("/api/auth/login-guard", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -225,19 +306,24 @@ function LoginContent() {
       const isAdminAccount =
         loginEmail.toLowerCase() === "bjasser123@gmail.com" ||
         loginEmail.toLowerCase() === "admin@musnad.tn" ||
-        resolvedRole === "ADMIN" ||
-        roleToUse === "ADMIN";
+        resolvedRole === "ADMIN";
 
       const targetDestination = isAdminAccount
         ? "/admin/dashboard"
-        : resolvedRole === "MODERATOR" || roleToUse === "MODERATOR"
+        : resolvedRole === "MODERATOR"
         ? "/moderator/dashboard"
-        : resolvedRole === "INSPECTOR" || roleToUse === "INSPECTOR"
-        ? "/inspector/dashboard"
-        : resolvedRole === "INSTITUTION" || roleToUse === "INSTITUTION"
-        ? (redirectTo && redirectTo !== "/" ? redirectTo : "/#institutions-hub")
-        : resolvedRole === "TEACHER" || roleToUse === "TEACHER"
-        ? (redirectTo && redirectTo !== "/" ? redirectTo : "/#teachers-hub")
+        : resolvedRole === "INSPECTOR"
+        ? resolvedVerified
+          ? "/inspector/dashboard"
+          : "/#inspectors-hub"
+        : resolvedRole === "INSTITUTION"
+        ? redirectTo && redirectTo !== "/"
+          ? redirectTo
+          : "/#institutions-hub"
+        : resolvedRole === "TEACHER"
+        ? redirectTo && redirectTo !== "/"
+          ? redirectTo
+          : "/#teachers-hub"
         : redirectTo;
 
       router.push(targetDestination);
@@ -271,7 +357,7 @@ function LoginContent() {
       const roleToPass = selectedRole || "TEACHER";
       const callbackUrl = `${window.location.origin}/api/auth/callback?role=${encodeURIComponent(
         roleToPass
-      )}&next=${encodeURIComponent(redirectTo)}`;
+      )}&mode=login&next=${encodeURIComponent(redirectTo)}`;
 
       const { data, error: oauthErr } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -308,7 +394,6 @@ function LoginContent() {
 
   return (
     <div className="max-w-7xl w-full mx-auto py-8 px-4 space-y-8" dir={t.dir}>
-
       {!selectedRole ? (
         <div className="space-y-6">
           <div className="text-center space-y-3 max-w-2xl mx-auto">
@@ -316,7 +401,7 @@ function LoginContent() {
               {t.authModal.loginTitle}
             </h1>
             <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400">
-              {t.authModal.loginSubtitle}
+              اختر الفضاء الخاص بنوع حسابك لتسجيل الدخول (يُسمح لكل حساب بالدخول من فضائه الخاص فقط)
             </p>
           </div>
 
@@ -328,7 +413,11 @@ function LoginContent() {
                 <button
                   key={card.role}
                   type="button"
-                  onClick={() => setSelectedRole(card.role)}
+                  onClick={() => {
+                    setError(null);
+                    setSuggestedPortalRole(null);
+                    setSelectedRole(card.role);
+                  }}
                   className={`group relative text-start bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 ${card.borderHover} rounded-3xl p-6 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col justify-between cursor-pointer overflow-hidden`}
                 >
                   <div
@@ -367,11 +456,15 @@ function LoginContent() {
           <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100 dark:border-slate-800">
             <button
               type="button"
-              onClick={() => setSelectedRole(null)}
+              onClick={() => {
+                setError(null);
+                setSuggestedPortalRole(null);
+                setSelectedRole(null);
+              }}
               className="text-xs font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white transition flex items-center gap-1 cursor-pointer"
             >
               <span>←</span>
-              <span>تغيير الفئة المحددة</span>
+              <span>تغيير الفضاء المحدد</span>
             </button>
             <span className="text-xs font-black text-blue-600 bg-blue-50 dark:bg-blue-950 px-2.5 py-1 rounded-lg">
               {selectedRole === "ADMIN"
@@ -401,10 +494,29 @@ function LoginContent() {
           </div>
 
           {error && (
-            <div className="mb-5 p-3.5 rounded-2xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800/80 text-red-700 dark:text-red-300 text-xs font-semibold leading-relaxed flex items-start gap-2">
+            <div className="mb-5 p-4 rounded-2xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800/80 text-red-700 dark:text-red-300 text-xs font-semibold leading-relaxed flex items-start gap-2.5">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
-              <div className="space-y-1">
+              <div className="space-y-2 flex-1">
                 <p>{error}</p>
+                {suggestedPortalRole &&
+                  ["INSTITUTION", "INSPECTOR", "TEACHER", "STUDENT"].includes(
+                    suggestedPortalRole
+                  ) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedRole(suggestedPortalRole);
+                        setError(null);
+                        setSuggestedPortalRole(null);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-[11px] font-black transition cursor-pointer"
+                    >
+                      <span>
+                        الانتقال إلى {PORTAL_NAMES_AR[suggestedPortalRole] || suggestedPortalRole}
+                      </span>
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 {isAccountLocked && (
                   <Link
                     href="/support"
@@ -513,7 +625,7 @@ function LoginContent() {
               href={`/register?role=${selectedRole}`}
               className="font-black text-blue-600 dark:text-blue-400 hover:underline"
             >
-              ليس لديك حساب؟ أنشئ حسابك الآن ←
+              ليس لديك حساب في هذا الفضاء؟ أنشئ حسابك الآن ←
             </Link>
           </div>
         </div>

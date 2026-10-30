@@ -78,7 +78,7 @@ function RegisterContent() {
       const supabase = createSupabaseBrowserClient();
       const callbackUrl = `${window.location.origin}/api/auth/callback?role=${encodeURIComponent(
         selectedRole
-      )}&next=/`;
+      )}&mode=register&next=/`;
 
       const { data, error: oauthErr } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -169,7 +169,7 @@ function RegisterContent() {
         `${parsed.data.email.split("@")[0].toLowerCase().replace(/[^a-z0-9_.]/g, "")}`;
 
       const supabase = createSupabaseBrowserClient();
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: parsed.data.email,
         password: parsed.data.password,
         options: {
@@ -179,6 +179,7 @@ function RegisterContent() {
             school: parsed.data.school,
             student_grade: parsed.data.studentGrade,
             role: selectedRole,
+            inspector_pending: selectedRole === "INSPECTOR",
           },
         },
       });
@@ -186,6 +187,23 @@ function RegisterContent() {
       if (signUpError) {
         setError(signUpError.message);
         return;
+      }
+
+      if (signUpData?.user?.id) {
+        await fetch("/api/auth/login-guard", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "REGISTER_SYNC",
+            userId: signUpData.user.id,
+            email: parsed.data.email,
+            username: fallbackUname,
+            name: parsed.data.name,
+            school: parsed.data.school,
+            studentGrade: parsed.data.studentGrade,
+            role: selectedRole,
+          }),
+        }).catch(() => null);
       }
 
       // Show the Post-Registration Thank You & Identity Verification Notice Screen

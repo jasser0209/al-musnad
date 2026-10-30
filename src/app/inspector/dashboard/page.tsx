@@ -182,12 +182,26 @@ export default function InspectorDashboardPage() {
           <p className="mt-2 text-[11px] text-slate-600 dark:text-slate-400">
             لا يمكن للمسؤول الإداري أو غيره الانتقال إلى لوحة المتفقد؛ كل رتبة تكتفي بالصلاحيات واللوحة المخصصة لها فقط.
           </p>
-          <Link
-            href="/"
-            className="mt-5 inline-block rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-bold text-white"
-          >
-            العودة للرئيسية
-          </Link>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href="/profile?tab=verification"
+              className="rounded-xl bg-amber-600 hover:bg-amber-700 px-5 py-2.5 text-xs font-extrabold text-white"
+            >
+              إدخال كود توثيق المتفقد ←
+            </Link>
+            <Link
+              href="/support"
+              className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-bold text-slate-700"
+            >
+              التواصل مع المشرف العام
+            </Link>
+            <Link
+              href="/"
+              className="rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-bold text-white"
+            >
+              العودة للرئيسية
+            </Link>
+          </div>
         </div>
       </div>
     );

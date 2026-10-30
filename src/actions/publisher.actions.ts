@@ -175,7 +175,7 @@ export async function getPublicPublisherProfileData(publisherId: string) {
 
   const vUser = await db.user.findUnique({
     where: { id: viewerAuth.id },
-    select: { id: true, role: true },
+    select: { id: true, role: true, isVerified: true },
   });
 
   if (!vUser) {
@@ -213,7 +213,7 @@ export async function getPublicPublisherProfileData(publisherId: string) {
   const audienceGuard =
     viewerAuth.id === publisherId
       ? {}
-      : buildAudienceVisibilityFilter(viewerRole, viewerAuth.id);
+      : buildAudienceVisibilityFilter(viewerRole, viewerAuth.id, vUser.isVerified);
 
   const [worksheets, followRecord, favRecord] = await Promise.all([
     db.worksheet.findMany({

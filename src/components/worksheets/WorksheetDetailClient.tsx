@@ -66,6 +66,7 @@ export default function WorksheetDetailClient({
   const [endorseLoading, setEndorseLoading] = useState<boolean>(false);
   const [viewerRole, setViewerRole] = useState<string | null>(null);
   const [viewerId, setViewerId] = useState<string | null>(null);
+  const [viewerIsVerified, setViewerIsVerified] = useState<boolean>(false);
 
   const [downloadCount, setDownloadCount] = useState<number>(
     initialWorksheet.downloadCount
@@ -162,6 +163,7 @@ export default function WorksheetDetailClient({
           if (meJson.success && meJson.data && isMounted) {
             setViewerRole(meJson.data.role || null);
             setViewerId(meJson.data.id || null);
+            setViewerIsVerified(Boolean(meJson.data.isVerified));
           }
         }
       } catch {
@@ -348,7 +350,7 @@ export default function WorksheetDetailClient({
   const displayTitle = worksheet.titleAr || worksheet.title;
   const displayDesc = worksheet.descriptionAr || worksheet.description;
   const subjectColor = worksheet.subject?.color || "#2563EB";
-  const canEndorse = viewerRole === "INSPECTOR" || viewerRole === "ADMIN";
+  const canEndorse = viewerRole === "ADMIN" || (viewerRole === "INSPECTOR" && viewerIsVerified);
   const isOwnerOrAdmin =
     (viewerId && viewerId === worksheet.uploadedBy) || viewerRole === "ADMIN";
 

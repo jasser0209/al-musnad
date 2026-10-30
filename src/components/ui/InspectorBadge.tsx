@@ -60,19 +60,22 @@ export default function InspectorBadge({
     );
   }
 
-  // 4. Certified Inspector Badge (المتفقد التربوي)
+  // 4. Certified Inspector Badge (Only shown when isVerified === true!)
   if (role === "INSPECTOR") {
-    return (
-      <span
-        title="متفقد تربوي معتمد للإشراف والمصادقة البيداغوجية"
-        className={`inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold shadow-sm select-none ${
-          size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-xs"
-        }`}
-      >
-        <BadgeCheck className={size === "sm" ? "w-3 h-3" : "w-4 h-4"} />
-        <span>متفقد معتمد</span>
-      </span>
-    );
+    if (isVerified) {
+      return (
+        <span
+          title="متفقد تربوي معتمد للإشراف والمصادقة البيداغوجية"
+          className={`inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold shadow-sm select-none ${
+            size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-xs"
+          }`}
+        >
+          <BadgeCheck className={size === "sm" ? "w-3 h-3" : "w-4 h-4"} />
+          <span>متفقد معتمد</span>
+        </span>
+      );
+    }
+    return null;
   }
 
   // 5. Educational Institution Badge (Verified via Admin Code vs Standard)

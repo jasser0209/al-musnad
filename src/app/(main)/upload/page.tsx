@@ -30,6 +30,7 @@ import {
   SUBJECT_SUBDIVISIONS,
   ADMINISTRATIVE_CATEGORY,
   SCHOOL_TRIMESTERS,
+  SCHOOL_SEMESTERS,
 } from "@/config/constants";
 import { extractPdfThumbnailAndPages } from "@/lib/utils/pdf-thumbnail";
 import type {
@@ -681,7 +682,7 @@ export default function UploadWorksheetPage() {
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
                 <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                <span>وسم الثلاثي المدرسي (اختيار سريع بضغطة زر)</span>
+                <span>الثلاثي والسداسي الدراسي</span>
               </label>
               {(selectedTrimester || tags.some((t) => SCHOOL_TRIMESTERS.some((st) => st.tag === t))) && (
                 <button
@@ -701,6 +702,30 @@ export default function UploadWorksheetPage() {
             <p className="text-xs text-slate-500 dark:text-slate-400">
               اختر الثلاثي لوسم الملف بيداغوجياً وتيسير عثور المعلمين والتلاميذ عليه في الفلترة والبحث:
             </p>
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              {SCHOOL_SEMESTERS.map((sem) => {
+                const isSelected = tags.includes(sem.tag);
+                return (
+                  <button
+                    key={sem.id}
+                    type="button"
+                    onClick={() => {
+                      const withoutSem = tags.filter(
+                        (t) => !SCHOOL_SEMESTERS.some((s) => s.tag === t)
+                      );
+                      setTags(isSelected ? withoutSem : [...withoutSem, sem.tag]);
+                    }}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold border-2 transition-all cursor-pointer text-center ${
+                      isSelected
+                        ? "bg-amber-500 text-slate-950 border-amber-500 shadow-sm"
+                        : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-amber-400"
+                    }`}
+                  >
+                    {sem.nameAr}
+                  </button>
+                );
+              })}
+            </div>
             <div className="grid grid-cols-3 gap-2 pt-1">
               {SCHOOL_TRIMESTERS.map((trim) => {
                 const isSelected = selectedTrimester === trim.tag || tags.includes(trim.tag);
@@ -734,13 +759,13 @@ export default function UploadWorksheetPage() {
               className="w-full px-4 py-3 rounded-xl border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-900 text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-blue-600"
             >
               <option value="ALL">
-                نشر للجميع (يظهر اسم الملف للزوار، ويُقرأ ويُحمّل من جميع الحسابات)
+                متاح للجميع
               </option>
               <option value="TEACHERS_AND_STUDENTS">
                 للمعلمين والتلاميذ (تمارين ودروس)
               </option>
               <option value="TEACHERS_ONLY">
-                للمعلمين والمتفقدين فقط — مخفي عن التلاميذ (مثل الإصلاح والجذاذات)
+                خاص بالمعلمين والمتفقدين
               </option>
               <option value="SAME_ROLE_ONLY">
                 حصر النشرة داخل نفس فئة حسابي فقط

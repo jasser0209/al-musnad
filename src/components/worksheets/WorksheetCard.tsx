@@ -15,7 +15,7 @@ interface WorksheetCardProps {
 }
 
 const AUDIENCE_LABELS: Record<string, { label: string; isRestricted: boolean }> = {
-  TEACHERS_ONLY: { label: "للمعلمين فقط (إصلاح / مذكرة)", isRestricted: true },
+  TEACHERS_ONLY: { label: "خاص بالمعلمين", isRestricted: true },
   SAME_ROLE_ONLY: { label: "خاص بنفس فئة الناشر", isRestricted: true },
   INSTITUTIONS_ONLY: { label: "خاص بالمؤسسات", isRestricted: true },
   TEACHERS_AND_STUDENTS: { label: "للمعلمين والتلاميذ", isRestricted: false },
@@ -178,10 +178,10 @@ export default function WorksheetCard({
 
   return (
     <div
-      className={`group bg-white dark:bg-slate-900 rounded-2xl border transition-all duration-200 flex flex-col justify-between overflow-hidden ${
+      className={`group rounded-2xl transition-all duration-200 flex flex-col justify-between overflow-hidden ${
         worksheet.isEndorsed
-          ? "border-2 border-amber-400 shadow-md shadow-amber-500/10"
-          : "border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-slate-300"
+          ? "border-2 border-amber-400 ring-2 ring-amber-400/30 bg-gradient-to-b from-amber-50/35 via-white to-white dark:from-amber-950/30 dark:via-slate-900 dark:to-slate-900 shadow-lg shadow-amber-500/15"
+          : "bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-slate-300"
       }`}
     >
       <div>
@@ -189,7 +189,7 @@ export default function WorksheetCard({
           <div className="bg-gradient-to-r from-amber-500 via-amber-600 to-orange-500 text-white px-3.5 py-1.5 text-[11px] font-extrabold flex items-center justify-between">
             <span className="flex items-center gap-1.5">
               <BadgeCheck className="w-4 h-4 shrink-0" />
-              <span>توثيق واعتماد بيداغوجي من المتفقد</span>
+              <span>معتمد بيداغوجياً</span>
             </span>
             <span className="bg-white/20 px-2 py-0.5 rounded-full text-[10px]">
               معتمد ★

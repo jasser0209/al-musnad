@@ -144,9 +144,8 @@ export default function RootLayout({
                       </Link>
                     </li>
                     <li>
-                      <Link href="/#administration-section" className="hover:text-blue-600 transition inline-flex items-center gap-1.5">
-                        <Briefcase className="w-3.5 h-3.5" />
-                        <span>قسم الإدارة والمعاملات الإدارية</span>
+                      <Link href="/#learn-more" className="hover:text-blue-600 transition inline-flex items-center gap-1.5">
+                        <span>اعرف المزيد عن المنصة</span>
                       </Link>
                     </li>
                     <li>

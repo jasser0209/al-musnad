@@ -246,6 +246,7 @@ export default async function HomePage(props: HomePageProps) {
   let viewerRole: string | null = null;
   let viewerName: string | null = null;
   let viewerStudentGrade: string | null = null;
+  let viewerIsVerified: boolean = false;
 
   try {
     const supabase = await createSupabaseServerClient();
@@ -258,7 +259,7 @@ export default async function HomePage(props: HomePageProps) {
       try {
         const dbUser = await db.user.findUnique({
           where: { id: user.id },
-          select: { role: true, name: true, studentGrade: true },
+          select: { role: true, name: true, studentGrade: true, isVerified: true },
         });
         viewerRole =
           dbUser?.role ||
@@ -272,6 +273,11 @@ export default async function HomePage(props: HomePageProps) {
           dbUser?.studentGrade ||
           (user.user_metadata?.student_grade as string | undefined) ||
           null;
+        viewerIsVerified = Boolean(
+          dbUser?.isVerified ||
+            viewerRole === "ADMIN" ||
+            viewerRole === "MODERATOR"
+        );
       } catch {
         viewerRole =
           (user.user_metadata?.role as string | undefined) || "TEACHER";
@@ -306,7 +312,8 @@ export default async function HomePage(props: HomePageProps) {
           sort,
         },
         viewerRole,
-        viewerUserId
+        viewerUserId,
+        viewerIsVerified
       ),
       listWorksheets(
         {
@@ -315,7 +322,8 @@ export default async function HomePage(props: HomePageProps) {
           sort: "newest",
         },
         viewerRole,
-        viewerUserId
+        viewerUserId,
+        viewerIsVerified
       ),
     ]);
 
@@ -384,17 +392,7 @@ export default async function HomePage(props: HomePageProps) {
 
   return (
     <div className="space-y-12 pb-16">
-      {!isDbConnected && (
-        <div
-          className="bg-amber-50 dark:bg-amber-950/60 border-b border-amber-200 dark:border-amber-800 px-4 py-2.5 text-xs text-amber-900 dark:text-amber-200 flex flex-wrap items-center justify-center gap-2"
-          dir="rtl"
-        >
-          <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-          <span>
-            <strong>الوضع التجريبي لمنصة المسند:</strong> يتم حالياً عرض البيانات التجريبية للمستويات والمواد والنشرات.
-          </span>
-        </div>
-      )}
+      
 
       {/* Hero Section: المسند */}
       <section className="relative overflow-hidden bg-gradient-to-b from-blue-700 via-indigo-800 to-slate-900 text-white pt-14 pb-16 px-4 sm:px-6 lg:px-8">
@@ -526,6 +524,7 @@ export default async function HomePage(props: HomePageProps) {
           viewerRole={viewerRole}
           viewerName={viewerName}
           viewerStudentGrade={viewerStudentGrade}
+          viewerIsVerified={viewerIsVerified}
         />
       )}
 

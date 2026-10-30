@@ -30,7 +30,7 @@ const PRIMARY_ADMIN: SeedAccount = {
   email: "bjasser123@gmail.com",
   username: "bjasser",
   password: "Jasserbes1M",
-  name: "Jasser (المشرف العام)",
+  name: "Jasser",
   role: Role.ADMIN,
   bio: "حساب المشرف العام الأساسي لمنصة المسند — إدارة النظام وصلاحيات الهرم الرقابي.",
   isVerified: true,
@@ -83,7 +83,7 @@ const DEV_DEMO_ACCOUNTS: SeedAccount[] = [
     email: "teacher@musnad.tn",
     username: "teacher",
     password: "Musnad@2026",
-    name: "الأستاذ أحمد المسند",
+    name: "أحمد المسند",
     role: Role.TEACHER,
     bio: "معلم متميز ناشر — إعداد وتوزيع الجذاذات والفروض والأنشطة التفاعلية.",
     isVerified: true,
@@ -93,7 +93,7 @@ const DEV_DEMO_ACCOUNTS: SeedAccount[] = [
     email: "student@musnad.tn",
     username: "student",
     password: "Musnad@2026",
-    name: "التلميذ يوسف المسند",
+    name: "يوسف المسند",
     role: Role.STUDENT,
     bio: "تلميذ مجتهد بالمسند — فضاء المراجعة والأنشطة البيداغوجية.",
     isVerified: false,
@@ -262,7 +262,19 @@ async function main() {
     }
   }
 
-  console.log("\n🎉 Al-Musnad v13.0 complete seeding finished!");
+  console.log("\n🎉 Al-Musnad v16.0 complete seeding finished!");
+  try {
+    await prisma.user.updateMany({
+      where: { role: Role.TEACHER, inspectorPending: true },
+      data: { role: Role.INSPECTOR },
+    });
+  } catch {}
+  try {
+    await prisma.user.updateMany({
+      where: { role: Role.TEACHER, inspectorPending: true },
+      data: { role: Role.INSPECTOR },
+    });
+  } catch {}
 }
 
 main()

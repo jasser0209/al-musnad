@@ -1,7 +1,7 @@
 export const APP_CONFIG = {
   name: "Al-Musnad",
   nameAr: "المسند",
-  version: "15.0.0",
+  version: "16.0.0",
   description:
     "Integrated educational platform for institutions, inspectors, teachers, and students.",
   descriptionAr:
@@ -169,7 +169,7 @@ export const ROLE_LABELS: Record<string, string> = {
 
 // Audience display labels
 export const AUDIENCE_LABELS: Record<string, { label: string; isRestricted: boolean }> = {
-  TEACHERS_ONLY: { label: "للمعلمين فقط (حجب عن التلاميذ)", isRestricted: true },
+  TEACHERS_ONLY: { label: "خاص بالمعلمين", isRestricted: true },
   SAME_ROLE_ONLY: { label: "لنفس فئة الناشر فقط", isRestricted: true },
   INSTITUTIONS_ONLY: { label: "للمؤسسات فقط", isRestricted: true },
   TEACHERS_AND_STUDENTS: { label: "للمعلمين والتلاميذ", isRestricted: false },
@@ -206,3 +206,111 @@ export const SCHOOL_TRIMESTERS = [
 
 export type SchoolTrimesterSlug = (typeof SCHOOL_TRIMESTERS)[number]["slug"];
 
+// Official School Semesters in Tunisia (السداسيات المدرسية) — v16.0
+export const SCHOOL_SEMESTERS = [
+  {
+    id: "sem1",
+    name: "Semestre 1",
+    nameAr: "السداسي الأول",
+    slug: "semester-1",
+    tag: "السداسي الأول",
+    keywords: ["السداسي الأول", "السداسي الاول", "سداسي أول", "سداسي 1", "Semestre 1", "semester-1", "الثلاثي الأول"],
+    sortOrder: 1,
+  },
+  {
+    id: "sem2",
+    name: "Semestre 2",
+    nameAr: "السداسي الثاني",
+    slug: "semester-2",
+    tag: "السداسي الثاني",
+    keywords: ["السداسي الثاني", "سداسي ثاني", "سداسي 2", "Semestre 2", "semester-2", "الثلاثي الثاني", "الثلاثي الثالث"],
+    sortOrder: 2,
+  },
+] as const;
+
+export type SchoolSemesterSlug = (typeof SCHOOL_SEMESTERS)[number]["slug"];
+
+export function extractLessonTopicAndSemester(ws: {
+  title?: string | null;
+  titleAr?: string | null;
+  descriptionAr?: string | null;
+  tags?: string[] | null;
+}): {
+  semesterSlug: "semester-1" | "semester-2" | "general";
+  semesterLabelAr: string;
+  lessonTopicKey: string;
+  lessonTopicTitleAr: string;
+} {
+  const tags = Array.isArray(ws.tags) ? ws.tags : [];
+  const combinedText = `${ws.titleAr || ""} ${ws.title || ""} ${ws.descriptionAr || ""} ${tags.join(" ")}`;
+
+  let semesterSlug: "semester-1" | "semester-2" | "general" = "general";
+  let semesterLabelAr = "جميع السداسيات";
+
+  for (const sem of SCHOOL_SEMESTERS) {
+    if (sem.keywords.some((kw) => combinedText.includes(kw))) {
+      semesterSlug = sem.slug;
+      semesterLabelAr = sem.nameAr;
+      break;
+    }
+  }
+
+  const explicitLessonTag = tags.find(
+    (t) => t.startsWith("الدرس:") || t.startsWith("درس:") || t.startsWith("المحور:")
+  );
+
+  const rawTopic = explicitLessonTag
+    ? explicitLessonTag.replace(/^(الدرس:|درس:|المحور:)\s*/, "").trim()
+    : (ws.titleAr || ws.title || "درس عام").trim();
+
+  const normalizedTopic = rawTopic
+    .replace(/^(درس|تمارين|تمرين|امتحان|فرض|جذاذة|نشاط تفاعلي|إصلاح)\s*(في|حول|درس)?\s*[:\-–—]?\s*/i, "")
+    .replace(/\s*[\(\[\-–—]\s*(الأستاذ|أستاذ|المعلم|معلم|مدرسة|إعداد).*$/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const finalTitle = normalizedTopic.length >= 2 ? normalizedTopic : rawTopic;
+  const lessonTopicKey = finalTitle
+    .toLowerCase()
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ة/g, "ه")
+    .replace(/ى/g, "ي")
+    .replace(/[^a-z0-9\u0600-\u06FF\s]/g, "")
+    .replace(/\s+/g, "-")
+    .trim();
+
+  return {
+    semesterSlug,
+    semesterLabelAr,
+    lessonTopicKey: lessonTopicKey || "general-lesson",
+    lessonTopicTitleAr: finalTitle,
+  };
+}
+
+export function sortWorksheetsDifferentially<
+  T extends {
+    isEndorsed?: boolean | null;
+    ratingAvg?: number | null;
+    downloadCount?: number | null;
+    favoriteCount?: number | null;
+    createdAt?: Date | string | null;
+  }
+>(items: T[]): T[] {
+  return [...items].sort((a, b) => {
+    const aEndorsed = a.isEndorsed ? 1 : 0;
+    const bEndorsed = b.isEndorsed ? 1 : 0;
+    if (bEndorsed !== aEndorsed) return bEndorsed - aEndorsed;
+
+    const aRating = Number(a.ratingAvg || 0);
+    const bRating = Number(b.ratingAvg || 0);
+    if (bRating !== aRating) return bRating - aRating;
+
+    const aPop = Number(a.downloadCount || 0) + Number(a.favoriteCount || 0) * 2;
+    const bPop = Number(b.downloadCount || 0) + Number(b.favoriteCount || 0) * 2;
+    if (bPop !== aPop) return bPop - aPop;
+
+    const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return bTime - aTime;
+  });
+}

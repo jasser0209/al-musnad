@@ -61,6 +61,7 @@ export default function ReviewSection({
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
+  const [currentUserIsVerified, setCurrentUserIsVerified] = useState<boolean>(false);
 
   const [rating, setRating] = useState<number>(5);
   const [hoverRating, setHoverRating] = useState<number>(0);
@@ -96,7 +97,10 @@ export default function ReviewSection({
           const meJson = await meRes.json();
           if (meJson.success && meJson.data?.id) {
             myId = meJson.data.id;
-            if (isMounted) setCurrentUserRole(meJson.data.role || null);
+            if (isMounted) {
+              setCurrentUserRole(meJson.data.role || null);
+              setCurrentUserIsVerified(Boolean(meJson.data.isVerified));
+            }
           }
         }
 
@@ -153,7 +157,7 @@ export default function ReviewSection({
   };
 
   const isInspectorOrStaff =
-    currentUserRole === "INSPECTOR" ||
+    (currentUserRole === "INSPECTOR" && currentUserIsVerified) ||
     currentUserRole === "MODERATOR" ||
     currentUserRole === "ADMIN";
 
@@ -262,7 +266,7 @@ export default function ReviewSection({
         >
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-              {currentUserRole === "INSPECTOR"
+              {currentUserRole === "INSPECTOR" && currentUserIsVerified
                 ? "إضافة تعليق متفقد (في الصدارة أو خاص للناشر)"
                 : "أضف تعليقك أو أشر لناشر بـ @username"}
             </h3>
@@ -405,7 +409,7 @@ export default function ReviewSection({
           </div>
         ) : (
           reviews.map((rev) => {
-            const isPinned = rev.isOfficialDirective || rev.user.role === "INSPECTOR";
+            const isPinned = rev.isOfficialDirective || (rev.user.role === "INSPECTOR" && rev.user.isVerified);
             const isPrivate = Boolean(rev.isPrivateToPublisher);
             const uname =
               rev.user.username ||

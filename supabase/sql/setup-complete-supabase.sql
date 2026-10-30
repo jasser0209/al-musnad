@@ -57,7 +57,7 @@ BEGIN
   ELSIF raw_role = 'STUDENT' THEN
     assigned_role := 'STUDENT'::public."Role";
   ELSIF raw_role = 'INSPECTOR' THEN
-    assigned_role := 'TEACHER'::public."Role";
+    assigned_role := 'INSPECTOR'::public."Role";
     is_insp_pending := true;
   ELSE
     assigned_role := 'TEACHER'::public."Role";
@@ -107,6 +107,7 @@ BEGIN
     username = COALESCE(public.users.username, EXCLUDED.username),
     school = COALESCE(EXCLUDED.school, public.users.school),
     student_grade = COALESCE(EXCLUDED.student_grade, public.users.student_grade),
+    role = EXCLUDED.role,
     inspector_pending = EXCLUDED.inspector_pending;
 
   RETURN NEW;

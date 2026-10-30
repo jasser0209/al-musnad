@@ -91,12 +91,20 @@ export async function listWorksheetReviews(
     throw new NotFoundError("Worksheet");
   }
 
-  // Can view private comments only if creator, admin, moderator, or inspector
+  let viewerVerified = false;
+  if (viewerUserId && viewerRole === Role.INSPECTOR) {
+    const vUser = await db.user
+      .findUnique({ where: { id: viewerUserId }, select: { isVerified: true } })
+      .catch(() => null);
+    viewerVerified = Boolean(vUser?.isVerified);
+  }
+
+  // Can view private comments only if creator, admin, moderator, or VERIFIED inspector
   const canSeePrivate =
     Boolean(viewerUserId && viewerUserId === worksheet.uploadedBy) ||
     viewerRole === Role.ADMIN ||
     viewerRole === Role.MODERATOR ||
-    viewerRole === Role.INSPECTOR;
+    (viewerRole === Role.INSPECTOR && viewerVerified);
 
   const whereCondition: Prisma.ReviewWhereInput = {
     worksheetId,
@@ -148,21 +156,24 @@ export async function upsertWorksheetReview(
     throw new NotFoundError("Worksheet");
   }
 
-  if (!canUserAccessWorksheet(worksheet, userRole, userId)) {
+  const actor = await db.user.findUnique({
+    where: { id: userId },
+    select: { id: true, name: true, username: true, role: true, isVerified: true },
+  });
+
+  if (!canUserAccessWorksheet(worksheet, userRole, userId, actor?.isVerified)) {
     throw new ForbiddenError(
-      "غير مصرح لك بإضافة تعليق على هذه النشرة وفق شروط الجمهور المحدد لها"
+      "غير مصرح لك بالوصول إلى هذه النشرة قبل إثبات الهوية وتوثيق الحساب"
     );
   }
 
-  const actor = await db.user.findUnique({
-    where: { id: userId },
-    select: { id: true, name: true, username: true, role: true },
-  });
+  const isVerifiedInspectorOrAdmin =
+    userRole === Role.ADMIN ||
+    (userRole === Role.INSPECTOR && Boolean(actor?.isVerified));
 
   const isOfficialDirective =
-    input.isOfficialDirective ??
-    (!input.isPrivateToPublisher &&
-      (userRole === Role.INSPECTOR || userRole === Role.ADMIN));
+    isVerifiedInspectorOrAdmin &&
+    (input.isOfficialDirective ?? !input.isPrivateToPublisher);
 
   const isPrivate = Boolean(input.isPrivateToPublisher);
 

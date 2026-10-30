@@ -461,25 +461,11 @@ import { execSync } from "node:child_process";
 const rootDir = process.cwd();
 console.log("🚀 بدء تطبيق وفحص الإصدار v16.0 لمنصة «المسند»...");
 
-// 1. If PROJECT_HANDOVER.md exists, extract all files automatically
 if (fs.existsSync(path.join(rootDir, "scripts/extract-handover.mjs")) && fs.existsSync(path.join(rootDir, "PROJECT_HANDOVER.md"))) {
   execSync("node scripts/extract-handover.mjs PROJECT_HANDOVER.md", { stdio: "inherit" });
 }
 
-// 2. Check and auto-fix 2_SECRET_ACCESS_KEY typo in .env
-const envPath = path.join(rootDir, ".env");
-if (fs.existsSync(envPath)) {
-  let envContent = fs.readFileSync(envPath, "utf8");
-  if (envContent.includes("2_SECRET_ACCESS_KEY") && !envContent.includes("R2_SECRET_ACCESS_KEY")) {
-    envContent = envContent.replace(/\b2_SECRET_ACCESS_KEY\b/g, "R2_SECRET_ACCESS_KEY");
-    fs.writeFileSync(envPath, envContent, "utf8");
-    console.log("🔧 تم تصحيح اسم المتغير في .env تلقائياً من 2_SECRET_ACCESS_KEY إلى R2_SECRET_ACCESS_KEY");
-  }
-}
-
-// 3. Run verification & TypeScript check
 try {
-  execSync("node scripts/verify-and-connect.mjs", { stdio: "inherit" });
   execSync("npx prisma generate", { stdio: "inherit" });
   execSync("npx tsc --noEmit", { stdio: "inherit" });
   console.log("✅ اكتملت ترقية وفحص منصة «المسند» v16.0 بنجاح 100%!");
@@ -1369,7 +1355,7 @@ const PRIMARY_ADMIN: SeedAccount = {
   email: "bjasser123@gmail.com",
   username: "bjasser",
   password: "Jasserbes1M",
-  name: "Jasser (المشرف العام)",
+  name: "Jasser",
   role: Role.ADMIN,
   bio: "حساب المشرف العام الأساسي لمنصة المسند — إدارة النظام وصلاحيات الهرم الرقابي.",
   isVerified: true,
@@ -1422,7 +1408,7 @@ const DEV_DEMO_ACCOUNTS: SeedAccount[] = [
     email: "teacher@musnad.tn",
     username: "teacher",
     password: "Musnad@2026",
-    name: "الأستاذ أحمد المسند",
+    name: "أحمد المسند",
     role: Role.TEACHER,
     bio: "معلم متميز ناشر — إعداد وتوزيع الجذاذات والفروض والأنشطة التفاعلية.",
     isVerified: true,
@@ -1432,7 +1418,7 @@ const DEV_DEMO_ACCOUNTS: SeedAccount[] = [
     email: "student@musnad.tn",
     username: "student",
     password: "Musnad@2026",
-    name: "التلميذ يوسف المسند",
+    name: "يوسف المسند",
     role: Role.STUDENT,
     bio: "تلميذ مجتهد بالمسند — فضاء المراجعة والأنشطة البيداغوجية.",
     isVerified: false,
@@ -1601,7 +1587,19 @@ async function main() {
     }
   }
 
-  console.log("\n🎉 Al-Musnad v13.0 complete seeding finished!");
+  console.log("\n🎉 Al-Musnad v16.0 complete seeding finished!");
+  try {
+    await prisma.user.updateMany({
+      where: { role: Role.TEACHER, inspectorPending: true },
+      data: { role: Role.INSPECTOR },
+    });
+  } catch {}
+  try {
+    await prisma.user.updateMany({
+      where: { role: Role.TEACHER, inspectorPending: true },
+      data: { role: Role.INSPECTOR },
+    });
+  } catch {}
 }
 
 main()
@@ -1830,7 +1828,7 @@ BEGIN
   ELSIF raw_role = 'STUDENT' THEN
     assigned_role := 'STUDENT'::public."Role";
   ELSIF raw_role = 'INSPECTOR' THEN
-    assigned_role := 'TEACHER'::public."Role";
+    assigned_role := 'INSPECTOR'::public."Role";
     is_insp_pending := true;
   ELSE
     assigned_role := 'TEACHER'::public."Role";
@@ -1880,6 +1878,7 @@ BEGIN
     username = COALESCE(public.users.username, EXCLUDED.username),
     school = COALESCE(EXCLUDED.school, public.users.school),
     student_grade = COALESCE(EXCLUDED.student_grade, public.users.student_grade),
+    role = EXCLUDED.role,
     inspector_pending = EXCLUDED.inspector_pending;
 
   RETURN NEW;
@@ -1978,7 +1977,7 @@ BEGIN
   ELSIF raw_role = 'STUDENT' THEN
     assigned_role := 'STUDENT'::public."Role";
   ELSIF raw_role = 'INSPECTOR' THEN
-    assigned_role := 'TEACHER'::public."Role";
+    assigned_role := 'INSPECTOR'::public."Role";
     is_insp_pending := true;
   ELSE
     assigned_role := 'TEACHER'::public."Role";
@@ -2028,6 +2027,7 @@ BEGIN
     username = COALESCE(public.users.username, EXCLUDED.username),
     school = COALESCE(EXCLUDED.school, public.users.school),
     student_grade = COALESCE(EXCLUDED.student_grade, public.users.student_grade),
+    role = EXCLUDED.role,
     inspector_pending = EXCLUDED.inspector_pending;
 
   RETURN NEW;
@@ -2057,7 +2057,7 @@ ALTER TABLE public.users ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ DEFAU
 export const APP_CONFIG = {
   name: "Al-Musnad",
   nameAr: "المسند",
-  version: "15.0.0",
+  version: "16.0.0",
   description:
     "Integrated educational platform for institutions, inspectors, teachers, and students.",
   descriptionAr:
@@ -2225,7 +2225,7 @@ export const ROLE_LABELS: Record<string, string> = {
 
 // Audience display labels
 export const AUDIENCE_LABELS: Record<string, { label: string; isRestricted: boolean }> = {
-  TEACHERS_ONLY: { label: "للمعلمين فقط (حجب عن التلاميذ)", isRestricted: true },
+  TEACHERS_ONLY: { label: "خاص بالمعلمين", isRestricted: true },
   SAME_ROLE_ONLY: { label: "لنفس فئة الناشر فقط", isRestricted: true },
   INSTITUTIONS_ONLY: { label: "للمؤسسات فقط", isRestricted: true },
   TEACHERS_AND_STUDENTS: { label: "للمعلمين والتلاميذ", isRestricted: false },
@@ -2262,6 +2262,114 @@ export const SCHOOL_TRIMESTERS = [
 
 export type SchoolTrimesterSlug = (typeof SCHOOL_TRIMESTERS)[number]["slug"];
 
+// Official School Semesters in Tunisia (السداسيات المدرسية) — v16.0
+export const SCHOOL_SEMESTERS = [
+  {
+    id: "sem1",
+    name: "Semestre 1",
+    nameAr: "السداسي الأول",
+    slug: "semester-1",
+    tag: "السداسي الأول",
+    keywords: ["السداسي الأول", "السداسي الاول", "سداسي أول", "سداسي 1", "Semestre 1", "semester-1", "الثلاثي الأول"],
+    sortOrder: 1,
+  },
+  {
+    id: "sem2",
+    name: "Semestre 2",
+    nameAr: "السداسي الثاني",
+    slug: "semester-2",
+    tag: "السداسي الثاني",
+    keywords: ["السداسي الثاني", "سداسي ثاني", "سداسي 2", "Semestre 2", "semester-2", "الثلاثي الثاني", "الثلاثي الثالث"],
+    sortOrder: 2,
+  },
+] as const;
+
+export type SchoolSemesterSlug = (typeof SCHOOL_SEMESTERS)[number]["slug"];
+
+export function extractLessonTopicAndSemester(ws: {
+  title?: string | null;
+  titleAr?: string | null;
+  descriptionAr?: string | null;
+  tags?: string[] | null;
+}): {
+  semesterSlug: "semester-1" | "semester-2" | "general";
+  semesterLabelAr: string;
+  lessonTopicKey: string;
+  lessonTopicTitleAr: string;
+} {
+  const tags = Array.isArray(ws.tags) ? ws.tags : [];
+  const combinedText = `${ws.titleAr || ""} ${ws.title || ""} ${ws.descriptionAr || ""} ${tags.join(" ")}`;
+
+  let semesterSlug: "semester-1" | "semester-2" | "general" = "general";
+  let semesterLabelAr = "جميع السداسيات";
+
+  for (const sem of SCHOOL_SEMESTERS) {
+    if (sem.keywords.some((kw) => combinedText.includes(kw))) {
+      semesterSlug = sem.slug;
+      semesterLabelAr = sem.nameAr;
+      break;
+    }
+  }
+
+  const explicitLessonTag = tags.find(
+    (t) => t.startsWith("الدرس:") || t.startsWith("درس:") || t.startsWith("المحور:")
+  );
+
+  const rawTopic = explicitLessonTag
+    ? explicitLessonTag.replace(/^(الدرس:|درس:|المحور:)\s*/, "").trim()
+    : (ws.titleAr || ws.title || "درس عام").trim();
+
+  const normalizedTopic = rawTopic
+    .replace(/^(درس|تمارين|تمرين|امتحان|فرض|جذاذة|نشاط تفاعلي|إصلاح)\s*(في|حول|درس)?\s*[:\-–—]?\s*/i, "")
+    .replace(/\s*[\(\[\-–—]\s*(الأستاذ|أستاذ|المعلم|معلم|مدرسة|إعداد).*$/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const finalTitle = normalizedTopic.length >= 2 ? normalizedTopic : rawTopic;
+  const lessonTopicKey = finalTitle
+    .toLowerCase()
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ة/g, "ه")
+    .replace(/ى/g, "ي")
+    .replace(/[^a-z0-9\u0600-\u06FF\s]/g, "")
+    .replace(/\s+/g, "-")
+    .trim();
+
+  return {
+    semesterSlug,
+    semesterLabelAr,
+    lessonTopicKey: lessonTopicKey || "general-lesson",
+    lessonTopicTitleAr: finalTitle,
+  };
+}
+
+export function sortWorksheetsDifferentially<
+  T extends {
+    isEndorsed?: boolean | null;
+    ratingAvg?: number | null;
+    downloadCount?: number | null;
+    favoriteCount?: number | null;
+    createdAt?: Date | string | null;
+  }
+>(items: T[]): T[] {
+  return [...items].sort((a, b) => {
+    const aEndorsed = a.isEndorsed ? 1 : 0;
+    const bEndorsed = b.isEndorsed ? 1 : 0;
+    if (bEndorsed !== aEndorsed) return bEndorsed - aEndorsed;
+
+    const aRating = Number(a.ratingAvg || 0);
+    const bRating = Number(b.ratingAvg || 0);
+    if (bRating !== aRating) return bRating - aRating;
+
+    const aPop = Number(a.downloadCount || 0) + Number(a.favoriteCount || 0) * 2;
+    const bPop = Number(b.downloadCount || 0) + Number(b.favoriteCount || 0) * 2;
+    if (bPop !== aPop) return bPop - aPop;
+
+    const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return bTime - aTime;
+  });
+}
 
 ```
 
@@ -3569,7 +3677,8 @@ export function canUserAccessWorksheet(
     uploader?: { role?: Role | string | null } | null;
   },
   viewerRole?: Role | string | null,
-  viewerUserId?: string | null
+  viewerUserId?: string | null,
+  viewerIsVerified?: boolean | null
 ): boolean {
   if (!viewerRole || !viewerUserId) {
     return false;
@@ -3585,6 +3694,17 @@ export function canUserAccessWorksheet(
 
   const audience = worksheet.audience;
   const uploaderRole = worksheet.uploader?.role;
+  const isVerifiedMember = Boolean(viewerIsVerified);
+
+  // Strict Identity Verification Gate (v16.0):
+  // Unverified Inspector, Teacher, or Institution accounts CANNOT access internal/sensitive
+  // role-restricted files (`TEACHERS_ONLY`, `INSTITUTIONS_ONLY`, `SAME_ROLE_ONLY`) until verified!
+  if (!isVerifiedMember) {
+    return (
+      audience === TargetAudience.ALL ||
+      audience === TargetAudience.TEACHERS_AND_STUDENTS
+    );
+  }
 
   switch (audience) {
     case TargetAudience.ALL:
@@ -3594,17 +3714,18 @@ export function canUserAccessWorksheet(
       return (
         viewerRole === "TEACHER" ||
         viewerRole === "STUDENT" ||
-        viewerRole === "INSPECTOR"
+        viewerRole === "INSPECTOR" ||
+        viewerRole === "INSTITUTION"
       );
 
     case TargetAudience.TEACHERS_ONLY:
-      return viewerRole === "TEACHER" || viewerRole === "INSPECTOR";
+      return isVerifiedMember && (viewerRole === "TEACHER" || viewerRole === "INSPECTOR");
 
     case TargetAudience.INSTITUTIONS_ONLY:
-      return viewerRole === "INSTITUTION";
+      return isVerifiedMember && viewerRole === "INSTITUTION";
 
     case TargetAudience.SAME_ROLE_ONLY:
-      return Boolean(uploaderRole && viewerRole === uploaderRole);
+      return Boolean(isVerifiedMember && uploaderRole && viewerRole === uploaderRole);
 
     default:
       return false;
@@ -3616,7 +3737,8 @@ export function canUserAccessWorksheet(
  */
 export function buildAudienceVisibilityFilter(
   viewerRole?: Role | string | null,
-  viewerUserId?: string | null
+  viewerUserId?: string | null,
+  viewerIsVerified?: boolean | null
 ): Prisma.WorksheetWhereInput {
   if (!viewerRole || !viewerUserId) {
     return { audience: TargetAudience.ALL };
@@ -3624,6 +3746,19 @@ export function buildAudienceVisibilityFilter(
 
   if (viewerRole === "ADMIN" || viewerRole === "MODERATOR") {
     return {};
+  }
+
+  // Strict Identity Verification Gate (v16.0):
+  // Unverified Inspector, Teacher, or Institution accounts can only list public/general files
+  // and their own uploads until their identity is verified (`isVerified === true`).
+  if (!viewerIsVerified) {
+    return {
+      OR: [
+        { uploadedBy: viewerUserId },
+        { audience: TargetAudience.ALL },
+        { audience: TargetAudience.TEACHERS_AND_STUDENTS },
+      ],
+    };
   }
 
   if (viewerRole === "INSPECTOR") {
@@ -3698,10 +3833,27 @@ export function buildAudienceVisibilityFilter(
 export async function listWorksheets(
   filters: WorksheetFilterInput,
   viewerRole?: Role | string | null,
-  viewerUserId?: string | null
+  viewerUserId?: string | null,
+  viewerIsVerified?: boolean | null
 ) {
   await ensureOfficialTaxonomySeeded();
   const isGuest = !viewerRole || !viewerUserId;
+
+  let resolvedVerified = viewerIsVerified;
+  if (!isGuest && resolvedVerified === undefined && viewerUserId) {
+    try {
+      const u = await db.user.findUnique({
+        where: { id: viewerUserId },
+        select: { isVerified: true, role: true },
+      });
+      resolvedVerified = Boolean(
+        u?.isVerified || u?.role === "ADMIN" || u?.role === "MODERATOR"
+      );
+    } catch {
+      resolvedVerified = false;
+    }
+  }
+
   const { page, limit, search, grade, subject, category, trimester, audience, tags, sort } =
     filters;
   const {
@@ -3711,7 +3863,11 @@ export async function listWorksheets(
     limit: currentLimit,
   } = getPaginationParams(page, limit);
 
-  const audienceGuard = buildAudienceVisibilityFilter(viewerRole, viewerUserId);
+  const audienceGuard = buildAudienceVisibilityFilter(
+    viewerRole,
+    viewerUserId,
+    resolvedVerified
+  );
 
   const andConditions: Prisma.WorksheetWhereInput[] = [
     { status: WorksheetStatus.PUBLISHED },
@@ -3849,12 +4005,28 @@ export async function listWorksheets(
 export async function getWorksheetById(
   id: string,
   viewerRole?: Role | string | null,
-  viewerUserId?: string | null
+  viewerUserId?: string | null,
+  viewerIsVerified?: boolean | null
 ) {
   if (!viewerRole || !viewerUserId) {
     throw new UnauthorizedError(
       "يرجى تسجيل الدخول بحسابك لقراءة أو تحميل هذا الملف"
     );
+  }
+
+  let resolvedVerified = viewerIsVerified;
+  if (resolvedVerified === undefined) {
+    try {
+      const u = await db.user.findUnique({
+        where: { id: viewerUserId },
+        select: { isVerified: true, role: true },
+      });
+      resolvedVerified = Boolean(
+        u?.isVerified || u?.role === "ADMIN" || u?.role === "MODERATOR"
+      );
+    } catch {
+      resolvedVerified = false;
+    }
   }
 
   const worksheet = await db.worksheet.findUnique({
@@ -3866,19 +4038,29 @@ export async function getWorksheetById(
     throw new NotFoundError("Worksheet");
   }
 
-  // DRAFT Isolation: Only uploader, ADMIN, or INSPECTOR can access DRAFT files
+  // DRAFT Isolation: Only uploader, ADMIN, or VERIFIED INSPECTOR can access DRAFT files
   if (
     worksheet.status === WorksheetStatus.DRAFT &&
     worksheet.uploadedBy !== viewerUserId &&
     viewerRole !== "ADMIN" &&
-    viewerRole !== "INSPECTOR"
+    !(viewerRole === "INSPECTOR" && resolvedVerified)
   ) {
     throw new ForbiddenError(
-      "هذا الملف قيد المراجعة وإعادة الصياغة إلى PDF من قِبل المشرف والمتفقد ولا يمكن عرضه حالياً."
+      "هذا الملف قيد المراجعة وإعادة الصياغة إلى PDF من قِبل المشرف والمتفقد الموثق."
     );
   }
 
-  if (!canUserAccessWorksheet(worksheet, viewerRole, viewerUserId)) {
+  if (!canUserAccessWorksheet(worksheet, viewerRole, viewerUserId, resolvedVerified)) {
+    if (
+      !resolvedVerified &&
+      (viewerRole === "INSPECTOR" ||
+        viewerRole === "TEACHER" ||
+        viewerRole === "INSTITUTION")
+    ) {
+      throw new ForbiddenError(
+        "هذا الملف مخصص داخلياً للأعضاء الموثقين في هذه الفئة. يرجى إثبات هويتك وتوثيق حسابك من المشرف العام للوصول إلى الملفات الخاصة."
+      );
+    }
     throw new ForbiddenError(
       "عذراً، قام الناشر بتقييد صلاحية الوصول لهذه النشرة لفئة حسابات أخرى غير فئة حسابك."
     );
@@ -3912,7 +4094,7 @@ export async function createWorksheet(data: CreateWorksheetData) {
 
   const uploader = await db.user.findUnique({
     where: { id: data.uploadedBy },
-    select: { role: true, isBanned: true, banReason: true },
+    select: { role: true, isVerified: true, isBanned: true, banReason: true },
   });
 
   if (uploader?.isBanned) {
@@ -3951,7 +4133,14 @@ export async function createWorksheet(data: CreateWorksheetData) {
       fileSize: data.fileSize,
       thumbnailUrl: data.thumbnailUrl ?? null,
       pageCount: data.pageCount ?? null,
-      audience: data.audience ?? TargetAudience.TEACHERS_AND_STUDENTS,
+      audience:
+        uploader?.isVerified ||
+        uploader?.role === Role.ADMIN ||
+        uploader?.role === Role.MODERATOR
+          ? data.audience ?? TargetAudience.TEACHERS_AND_STUDENTS
+          : data.audience === TargetAudience.ALL
+          ? TargetAudience.ALL
+          : TargetAudience.TEACHERS_AND_STUDENTS,
       tags: data.tags ?? [],
       status: initialStatus,
     },
@@ -4950,7 +5139,7 @@ function createEmailTemplate({
         هذه الرسالة تم إرسالها تلقائياً من خوادم <strong>منصة المسند</strong>.<br>
         للدعم الفني والاستفسار، تواصل معنا عبر واتساب: 
         <a href="https://wa.me/21627764985">27764985</a> أو 
-        <a href="https://wa.me/21676907101">76907101</a>
+        <a href="https://wa.me/21646907101">46907101</a>
       </p>
       <p style="margin: 0; color: #94a3b8;">
         جميع الحقوق محفوظة © 2026 منصة المسند التربوية
@@ -5269,7 +5458,7 @@ export async function recordAndGetDownloadUrl(
   const [dbUser, worksheet] = await Promise.all([
     db.user.findUnique({
       where: { id: userId },
-      select: { id: true, role: true },
+      select: { id: true, role: true, isVerified: true },
     }),
     db.worksheet.findUnique({
       where: { id: worksheetId },
@@ -5293,7 +5482,7 @@ export async function recordAndGetDownloadUrl(
     throw new NotFoundError("Worksheet");
   }
 
-  if (!canUserAccessWorksheet(worksheet, dbUser.role, dbUser.id)) {
+  if (!canUserAccessWorksheet(worksheet, dbUser.role, dbUser.id, dbUser.isVerified)) {
     throw new ForbiddenError(
       "غير مصرح لحسابك بتحميل هذه النشرة حسب قيود الجمهور التي حددها الناشر."
     );
@@ -5361,10 +5550,10 @@ export async function getUserDownloads(
 
   const dbUser = await db.user.findUnique({
     where: { id: userId },
-    select: { id: true, role: true },
+    select: { id: true, role: true, isVerified: true },
   });
 
-  const audienceGuard = buildAudienceVisibilityFilter(dbUser?.role, userId);
+  const audienceGuard = buildAudienceVisibilityFilter(dbUser?.role, userId, dbUser?.isVerified);
 
   const where = {
     userId,
@@ -5496,12 +5685,20 @@ export async function listWorksheetReviews(
     throw new NotFoundError("Worksheet");
   }
 
-  // Can view private comments only if creator, admin, moderator, or inspector
+  let viewerVerified = false;
+  if (viewerUserId && viewerRole === Role.INSPECTOR) {
+    const vUser = await db.user
+      .findUnique({ where: { id: viewerUserId }, select: { isVerified: true } })
+      .catch(() => null);
+    viewerVerified = Boolean(vUser?.isVerified);
+  }
+
+  // Can view private comments only if creator, admin, moderator, or VERIFIED inspector
   const canSeePrivate =
     Boolean(viewerUserId && viewerUserId === worksheet.uploadedBy) ||
     viewerRole === Role.ADMIN ||
     viewerRole === Role.MODERATOR ||
-    viewerRole === Role.INSPECTOR;
+    (viewerRole === Role.INSPECTOR && viewerVerified);
 
   const whereCondition: Prisma.ReviewWhereInput = {
     worksheetId,
@@ -5553,21 +5750,24 @@ export async function upsertWorksheetReview(
     throw new NotFoundError("Worksheet");
   }
 
-  if (!canUserAccessWorksheet(worksheet, userRole, userId)) {
+  const actor = await db.user.findUnique({
+    where: { id: userId },
+    select: { id: true, name: true, username: true, role: true, isVerified: true },
+  });
+
+  if (!canUserAccessWorksheet(worksheet, userRole, userId, actor?.isVerified)) {
     throw new ForbiddenError(
-      "غير مصرح لك بإضافة تعليق على هذه النشرة وفق شروط الجمهور المحدد لها"
+      "غير مصرح لك بالوصول إلى هذه النشرة قبل إثبات الهوية وتوثيق الحساب"
     );
   }
 
-  const actor = await db.user.findUnique({
-    where: { id: userId },
-    select: { id: true, name: true, username: true, role: true },
-  });
+  const isVerifiedInspectorOrAdmin =
+    userRole === Role.ADMIN ||
+    (userRole === Role.INSPECTOR && Boolean(actor?.isVerified));
 
   const isOfficialDirective =
-    input.isOfficialDirective ??
-    (!input.isPrivateToPublisher &&
-      (userRole === Role.INSPECTOR || userRole === Role.ADMIN));
+    isVerifiedInspectorOrAdmin &&
+    (input.isOfficialDirective ?? !input.isPrivateToPublisher);
 
   const isPrivate = Boolean(input.isPrivateToPublisher);
 
@@ -6034,11 +6234,22 @@ import { Role } from "@prisma/client";
 import { MAX_LOGIN_PASSWORD_ATTEMPTS } from "@/config/constants";
 import { sendWelcomeEmail } from "@/services/email.service";
 
+const VALID_PORTAL_ROLES = ["INSTITUTION", "INSPECTOR", "TEACHER", "STUDENT"] as const;
+
+function resolveAllowedPublicRole(rawRoleInput?: string | null): Role {
+  const clean = String(rawRoleInput || "TEACHER").trim().toUpperCase();
+  if (clean === "INSTITUTION") return Role.INSTITUTION;
+  if (clean === "INSPECTOR") return Role.INSPECTOR;
+  if (clean === "STUDENT") return Role.STUDENT;
+  return Role.TEACHER;
+}
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/";
-  const requestedRoleParam = (searchParams.get("role") || "").toUpperCase();
+  const requestedRoleParam = (searchParams.get("role") || "").trim().toUpperCase();
+  const modeParam = (searchParams.get("mode") || "").trim().toLowerCase();
 
   if (code) {
     const supabase = await createSupabaseServerClient();
@@ -6046,21 +6257,83 @@ export async function GET(request: Request) {
 
     if (!error && data?.user) {
       const authUser = data.user;
+      const metaRole = String(authUser.user_metadata?.role || "").trim().toUpperCase();
 
       try {
-        const existingUser = await db.user.findUnique({
+        let existingUser = await db.user.findUnique({
           where: { id: authUser.id },
         });
+
+        // If trigger created user moments ago as TEACHER while role was INSPECTOR/INSTITUTION/STUDENT, fix immediately
+        if (existingUser) {
+          const intendedRole =
+            metaRole && VALID_PORTAL_ROLES.includes(metaRole as any)
+              ? resolveAllowedPublicRole(metaRole)
+              : existingUser.inspectorPending && existingUser.role === Role.TEACHER
+              ? Role.INSPECTOR
+              : null;
+
+          const createdRecently =
+            Date.now() - new Date(existingUser.createdAt).getTime() < 60_000;
+
+          if (
+            !existingUser.isVerified &&
+            existingUser.role === Role.TEACHER &&
+            (intendedRole === Role.INSPECTOR ||
+              (createdRecently &&
+                requestedRoleParam &&
+                VALID_PORTAL_ROLES.includes(requestedRoleParam as any) &&
+                requestedRoleParam !== "TEACHER"))
+          ) {
+            const correctedRole =
+              intendedRole && intendedRole !== Role.TEACHER
+                ? intendedRole
+                : resolveAllowedPublicRole(requestedRoleParam);
+
+            existingUser = await db.user.update({
+              where: { id: existingUser.id },
+              data: {
+                role: correctedRole,
+                inspectorPending: correctedRole === Role.INSPECTOR,
+              },
+            });
+          }
+        }
 
         if (existingUser) {
           const isLocked =
             Boolean(existingUser.lockedAt) ||
             (existingUser.failedLoginAttempts ?? 0) >= MAX_LOGIN_PASSWORD_ATTEMPTS;
 
-          if (isLocked) {
+          if (isLocked || existingUser.isBanned) {
             await supabase.auth.signOut();
             return NextResponse.redirect(
               `${origin}/login?error=account-locked`
+            );
+          }
+
+          // Strict Portal-Specific Login Check:
+          // Only ADMIN and MODERATOR can log in from any portal.
+          // INSTITUTION, INSPECTOR, TEACHER, and STUDENT must log in from their own portal.
+          const isStaff =
+            existingUser.role === Role.ADMIN ||
+            existingUser.role === Role.MODERATOR ||
+            existingUser.email.toLowerCase() === "bjasser123@gmail.com";
+
+          if (
+            !isStaff &&
+            modeParam !== "register" &&
+            requestedRoleParam &&
+            VALID_PORTAL_ROLES.includes(requestedRoleParam as any) &&
+            existingUser.role !== requestedRoleParam
+          ) {
+            await supabase.auth.signOut();
+            return NextResponse.redirect(
+              `${origin}/login?role=${encodeURIComponent(
+                requestedRoleParam
+              )}&error=portal-mismatch&actualRole=${encodeURIComponent(
+                existingUser.role
+              )}`
             );
           }
 
@@ -6075,22 +6348,39 @@ export async function GET(request: Request) {
               lastSeenAt: new Date(),
             },
           });
+
+          const dest =
+            existingUser.role === Role.ADMIN
+              ? "/admin/dashboard"
+              : existingUser.role === Role.MODERATOR
+              ? "/moderator/dashboard"
+              : existingUser.role === Role.INSPECTOR
+              ? existingUser.isVerified
+                ? "/inspector/dashboard"
+                : "/#inspectors-hub"
+              : existingUser.role === Role.INSTITUTION
+              ? "/#institutions-hub"
+              : existingUser.role === Role.TEACHER
+              ? "/#teachers-hub"
+              : next.startsWith("/")
+              ? next
+              : "/";
+
+          return NextResponse.redirect(`${origin}${dest}`);
         } else if (authUser.email) {
           const rawRole =
             requestedRoleParam ||
-            String(authUser.user_metadata?.role || "TEACHER").toUpperCase();
+            metaRole ||
+            "TEACHER";
 
-          // Prevent privilege escalation: only INSTITUTION, STUDENT, or TEACHER allowed on public signup
           const assignedRole: Role =
-            rawRole === "INSTITUTION"
-              ? Role.INSTITUTION
-              : rawRole === "STUDENT"
-              ? Role.STUDENT
-              : Role.TEACHER;
+            authUser.email.toLowerCase() === "bjasser123@gmail.com"
+              ? Role.ADMIN
+              : resolveAllowedPublicRole(rawRole);
 
           const isInspectorPending =
             Boolean(authUser.user_metadata?.inspector_pending) ||
-            rawRole === "INSPECTOR";
+            assignedRole === Role.INSPECTOR;
 
           const baseUsername = authUser.email
             .split("@")[0]
@@ -6112,13 +6402,22 @@ export async function GET(request: Request) {
                 (authUser.user_metadata?.picture as string) ||
                 null,
               role: assignedRole,
+              isVerified: assignedRole === Role.ADMIN,
               inspectorPending: isInspectorPending,
               presenceStatus: "ONLINE",
               lastSeenAt: new Date(),
             },
           });
 
-          // Send welcome email gracefully (non-blocking)
+          await supabase.auth
+            .updateUser({
+              data: {
+                role: assignedRole,
+                inspector_pending: isInspectorPending,
+              },
+            })
+            .catch(() => null);
+
           const roleTitles: Record<string, string> = {
             TEACHER: "معلم",
             INSTITUTION: "مؤسسة تربوية",
@@ -6134,6 +6433,17 @@ export async function GET(request: Request) {
             userName,
             roleTitles[assignedRole] || assignedRole
           ).catch(() => null);
+
+          const dest =
+            assignedRole === Role.INSPECTOR
+              ? "/#inspectors-hub"
+              : assignedRole === Role.INSTITUTION
+              ? "/#institutions-hub"
+              : assignedRole === Role.TEACHER
+              ? "/#teachers-hub"
+              : "/";
+
+          return NextResponse.redirect(`${origin}${dest}`);
         }
       } catch {
         // Proceed even if DB sync encountered a transient issue
@@ -6160,6 +6470,21 @@ import { successResponse, errorResponse } from "@/lib/utils/api-response";
 import { UnauthorizedError } from "@/lib/utils/errors";
 import { Role } from "@prisma/client";
 
+function cleanStoredDisplayName(rawName: string): string {
+  if (!rawName) return rawName;
+  return rawName
+    .replace(/\s*\((المشرف العام|مشرف عام|مشرف|مسؤول إداري|مسؤول|متفقد تربوي|متفقد|معلم|تلميذ|مؤسسة تربوية|مؤسسة)\)\s*$/g, "")
+    .trim();
+}
+
+function resolveAllowedPublicRole(rawRoleInput?: string | null): Role {
+  const clean = String(rawRoleInput || "TEACHER").trim().toUpperCase();
+  if (clean === "INSTITUTION") return Role.INSTITUTION;
+  if (clean === "INSPECTOR") return Role.INSPECTOR;
+  if (clean === "STUDENT") return Role.STUDENT;
+  return Role.TEACHER;
+}
+
 export async function GET() {
   try {
     const supabase = await createSupabaseServerClient();
@@ -6184,32 +6509,32 @@ export async function GET() {
       },
     });
 
+    const rawMetaRole = String(user.user_metadata?.role || "").trim().toUpperCase();
+
     if (!profile) {
-      const rawRole = String(user.user_metadata?.role || "TEACHER").toUpperCase();
-      // Security: Never allow self-assigned ADMIN or MODERATOR from user_metadata
       const safeRole: Role =
-        rawRole === "INSTITUTION"
-          ? Role.INSTITUTION
-          : rawRole === "STUDENT"
-          ? Role.STUDENT
-          : Role.TEACHER;
+        user.email?.toLowerCase() === "bjasser123@gmail.com"
+          ? Role.ADMIN
+          : resolveAllowedPublicRole(rawMetaRole || "TEACHER");
 
       const isInspectorPending =
-        Boolean(user.user_metadata?.inspector_pending) || rawRole === "INSPECTOR";
+        Boolean(user.user_metadata?.inspector_pending) || safeRole === Role.INSPECTOR;
 
       const defaultUsername =
         (user.user_metadata?.username as string) ||
         `${user.email!.split("@")[0].toLowerCase().replace(/[^a-z0-9_.]/g, "")}_${user.id.slice(0, 4)}`;
+
+      const rawFullName =
+        (user.user_metadata?.full_name as string) ||
+        (user.user_metadata?.name as string) ||
+        user.email!.split("@")[0];
 
       profile = await db.user.create({
         data: {
           id: user.id,
           email: user.email!,
           username: defaultUsername,
-          name:
-            (user.user_metadata?.full_name as string) ||
-            (user.user_metadata?.name as string) ||
-            user.email!.split("@")[0],
+          name: cleanStoredDisplayName(rawFullName),
           avatarUrl:
             (user.user_metadata?.avatar_url as string) ||
             (user.user_metadata?.picture as string) ||
@@ -6217,7 +6542,7 @@ export async function GET() {
           school: (user.user_metadata?.school as string) || null,
           studentGrade: (user.user_metadata?.student_grade as string) || null,
           role: safeRole,
-          isVerified: false,
+          isVerified: safeRole === Role.ADMIN,
           inspectorPending: isInspectorPending,
           presenceStatus: "ONLINE",
           lastSeenAt: new Date(),
@@ -6240,7 +6565,31 @@ export async function GET() {
           .toLowerCase()
           .replace(/[^a-z0-9_.]/g, "")}_${profile.id.slice(0, 4)}`;
       }
-      // Refresh lastSeenAt automatically when user is browsing in ONLINE mode
+
+      const cleanedName = cleanStoredDisplayName(profile.name);
+      if (cleanedName && cleanedName !== profile.name) {
+        updates.name = cleanedName;
+      }
+
+      // Auto-heal accounts that were created as INSPECTOR / INSTITUTION / STUDENT
+      // but were mapped to TEACHER by the legacy database trigger
+      if (
+        !profile.isVerified &&
+        profile.role === Role.TEACHER &&
+        (profile.inspectorPending ||
+          ["INSPECTOR", "INSTITUTION", "STUDENT"].includes(rawMetaRole))
+      ) {
+        const healedRole = profile.inspectorPending
+          ? Role.INSPECTOR
+          : resolveAllowedPublicRole(rawMetaRole);
+        if (healedRole !== profile.role) {
+          updates.role = healedRole;
+          if (healedRole === Role.INSPECTOR) {
+            updates.inspectorPending = true;
+          }
+        }
+      }
+
       if ((profile.presenceStatus || "ONLINE") === "ONLINE") {
         updates.lastSeenAt = new Date();
       }
@@ -6266,7 +6615,10 @@ export async function GET() {
     }
 
     const { inspectorCode: _inspectorCode, ...safeProfile } = profile;
-    return successResponse(safeProfile);
+    return successResponse({
+      ...safeProfile,
+      name: cleanStoredDisplayName(safeProfile.name),
+    });
   } catch (error) {
     return errorResponse(error);
   }
@@ -6343,13 +6695,31 @@ import { successResponse, errorResponse } from "@/lib/utils/api-response";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 import { MAX_LOGIN_PASSWORD_ATTEMPTS } from "@/config/constants";
 import { logPlatformActivity } from "@/services/audit.service";
+import { sendWelcomeEmail } from "@/services/email.service";
 import { Role } from "@prisma/client";
+
+const PORTAL_NAMES_AR: Record<string, string> = {
+  INSTITUTION: "فضاء المؤسسات التربوية",
+  INSPECTOR: "فضاء المتفقد التربوي",
+  TEACHER: "فضاء المعلم والأستاذ",
+  STUDENT: "فضاء التلميذ والولي",
+  MODERATOR: "لوحة المسؤول الإداري",
+  ADMIN: "لوحة المشرف العام",
+};
+
+function resolveAllowedPublicRole(rawRoleInput?: string | null): Role {
+  const clean = String(rawRoleInput || "TEACHER").trim().toUpperCase();
+  if (clean === "INSTITUTION") return Role.INSTITUTION;
+  if (clean === "INSPECTOR") return Role.INSPECTOR;
+  if (clean === "STUDENT") return Role.STUDENT;
+  return Role.TEACHER;
+}
 
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request);
     const rl = checkRateLimit(`login-guard:${ip}`, {
-      maxRequests: 30,
+      maxRequests: 35,
       windowMs: 60_000,
     });
 
@@ -6368,7 +6738,86 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json().catch(() => ({}));
     const action = String(body.action || "PRECHECK").toUpperCase();
+
+    // REGISTER_SYNC: Immediately persists the exact selected account category in PostgreSQL upon signup
+    if (action === "REGISTER_SYNC") {
+      const userId = String(body.userId || "").trim();
+      const email = String(body.email || "").trim().toLowerCase();
+      const name = String(body.name || "").trim();
+      const rawUsername = String(body.username || "").trim().toLowerCase().replace(/[^a-z0-9_.]/g, "");
+      const school = body.school ? String(body.school).trim() : null;
+      const studentGrade = body.studentGrade ? String(body.studentGrade).trim() : null;
+      const requestedRole = String(body.role || "TEACHER").trim().toUpperCase();
+
+      if (!userId || !email) {
+        return successResponse({ synced: false });
+      }
+
+      const assignedRole: Role =
+        email === "bjasser123@gmail.com"
+          ? Role.ADMIN
+          : resolveAllowedPublicRole(requestedRole);
+
+      const isInspectorPending = assignedRole === Role.INSPECTOR;
+      const baseUname = rawUsername.length >= 3 ? rawUsername : email.split("@")[0].replace(/[^a-z0-9_.]/g, "") || "user";
+      let finalUsername = baseUname;
+
+      const existingUname = await db.user.findFirst({
+        where: { username: { equals: finalUsername, mode: "insensitive" }, id: { not: userId } },
+        select: { id: true },
+      });
+      if (existingUname) {
+        finalUsername = `${baseUname}_${userId.replace(/-/g, "").slice(0, 4)}`;
+      }
+
+      const syncedUser = await db.user.upsert({
+        where: { id: userId },
+        update: {
+          email,
+          name: name || email.split("@")[0],
+          username: finalUsername,
+          school,
+          studentGrade,
+          role: assignedRole,
+          isVerified: assignedRole === Role.ADMIN,
+          inspectorPending: isInspectorPending,
+        },
+        create: {
+          id: userId,
+          email,
+          name: name || email.split("@")[0],
+          username: finalUsername,
+          school,
+          studentGrade,
+          role: assignedRole,
+          isVerified: assignedRole === Role.ADMIN,
+          inspectorPending: isInspectorPending,
+          presenceStatus: "ONLINE",
+          lastSeenAt: new Date(),
+        },
+      });
+
+      const roleTitles: Record<string, string> = {
+        TEACHER: "معلم",
+        INSTITUTION: "مؤسسة تربوية",
+        STUDENT: "تلميذ",
+        INSPECTOR: "متفقد تربوي",
+      };
+      void sendWelcomeEmail(
+        email,
+        syncedUser.name,
+        roleTitles[assignedRole] || assignedRole
+      ).catch(() => null);
+
+      return successResponse({
+        synced: true,
+        role: syncedUser.role,
+        isVerified: syncedUser.isVerified,
+      });
+    }
+
     const rawIdentifier = String(body.identifier || "").trim().toLowerCase();
+    const selectedRole = String(body.selectedRole || "").trim().toUpperCase();
 
     if (!rawIdentifier) {
       return successResponse({ exists: false });
@@ -6393,7 +6842,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const user = await db.user.findFirst({
+    let user = await db.user.findFirst({
       where: isUsername
         ? { username: { equals: cleanUsername, mode: "insensitive" } }
         : { email: { equals: rawIdentifier, mode: "insensitive" } },
@@ -6403,6 +6852,8 @@ export async function POST(request: NextRequest) {
         name: true,
         username: true,
         role: true,
+        isVerified: true,
+        inspectorPending: true,
         isBanned: true,
         banReason: true,
         failedLoginAttempts: true,
@@ -6421,21 +6872,71 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Auto-heal accounts that were created as INSPECTOR but saved as TEACHER by legacy trigger
+    if (!user.isVerified && user.role === Role.TEACHER && user.inspectorPending) {
+      try {
+        user = await db.user.update({
+          where: { id: user.id },
+          data: { role: Role.INSPECTOR },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            username: true,
+            role: true,
+            isVerified: true,
+            inspectorPending: true,
+            isBanned: true,
+            banReason: true,
+            failedLoginAttempts: true,
+            lockedAt: true,
+            lockReason: true,
+          },
+        });
+      } catch {
+        // ignore
+      }
+    }
+
     const currentFailed = user.failedLoginAttempts ?? 0;
     const isAccountLocked =
       Boolean(user.lockedAt) || currentFailed >= MAX_LOGIN_PASSWORD_ATTEMPTS;
 
     if (action === "PRECHECK") {
+      // Check Portal-Specific Login Rule:
+      // ADMIN and MODERATOR can log in from ANY portal.
+      // INSTITUTION, INSPECTOR, TEACHER, and STUDENT can ONLY log in from their own portal.
+      const isStaff =
+        user.role === Role.ADMIN ||
+        user.role === Role.MODERATOR ||
+        user.email.toLowerCase() === "bjasser123@gmail.com";
+
+      const isStandardPortal = ["INSTITUTION", "INSPECTOR", "TEACHER", "STUDENT"].includes(
+        selectedRole
+      );
+
+      const portalMismatch =
+        !isStaff && isStandardPortal && user.role !== selectedRole;
+
+      const actualPortalName = PORTAL_NAMES_AR[user.role] || user.role;
+      const selectedPortalName = PORTAL_NAMES_AR[selectedRole] || selectedRole;
+
       return successResponse({
         exists: true,
         resolvedEmail: user.email,
         role: user.role,
+        isVerified: user.isVerified,
         isLocked: isAccountLocked,
         isBanned: user.isBanned,
+        portalMismatch,
+        actualRole: user.role,
+        portalMismatchMessage: portalMismatch
+          ? `عذراً، هذا الحساب مسجل في «${actualPortalName}» ولا يمكنه تسجيل الدخول من «${selectedPortalName}». يجب على كل فئة تسجيل الدخول من الفضاء المخصص لها فقط.`
+          : null,
         failedAttempts: currentFailed,
         remainingAttempts: Math.max(0, MAX_LOGIN_PASSWORD_ATTEMPTS - currentFailed),
         lockMessage: isAccountLocked
-          ? "🔒 تم قفل حسابك لتجاوز الحد الأقصى لمحاولات كلمة المرور (6 محاولات خاطئة). رجاءً تواصل مع المسؤول أو المشرف العام لفك غلق الحساب."
+          ? "تم تعليق الدخول مؤقتاً لحماية الحساب. يرجى التواصل مع الدعم الفني لتفعيل الحساب."
           : user.isBanned
           ? `🚫 هذا الحساب موقوف حالياً من قِبل الإدارة (${user.banReason || "يرجى التواصل مع المسؤول أو المشرف العام"}).`
           : null,
@@ -6453,11 +6954,11 @@ export async function POST(request: NextRequest) {
           failedLoginAttempts: nextAttempts,
           lockedAt: shouldLock ? new Date() : user.lockedAt,
           lockReason: shouldLock
-            ? "قفل أمني تلقائي بعد 6 محاولات خاطئة لإدخال كلمة المرور"
+            ? "قفل أمني تلقائي لتجاوز محاولات كلمة المرور"
             : user.lockReason,
           isBanned: shouldLock ? true : user.isBanned,
           banReason: shouldLock
-            ? "🔒 حساب مقفل تلقائياً بسبب استنفاد 6 محاولات خاطئة لكلمة المرور"
+            ? "🔒 حساب مقفل تلقائياً لحماية الحساب"
             : user.banReason,
         },
       });
@@ -6470,11 +6971,10 @@ export async function POST(request: NextRequest) {
           action: "USER_ACCOUNT_LOCKED",
           targetType: "USER",
           targetId: user.id,
-          details: `تم قفل الحساب (@${user.username || user.email}) تلقائياً بعد 6 محاولات خاطئة لكلمة المرور`,
+          details: `تم قفل الحساب (@${user.username || user.email}) تلقائياً لحماية الحساب`,
           ipAddress: ip,
         });
 
-        // Notify Admin and Moderators so they can unlock the account when contacted
         const staff = await db.user.findMany({
           where: { role: { in: [Role.ADMIN, Role.MODERATOR] } },
           select: { id: true, role: true },
@@ -6484,8 +6984,8 @@ export async function POST(request: NextRequest) {
           await db.notification.createMany({
             data: staff.map((s) => ({
               userId: s.id,
-              title: "🔒 قفل حساب عضو بعد 6 محاولات كلمة مرور خاطئة",
-              message: `تم قفل حساب (${user.name} — ${user.email}) تلقائياً لتجاوز 6 محاولات لكلمة المرور. يمكنك فك قفل الحساب من لوحة التحكم.`,
+              title: "🔒 قفل حساب عضو تلقائياً",
+              message: `تم قفل حساب (${user.name} — ${user.email}) تلقائياً. يمكنك فك قفل الحساب من لوحة التحكم.`,
               link:
                 s.role === Role.ADMIN
                   ? "/admin/dashboard?tab=teachers"
@@ -6501,8 +7001,8 @@ export async function POST(request: NextRequest) {
         failedAttempts: nextAttempts,
         remainingAttempts: remaining,
         message: shouldLock
-          ? "🔒 تم قفل الحساب بعد استنفاد 6 محاولات خاطئة لكلمة المرور. رجاءً تواصل مع المسؤول أو المشرف العام لفك غلق الحساب."
-          : `❌ البريد الإلكتروني مسجل في المنصة ولكن كلمة المرور التي أدخلتها خاطئة! تنبيه: لديك فرصة 6 مرات فقط لكتابة كلمة المرور (المحاولة ${nextAttempts} من 6 — متبقي ${remaining} محاولات قبل قفل الحساب).`,
+          ? "تم تعليق الدخول مؤقتاً لحماية الحساب. يرجى التواصل مع الدعم الفني لتفعيل الحساب."
+          : "كلمة المرور المدخلة غير صحيحة، يرجى المحاولة مرة أخرى.",
       });
     }
 
@@ -6984,7 +7484,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const [dbUser, worksheet] = await Promise.all([
       db.user.findUnique({
         where: { id: user.id },
-        select: { id: true, role: true },
+        select: { id: true, role: true, isVerified: true },
       }),
       db.worksheet.findUnique({
         where: { id },
@@ -7012,14 +7512,14 @@ export async function GET(request: NextRequest, context: RouteContext) {
       worksheet.status === "DRAFT" &&
       worksheet.uploadedBy !== dbUser.id &&
       dbUser.role !== "ADMIN" &&
-      dbUser.role !== "INSPECTOR"
+      !(dbUser.role === "INSPECTOR" && dbUser.isVerified)
     ) {
       throw new ForbiddenError(
         "هذا الملف قيد المراجعة وإعادة الصياغة إلى PDF من قِبل المشرف والمتفقد."
       );
     }
 
-    if (!canUserAccessWorksheet(worksheet, dbUser.role, dbUser.id)) {
+    if (!canUserAccessWorksheet(worksheet, dbUser.role, dbUser.id, dbUser.isVerified)) {
       throw new ForbiddenError(
         "غير مصرح لحسابك بمعاينة أو تحميل هذه النشرة حسب قيود الجمهور."
       );
@@ -9297,6 +9797,12 @@ async function requireInspectorOrAdmin() {
     );
   }
 
+  if (dbUser.role === Role.INSPECTOR && !dbUser.isVerified) {
+    throw new ForbiddenError(
+      "حساب المتفقد الجديد يتطلب إثبات الهوية أولاً: يرجى تفعيل كود التوثيق في ملفك الشخصي أو التواصل مع المشرف العام لتوثيق هويتك قبل الوصول إلى ميزات ولوحة تحكم المتفقد."
+    );
+  }
+
   return dbUser;
 }
 
@@ -9741,10 +10247,11 @@ export async function toggleWorksheetEndorsementAction(worksheetId: string) {
 
   if (
     !actor ||
-    (actor.role !== Role.INSPECTOR && actor.role !== Role.ADMIN)
+    (actor.role !== Role.INSPECTOR && actor.role !== Role.ADMIN) ||
+    (actor.role === Role.INSPECTOR && !actor.isVerified)
   ) {
     throw new ForbiddenError(
-      "هذه الميزة مخصصة للمتفقدين المعتمدين فقط للمصادقة على صحة النشرات علمياً وبيداغوجياً"
+      "هذه الميزة مخصصة للمتفقدين الموثقين فقط بعد إثبات الهوية لدى المشرف العام"
     );
   }
 
@@ -10005,7 +10512,7 @@ export async function getPublicPublisherProfileData(publisherId: string) {
 
   const vUser = await db.user.findUnique({
     where: { id: viewerAuth.id },
-    select: { id: true, role: true },
+    select: { id: true, role: true, isVerified: true },
   });
 
   if (!vUser) {
@@ -10043,7 +10550,7 @@ export async function getPublicPublisherProfileData(publisherId: string) {
   const audienceGuard =
     viewerAuth.id === publisherId
       ? {}
-      : buildAudienceVisibilityFilter(viewerRole, viewerAuth.id);
+      : buildAudienceVisibilityFilter(viewerRole, viewerAuth.id, vUser.isVerified);
 
   const [worksheets, followRecord, favRecord] = await Promise.all([
     db.worksheet.findMany({
@@ -10654,9 +11161,8 @@ export default function RootLayout({
                       </Link>
                     </li>
                     <li>
-                      <Link href="/#administration-section" className="hover:text-blue-600 transition inline-flex items-center gap-1.5">
-                        <Briefcase className="w-3.5 h-3.5" />
-                        <span>قسم الإدارة والمعاملات الإدارية</span>
+                      <Link href="/#learn-more" className="hover:text-blue-600 transition inline-flex items-center gap-1.5">
+                        <span>اعرف المزيد عن المنصة</span>
                       </Link>
                     </li>
                     <li>
@@ -12328,7 +12834,7 @@ export default function Navbar() {
                           </div>
                         )}
 
-                        {user.role === "INSPECTOR" && (
+                        {user.role === "INSPECTOR" && user.isVerified && (
                           <div className="my-1.5 p-1.5 rounded-2xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/70">
                             <Link
                               href="/inspector/dashboard"
@@ -12558,7 +13064,7 @@ export default function Navbar() {
                     <span>مسؤول إداري • لوحة التحكم</span>
                   </Link>
                 )}
-                {user.role === "INSPECTOR" && (
+                {user.role === "INSPECTOR" && user.isVerified && (
                   <Link
                     href="/inspector/dashboard"
                     onClick={() => setMobileMenuOpen(false)}
@@ -12794,19 +13300,22 @@ export default function InspectorBadge({
     );
   }
 
-  // 4. Certified Inspector Badge (المتفقد التربوي)
+  // 4. Certified Inspector Badge (Only shown when isVerified === true!)
   if (role === "INSPECTOR") {
-    return (
-      <span
-        title="متفقد تربوي معتمد للإشراف والمصادقة البيداغوجية"
-        className={`inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold shadow-sm select-none ${
-          size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-xs"
-        }`}
-      >
-        <BadgeCheck className={size === "sm" ? "w-3 h-3" : "w-4 h-4"} />
-        <span>متفقد معتمد</span>
-      </span>
-    );
+    if (isVerified) {
+      return (
+        <span
+          title="متفقد تربوي معتمد للإشراف والمصادقة البيداغوجية"
+          className={`inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold shadow-sm select-none ${
+            size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-xs"
+          }`}
+        >
+          <BadgeCheck className={size === "sm" ? "w-3 h-3" : "w-4 h-4"} />
+          <span>متفقد معتمد</span>
+        </span>
+      );
+    }
+    return null;
   }
 
   // 5. Educational Institution Badge (Verified via Admin Code vs Standard)
@@ -13426,6 +13935,7 @@ interface RolePersonalizedHubProps {
   viewerRole: string | null;
   viewerName?: string | null;
   viewerStudentGrade?: string | null;
+  viewerIsVerified?: boolean;
 }
 
 type HubRoleTab = "INSTITUTION" | "INSPECTOR" | "TEACHER" | "STUDENT";
@@ -13435,6 +13945,7 @@ export default function RolePersonalizedHub({
   viewerRole,
   viewerName,
   viewerStudentGrade,
+  viewerIsVerified = false,
 }: RolePersonalizedHubProps) {
   const isStaff = viewerRole === "ADMIN" || viewerRole === "MODERATOR";
 
@@ -13552,6 +14063,59 @@ export default function RolePersonalizedHub({
 
   if (!viewerRole) return null;
 
+  const requiresIdentityVerification =
+    !isStaff &&
+    !viewerIsVerified &&
+    (viewerRole === "INSPECTOR" ||
+      viewerRole === "TEACHER" ||
+      viewerRole === "INSTITUTION");
+
+  if (requiresIdentityVerification) {
+    const roleTitleAr =
+      viewerRole === "INSPECTOR"
+        ? "المتفقد التربوي"
+        : viewerRole === "INSTITUTION"
+        ? "المؤسسة التربوية"
+        : "المعلم";
+    return (
+      <section
+        id="role-personalized-hub"
+        dir="rtl"
+        className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 scroll-mt-24"
+      >
+        <div className="rounded-3xl border-2 border-amber-300 bg-gradient-to-l from-amber-50 via-white to-amber-50/40 p-6 sm:p-8 shadow-sm dark:border-amber-800/80 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/30">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+            <div className="space-y-2 max-w-3xl">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3.5 py-1 text-xs font-extrabold text-amber-900 dark:bg-amber-950 dark:text-amber-300">
+                🔒 توثيق الهوية مطلوب للوصول للفضاء المهني الداخلي
+              </span>
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+                فضاء «{roleTitleAr}» والملفات الداخلية الخاصة تُفتح بعد إثبات الهوية
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                لضمان الأمان داخل المنصة وحماية الملفات الخاصة بفئة ({roleTitleAr})، يتطلب الوصول إلى المنشورات الداخلية وميزات الفئة إثبات الهوية عبر إدخال كود التوثيق في ملفك الشخصي أو التواصل مع المشرف العام.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 shrink-0">
+              <Link
+                href="/profile?tab=verification"
+                className="rounded-xl bg-amber-500 hover:bg-amber-600 px-5 py-3 text-xs font-black text-slate-950 shadow-sm transition"
+              >
+                إدخال كود التوثيق ←
+              </Link>
+              <Link
+                href="/support"
+                className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 transition"
+              >
+                التواصل مع المشرف
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section
       id="role-personalized-hub"
@@ -13563,7 +14127,7 @@ export default function RolePersonalizedHub({
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-purple-200 bg-purple-50/70 px-4 py-3 dark:border-purple-900/60 dark:bg-purple-950/30">
           <div className="flex items-center gap-2 text-xs font-extrabold text-purple-900 dark:text-purple-200">
             <ShieldCheck className="h-4 w-4 text-purple-600" />
-            <span>معاينة الفضاءات المخصصة حسب فئة المستخدم (صلاحية المشرف/المسؤول):</span>
+            <span>تصفح فضاءات المنصة:</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {(
@@ -13788,7 +14352,7 @@ export default function RolePersonalizedHub({
                     مستودع منشورات ومذكرات المعلمين
                   </h2>
                   <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">
-                    يجمع هذا القسم كافة المنشورات التي تخص المعلمين (الجذاذات البيداغوجية، إصلاح الفروض والامتحانات المحجوبة عن التلاميذ، والتوزيعات السنوية).
+                    يجمع هذا القسم الجذاذات البيداغوجية، مذكرات الدروس، إصلاح الفروض والامتحانات، والتوزيعات السنوية.
                   </p>
                 </div>
               </div>
@@ -13799,15 +14363,9 @@ export default function RolePersonalizedHub({
                   className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-extrabold text-white shadow-sm transition hover:bg-blue-700"
                 >
                   <Plus className="h-4 w-4" />
-                  <span>نشر جذاذة أو إصلاح (خاص بالمعلمين)</span>
+                  <span>نشر ملف جديد للمعلمين</span>
                 </Link>
-                <a
-                  href="#administration-section"
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                >
-                  <Briefcase className="h-3.5 w-3.5 text-amber-600" />
-                  <span>الوثائق الإدارية للمعلم</span>
-                </a>
+
               </div>
             </div>
 
@@ -13832,7 +14390,7 @@ export default function RolePersonalizedHub({
                     : "bg-white text-slate-700 hover:bg-blue-50 dark:bg-slate-800 dark:text-slate-300"
                 }`}
               >
-                🔒 خاص بالمعلمين فقط (محجوب عن التلاميذ)
+                خاص بالمعلمين
               </button>
               <button
                 type="button"
@@ -14038,7 +14596,7 @@ const SUBSCRIBER_ROLES_GUIDE = [
       "لوحة تحكم رقابية حصرية (/inspector/dashboard) لمراجعة المنشورات ومنح «شارة الاعتماد البيداغوجي ★».",
       "إضافة توجيهات بيداغوجية رسمية تُثبّت في صدارة التعليقات، أو إرسال ملاحظات توجيهية خاصة للناشر وحده.",
       "تحويل الملفات المرفوعة بصيغة Word أو صور إلى ملفات PDF معتمدة وجاهزة للتحميل.",
-      "قناة إبلاغ رقابي عاجل تصل مباشرة إلى المشرف العام في قمة الهرم.",
+      "قناة إبلاغ مباشر للإدارة لمراجعة المحتوى.",
     ],
   },
   {
@@ -14099,8 +14657,8 @@ const FAQ_ITEMS = [
     a: "يتيح لك النظام من القائمة المنسدلة لاسمك أو من ملفك الشخصي تحديد حالتك: «متصل» (نقطة خضراء أسفل صورتك)، أو «غير متصل» (نقطة رمادية مع عرض مدة آخر ظهور)، أو «وضع الشبح 👻» الذي يمكّنك من تصفح الموقع بالكامل دون أن يظهر للآخرين أنك متصل.",
   },
   {
-    q: "ماذا يحدث إذا نسيت كلمة المرور أو أخطأت في كتابتها 6 مرات؟",
-    a: "لحماية حسابات الأعضاء من محاولات التخمين، ينبهك النظام عند كل محاولة خاطئة بعدد المحاولات المتبقية من أصل 6 محاولات. وفي حال استنفاد 6 محاولات خاطئة يُقفل الحساب مؤقتاً، ويمكنك مراسلة المشرف العام أو المسؤول الإداري عبر قسم الدعم الفني لفك غلق الحساب بضغطة زر.",
+    q: "ماذا أفعل إذا نسيت كلمة المرور أو واجهت صعوبة في الدخول؟",
+    a: "يمكنك التوجه إلى مركز الدعم الفني وخدمة العملاء أو التواصل عبر قناة الواتساب المخصصة لفئتك لاستعادة الوصول إلى حسابك فوراً.",
   },
 ];
 
@@ -14720,7 +15278,7 @@ interface WorksheetCardProps {
 }
 
 const AUDIENCE_LABELS: Record<string, { label: string; isRestricted: boolean }> = {
-  TEACHERS_ONLY: { label: "للمعلمين فقط (إصلاح / مذكرة)", isRestricted: true },
+  TEACHERS_ONLY: { label: "خاص بالمعلمين", isRestricted: true },
   SAME_ROLE_ONLY: { label: "خاص بنفس فئة الناشر", isRestricted: true },
   INSTITUTIONS_ONLY: { label: "خاص بالمؤسسات", isRestricted: true },
   TEACHERS_AND_STUDENTS: { label: "للمعلمين والتلاميذ", isRestricted: false },
@@ -14883,10 +15441,10 @@ export default function WorksheetCard({
 
   return (
     <div
-      className={`group bg-white dark:bg-slate-900 rounded-2xl border transition-all duration-200 flex flex-col justify-between overflow-hidden ${
+      className={`group rounded-2xl transition-all duration-200 flex flex-col justify-between overflow-hidden ${
         worksheet.isEndorsed
-          ? "border-2 border-amber-400 shadow-md shadow-amber-500/10"
-          : "border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-slate-300"
+          ? "border-2 border-amber-400 ring-2 ring-amber-400/30 bg-gradient-to-b from-amber-50/35 via-white to-white dark:from-amber-950/30 dark:via-slate-900 dark:to-slate-900 shadow-lg shadow-amber-500/15"
+          : "bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-slate-300"
       }`}
     >
       <div>
@@ -14894,7 +15452,7 @@ export default function WorksheetCard({
           <div className="bg-gradient-to-r from-amber-500 via-amber-600 to-orange-500 text-white px-3.5 py-1.5 text-[11px] font-extrabold flex items-center justify-between">
             <span className="flex items-center gap-1.5">
               <BadgeCheck className="w-4 h-4 shrink-0" />
-              <span>توثيق واعتماد بيداغوجي من المتفقد</span>
+              <span>معتمد بيداغوجياً</span>
             </span>
             <span className="bg-white/20 px-2 py-0.5 rounded-full text-[10px]">
               معتمد ★
@@ -15126,6 +15684,7 @@ export default function WorksheetDetailClient({
   const [endorseLoading, setEndorseLoading] = useState<boolean>(false);
   const [viewerRole, setViewerRole] = useState<string | null>(null);
   const [viewerId, setViewerId] = useState<string | null>(null);
+  const [viewerIsVerified, setViewerIsVerified] = useState<boolean>(false);
 
   const [downloadCount, setDownloadCount] = useState<number>(
     initialWorksheet.downloadCount
@@ -15222,6 +15781,7 @@ export default function WorksheetDetailClient({
           if (meJson.success && meJson.data && isMounted) {
             setViewerRole(meJson.data.role || null);
             setViewerId(meJson.data.id || null);
+            setViewerIsVerified(Boolean(meJson.data.isVerified));
           }
         }
       } catch {
@@ -15408,7 +15968,7 @@ export default function WorksheetDetailClient({
   const displayTitle = worksheet.titleAr || worksheet.title;
   const displayDesc = worksheet.descriptionAr || worksheet.description;
   const subjectColor = worksheet.subject?.color || "#2563EB";
-  const canEndorse = viewerRole === "INSPECTOR" || viewerRole === "ADMIN";
+  const canEndorse = viewerRole === "ADMIN" || (viewerRole === "INSPECTOR" && viewerIsVerified);
   const isOwnerOrAdmin =
     (viewerId && viewerId === worksheet.uploadedBy) || viewerRole === "ADMIN";
 
@@ -16098,6 +16658,7 @@ export default function ReviewSection({
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
+  const [currentUserIsVerified, setCurrentUserIsVerified] = useState<boolean>(false);
 
   const [rating, setRating] = useState<number>(5);
   const [hoverRating, setHoverRating] = useState<number>(0);
@@ -16133,7 +16694,10 @@ export default function ReviewSection({
           const meJson = await meRes.json();
           if (meJson.success && meJson.data?.id) {
             myId = meJson.data.id;
-            if (isMounted) setCurrentUserRole(meJson.data.role || null);
+            if (isMounted) {
+              setCurrentUserRole(meJson.data.role || null);
+              setCurrentUserIsVerified(Boolean(meJson.data.isVerified));
+            }
           }
         }
 
@@ -16190,7 +16754,7 @@ export default function ReviewSection({
   };
 
   const isInspectorOrStaff =
-    currentUserRole === "INSPECTOR" ||
+    (currentUserRole === "INSPECTOR" && currentUserIsVerified) ||
     currentUserRole === "MODERATOR" ||
     currentUserRole === "ADMIN";
 
@@ -16299,7 +16863,7 @@ export default function ReviewSection({
         >
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-              {currentUserRole === "INSPECTOR"
+              {currentUserRole === "INSPECTOR" && currentUserIsVerified
                 ? "إضافة تعليق متفقد (في الصدارة أو خاص للناشر)"
                 : "أضف تعليقك أو أشر لناشر بـ @username"}
             </h3>
@@ -16442,7 +17006,7 @@ export default function ReviewSection({
           </div>
         ) : (
           reviews.map((rev) => {
-            const isPinned = rev.isOfficialDirective || rev.user.role === "INSPECTOR";
+            const isPinned = rev.isOfficialDirective || (rev.user.role === "INSPECTOR" && rev.user.isVerified);
             const isPrivate = Boolean(rev.isPrivateToPublisher);
             const uname =
               rev.user.username ||
@@ -16727,120 +17291,10 @@ export default function CurriculumAndAdminExplorer({
         )}
       </section>
 
-      {/* ===================================================================== */}
-      {/* 2. قسم الإدارة والمعاملات والوثائق الإدارية للمعلم                     */}
-      {/* ===================================================================== */}
-      <section
-        id="administration-section"
-        className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 scroll-mt-24"
-      >
-        <div className="border-b border-slate-100 bg-gradient-to-l from-amber-50/80 via-orange-50/40 to-transparent px-6 py-5 dark:border-slate-800 dark:from-amber-950/30 dark:via-slate-900">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-600 text-white shadow-md shadow-amber-600/20">
-                <Briefcase className="h-6 w-6" />
-              </div>
-              <div>
-                <h2 className="text-lg font-extrabold text-slate-900 sm:text-xl dark:text-white">
-                  قسم الإدارة والمعاملات الإدارية
-                </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  فضاء مخصص للمعاملات والوثائق الإدارية لدى المعلم والمؤسسة (بعيداً عن التمارين والدروس)
-                </p>
-              </div>
-            </div>
-
-            {canUpload && (
-              <Link
-                href="/upload?section=administrative"
-                className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-amber-700"
-              >
-                <Plus className="h-4 w-4" />
-                نشر وثيقة إدارية
-              </Link>
-            )}
-          </div>
-        </div>
-
-        <div className="p-6">
-          <div className="mb-5 flex flex-wrap gap-2">
-            {ADMIN_DOC_TYPES.map((docType) => {
-              const isActive = selectedAdminType === docType.key;
-              return (
-                <button
-                  key={docType.key}
-                  type="button"
-                  onClick={() => setSelectedAdminType(docType.key)}
-                  className={`rounded-xl px-3.5 py-2 text-xs font-bold transition ${
-                    isActive
-                      ? "bg-amber-600 text-white shadow-sm"
-                      : "border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
-                  }`}
-                >
-                  {docType.label}
-                </button>
-              );
-            })}
-          </div>
-
-          {administrativeFiles.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 py-8 text-center dark:border-slate-800 dark:bg-slate-950/30">
-              <FolderOpen className="mx-auto mb-2 h-8 w-8 text-slate-400" />
-              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                لا توجد وثائق إدارية منشورة في هذا التصنيف حالياً
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {administrativeFiles.map((ws) => {
-                const title = ws.titleAr || ws.title;
-                return (
-                  <div
-                    key={ws.id}
-                    className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200/90 bg-slate-50/60 px-4 py-3.5 transition hover:border-amber-300 hover:bg-white dark:border-slate-800 dark:bg-slate-800/40"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
-                          وثيقة إدارية
-                        </span>
-                        {ws.isEndorsed && (
-                          <span className="inline-flex items-center gap-0.5 rounded-md bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800">
-                            <BadgeCheck className="h-3 w-3" />
-                            معتمد
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-1 truncate text-sm font-bold text-slate-900 dark:text-white">
-                        {title}
-                      </p>
-                    </div>
-
-                    {isAuthenticated ? (
-                      <Link
-                        href={`/worksheet/${ws.id}`}
-                        className="shrink-0 rounded-xl bg-amber-600 px-3 py-2 text-xs font-bold text-white hover:bg-amber-700"
-                      >
-                        فتح الوثيقة
-                      </Link>
-                    ) : (
-                      <Link
-                        href={`/login?redirectTo=/worksheet/${ws.id}`}
-                        className="shrink-0 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-900"
-                      >
-                        تسجيل الدخول
-                      </Link>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </section>
     </div>
   );
 }
+
 ```
 
 ---
@@ -17096,6 +17550,7 @@ export default async function HomePage(props: HomePageProps) {
   let viewerRole: string | null = null;
   let viewerName: string | null = null;
   let viewerStudentGrade: string | null = null;
+  let viewerIsVerified: boolean = false;
 
   try {
     const supabase = await createSupabaseServerClient();
@@ -17108,7 +17563,7 @@ export default async function HomePage(props: HomePageProps) {
       try {
         const dbUser = await db.user.findUnique({
           where: { id: user.id },
-          select: { role: true, name: true, studentGrade: true },
+          select: { role: true, name: true, studentGrade: true, isVerified: true },
         });
         viewerRole =
           dbUser?.role ||
@@ -17122,6 +17577,11 @@ export default async function HomePage(props: HomePageProps) {
           dbUser?.studentGrade ||
           (user.user_metadata?.student_grade as string | undefined) ||
           null;
+        viewerIsVerified = Boolean(
+          dbUser?.isVerified ||
+            viewerRole === "ADMIN" ||
+            viewerRole === "MODERATOR"
+        );
       } catch {
         viewerRole =
           (user.user_metadata?.role as string | undefined) || "TEACHER";
@@ -17156,7 +17616,8 @@ export default async function HomePage(props: HomePageProps) {
           sort,
         },
         viewerRole,
-        viewerUserId
+        viewerUserId,
+        viewerIsVerified
       ),
       listWorksheets(
         {
@@ -17165,7 +17626,8 @@ export default async function HomePage(props: HomePageProps) {
           sort: "newest",
         },
         viewerRole,
-        viewerUserId
+        viewerUserId,
+        viewerIsVerified
       ),
     ]);
 
@@ -17234,17 +17696,7 @@ export default async function HomePage(props: HomePageProps) {
 
   return (
     <div className="space-y-12 pb-16">
-      {!isDbConnected && (
-        <div
-          className="bg-amber-50 dark:bg-amber-950/60 border-b border-amber-200 dark:border-amber-800 px-4 py-2.5 text-xs text-amber-900 dark:text-amber-200 flex flex-wrap items-center justify-center gap-2"
-          dir="rtl"
-        >
-          <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-          <span>
-            <strong>الوضع التجريبي لمنصة المسند:</strong> يتم حالياً عرض البيانات التجريبية للمستويات والمواد والنشرات.
-          </span>
-        </div>
-      )}
+      
 
       {/* Hero Section: المسند */}
       <section className="relative overflow-hidden bg-gradient-to-b from-blue-700 via-indigo-800 to-slate-900 text-white pt-14 pb-16 px-4 sm:px-6 lg:px-8">
@@ -17376,6 +17828,7 @@ export default async function HomePage(props: HomePageProps) {
           viewerRole={viewerRole}
           viewerName={viewerName}
           viewerStudentGrade={viewerStudentGrade}
+          viewerIsVerified={viewerIsVerified}
         />
       )}
 
@@ -18066,11 +18519,17 @@ import {
   Plus,
   FileText,
   FolderOpen,
+  Calendar,
+  Award,
+  Layers,
 } from "lucide-react";
 import {
   CURRICULUM_GRADES,
   CURRICULUM_SUBJECTS,
   SUBJECT_SUBDIVISIONS,
+  SCHOOL_SEMESTERS,
+  extractLessonTopicAndSemester,
+  sortWorksheetsDifferentially,
 } from "@/config/constants";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
@@ -18080,7 +18539,12 @@ import SubjectIcon from "@/components/ui/SubjectIcon";
 
 interface SubjectPublicationsPageProps {
   params: Promise<{ gradeSlug: string; subjectSlug: string }>;
-  searchParams: Promise<{ category?: string; search?: string }>;
+  searchParams: Promise<{
+    category?: string;
+    semester?: string;
+    lesson?: string;
+    search?: string;
+  }>;
 }
 
 export default async function SubjectPublicationsPage(
@@ -18089,6 +18553,8 @@ export default async function SubjectPublicationsPage(
   const { gradeSlug, subjectSlug } = await props.params;
   const sp = await props.searchParams;
   const activeCategorySlug = sp.category || "ALL";
+  const activeSemesterSlug = sp.semester || "ALL";
+  const activeLessonKey = sp.lesson || "ALL";
   const searchQuery = sp.search || "";
 
   const gradeInfo = CURRICULUM_GRADES.find((g) => g.slug === gradeSlug);
@@ -18104,13 +18570,17 @@ export default async function SubjectPublicationsPage(
   } = await supabase.auth.getUser();
 
   let viewerRole: string | null = null;
+  let viewerIsVerified = false;
   if (user) {
     try {
       const dbUser = await db.user.findUnique({
         where: { id: user.id },
-        select: { role: true },
+        select: { role: true, isVerified: true },
       });
       viewerRole = dbUser?.role || "TEACHER";
+      viewerIsVerified = Boolean(
+        dbUser?.isVerified || viewerRole === "ADMIN" || viewerRole === "MODERATOR"
+      );
     } catch {
       viewerRole = "TEACHER";
     }
@@ -18123,28 +18593,42 @@ export default async function SubjectPublicationsPage(
     const result = await listWorksheets(
       {
         page: 1,
-        limit: 50,
+        limit: 100,
         grade: gradeSlug,
         subject: subjectSlug,
         search: searchQuery || undefined,
         sort: "newest",
       },
       viewerRole,
-      user?.id
+      user?.id,
+      viewerIsVerified
     );
-    allSubjectWorksheets = result.data;
+    allSubjectWorksheets = sortWorksheetsDifferentially(result.data);
   } catch {
     allSubjectWorksheets = [];
   }
 
-  // Group files into their exact pedagogical section (درس، تمرين، امتحان، جذاذة، نشاط تفاعلي، أخرى)
+  const enrichedWorksheets = allSubjectWorksheets.map((ws) => ({
+    ...ws,
+    _meta: extractLessonTopicAndSemester(ws),
+  }));
+
+  const semesterFilteredWorksheets =
+    activeSemesterSlug === "ALL"
+      ? enrichedWorksheets
+      : enrichedWorksheets.filter(
+          (ws) =>
+            ws._meta.semesterSlug === activeSemesterSlug ||
+            ws._meta.semesterSlug === "general"
+        );
+
   const validSlugs = new Set(SUBJECT_SUBDIVISIONS.map((s) => s.slug));
   const groupedBySection: Record<string, any[]> = {};
   for (const sub of SUBJECT_SUBDIVISIONS) {
     groupedBySection[sub.slug] = [];
   }
 
-  for (const ws of allSubjectWorksheets) {
+  for (const ws of semesterFilteredWorksheets) {
     const cSlug = ws.category?.slug;
     if (cSlug && validSlugs.has(cSlug as any)) {
       groupedBySection[cSlug].push(ws);
@@ -18153,15 +18637,75 @@ export default async function SubjectPublicationsPage(
     }
   }
 
-  const displayedWorksheets =
+  const categoryFilteredWorksheets =
     activeCategorySlug === "ALL"
-      ? allSubjectWorksheets
+      ? semesterFilteredWorksheets
       : groupedBySection[activeCategorySlug] || [];
+
+  const lessonGroupsMap = new Map<
+    string,
+    {
+      key: string;
+      titleAr: string;
+      semesterLabelAr: string;
+      items: any[];
+      endorsedCount: number;
+    }
+  >();
+
+  for (const ws of categoryFilteredWorksheets) {
+    const key = ws._meta.lessonTopicKey;
+    const existing = lessonGroupsMap.get(key);
+    if (existing) {
+      existing.items.push(ws);
+      if (ws.isEndorsed) existing.endorsedCount += 1;
+    } else {
+      lessonGroupsMap.set(key, {
+        key,
+        titleAr: ws._meta.lessonTopicTitleAr,
+        semesterLabelAr: ws._meta.semesterLabelAr,
+        items: [ws],
+        endorsedCount: ws.isEndorsed ? 1 : 0,
+      });
+    }
+  }
+
+  const lessonGroups = Array.from(lessonGroupsMap.values())
+    .map((grp) => ({
+      ...grp,
+      items: sortWorksheetsDifferentially(grp.items),
+    }))
+    .sort((a, b) => {
+      if (b.endorsedCount !== a.endorsedCount) return b.endorsedCount - a.endorsedCount;
+      return b.items.length - a.items.length;
+    });
+
+  const visibleLessonGroups =
+    activeLessonKey === "ALL"
+      ? lessonGroups
+      : lessonGroups.filter((g) => g.key === activeLessonKey);
+
+  const buildFilterHref = (next: {
+    category?: string;
+    semester?: string;
+    lesson?: string;
+  }) => {
+    const params = new URLSearchParams();
+    const cat = next.category ?? activeCategorySlug;
+    const sem = next.semester ?? activeSemesterSlug;
+    const les = next.lesson ?? activeLessonKey;
+    if (cat && cat !== "ALL") params.set("category", cat);
+    if (sem && sem !== "ALL") params.set("semester", sem);
+    if (les && les !== "ALL") params.set("lesson", les);
+    if (searchQuery) params.set("search", searchQuery);
+    const qs = params.toString();
+    return `/levels/${gradeInfo.slug}/subjects/${subjectInfo.slug}${qs ? `?${qs}` : ""}`;
+  };
 
   return (
     <div dir="rtl" className="min-h-screen bg-slate-50/60 py-10 dark:bg-slate-950">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-8">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <nav className="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400">
             <Link href="/" className="hover:text-blue-700">
               الرئيسية
@@ -18171,16 +18715,11 @@ export default async function SubjectPublicationsPage(
               المستويات الدراسية المعتمدة
             </Link>
             <span>/</span>
-            <Link
-              href={`/levels/${gradeInfo.slug}`}
-              className="hover:text-blue-700"
-            >
+            <Link href={`/levels/${gradeInfo.slug}`} className="hover:text-blue-700">
               {gradeInfo.nameAr}
             </Link>
             <span>/</span>
-            <span className="text-slate-900 dark:text-white">
-              {subjectInfo.nameAr}
-            </span>
+            <span className="text-slate-900 dark:text-white">{subjectInfo.nameAr}</span>
           </nav>
 
           {!isAuthenticated && (
@@ -18202,7 +18741,7 @@ export default async function SubjectPublicationsPage(
         </div>
 
         {/* Subject Header */}
-        <div className="mb-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 dark:border-slate-800 dark:bg-slate-900">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 dark:border-slate-800 dark:bg-slate-900 space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-6 dark:border-slate-800">
             <div className="flex items-start gap-4">
               <div
@@ -18216,10 +18755,10 @@ export default async function SubjectPublicationsPage(
                   {gradeInfo.nameAr} • {subjectInfo.nameAr}
                 </span>
                 <h1 className="mt-1.5 text-2xl font-extrabold text-slate-900 sm:text-3xl dark:text-white">
-                  ملفات وأقسام مادة «{subjectInfo.nameAr}»
+                  مادة «{subjectInfo.nameAr}»
                 </h1>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  كل ملف يحمل اسم المادة والسنة الدراسية ونوع الملف، ومرتب في القسم المناسب له (درس، تمرين، امتحان، جذاذة، نشاط تفاعلي، أو أخرى).
+                  تصفح الدروس والتمارين والامتحانات والجذاذات منظمة حسب السداسي والمحاور التعليمية.
                 </p>
               </div>
             </div>
@@ -18244,17 +18783,53 @@ export default async function SubjectPublicationsPage(
             </div>
           </div>
 
-          {/* 6 Pedagogical Sub-divisions Filter Tabs (including أخرى) */}
-          <div className="mt-5 flex flex-wrap items-center gap-2">
+          {/* 1. Semester Tabs (`السداسي الأول` / `السداسي الثاني`) */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-2 text-xs font-extrabold text-slate-700 dark:text-slate-200">
+              <Calendar className="h-4 w-4 text-blue-600" />
+              <span>السداسي الدراسي:</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href={buildFilterHref({ semester: "ALL", lesson: "ALL" })}
+                className={`rounded-xl px-4 py-2 text-xs font-extrabold transition ${
+                  activeSemesterSlug === "ALL"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                }`}
+              >
+                كل السداسيات ({enrichedWorksheets.length})
+              </Link>
+              {SCHOOL_SEMESTERS.map((sem) => {
+                const isAct = activeSemesterSlug === sem.slug;
+                return (
+                  <Link
+                    key={sem.slug}
+                    href={buildFilterHref({ semester: sem.slug, lesson: "ALL" })}
+                    className={`rounded-xl px-4 py-2 text-xs font-extrabold transition ${
+                      isAct
+                        ? "bg-blue-600 text-white shadow-sm"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                    }`}
+                  >
+                    {sem.nameAr}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 2. Pedagogical Sub-divisions Filter Tabs */}
+          <div className="flex flex-wrap items-center gap-2">
             <Link
-              href={`/levels/${gradeInfo.slug}/subjects/${subjectInfo.slug}`}
+              href={buildFilterHref({ category: "ALL", lesson: "ALL" })}
               className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
                 activeCategorySlug === "ALL"
                   ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
                   : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
               }`}
             >
-              جميع الأقسام ({allSubjectWorksheets.length})
+              جميع الأقسام ({semesterFilteredWorksheets.length})
             </Link>
             {SUBJECT_SUBDIVISIONS.map((sub) => {
               const active = activeCategorySlug === sub.slug;
@@ -18262,7 +18837,7 @@ export default async function SubjectPublicationsPage(
               return (
                 <Link
                   key={sub.slug}
-                  href={`/levels/${gradeInfo.slug}/subjects/${subjectInfo.slug}?category=${sub.slug}`}
+                  href={buildFilterHref({ category: sub.slug, lesson: "ALL" })}
                   className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
                     active
                       ? "bg-blue-700 text-white shadow-sm"
@@ -18274,10 +18849,51 @@ export default async function SubjectPublicationsPage(
               );
             })}
           </div>
+
+          {/* 3. Lesson Topic Index */}
+          {lessonGroups.length > 1 && (
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-extrabold text-slate-600 dark:text-slate-300">
+                <Layers className="h-4 w-4 text-amber-500" />
+                <span>فهرس الدروس والمحاور:</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  href={buildFilterHref({ lesson: "ALL" })}
+                  className={`rounded-xl px-3.5 py-1.5 text-xs font-bold border transition ${
+                    activeLessonKey === "ALL"
+                      ? "bg-amber-500 text-slate-950 border-amber-500 font-black"
+                      : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700"
+                  }`}
+                >
+                  كل الدروس ({lessonGroups.length})
+                </Link>
+                {lessonGroups.map((grp) => (
+                  <Link
+                    key={grp.key}
+                    href={buildFilterHref({
+                      lesson: activeLessonKey === grp.key ? "ALL" : grp.key,
+                    })}
+                    className={`rounded-xl px-3.5 py-1.5 text-xs font-bold border transition inline-flex items-center gap-1.5 ${
+                      activeLessonKey === grp.key
+                        ? "bg-amber-500 text-slate-950 border-amber-500 font-black shadow-sm"
+                        : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-amber-400"
+                    }`}
+                  >
+                    <FolderOpen className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                    <span>{grp.titleAr}</span>
+                    <span className="rounded-full bg-slate-100 dark:bg-slate-700 px-2 py-0.5 text-[10px] font-black">
+                      {grp.items.length}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Publications Organized by Section */}
-        {displayedWorksheets.length === 0 ? (
+        {/* Organized Lesson Sections */}
+        {visibleLessonGroups.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-14 text-center dark:border-slate-800 dark:bg-slate-900">
             <FileText className="mx-auto mb-3 h-10 w-10 text-slate-300" />
             <h3 className="text-base font-extrabold text-slate-800 dark:text-white">
@@ -18287,54 +18903,50 @@ export default async function SubjectPublicationsPage(
               كن أول من يثري مادة «{subjectInfo.nameAr}» ({gradeInfo.nameAr}) بنشر ملف تربوي جديد.
             </p>
           </div>
-        ) : activeCategorySlug === "ALL" ? (
-          <div className="space-y-8">
-            {SUBJECT_SUBDIVISIONS.map((sub) => {
-              const sectionFiles = groupedBySection[sub.slug] || [];
-              if (sectionFiles.length === 0) return null;
-              return (
-                <section
-                  key={sub.slug}
-                  className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-                >
-                  <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
-                    <div className="flex items-center gap-2.5">
-                      <FolderOpen className="h-5 w-5 text-blue-600" />
-                      <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
-                        قسم: {sub.nameAr}
-                      </h2>
-                      <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-extrabold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
-                        {sectionFiles.length} ملف
-                      </span>
-                    </div>
-                    <Link
-                      href={`/levels/${gradeInfo.slug}/subjects/${subjectInfo.slug}?category=${sub.slug}`}
-                      className="text-xs font-bold text-blue-600 hover:underline"
-                    >
-                      عرض هذا القسم فقط ←
-                    </Link>
-                  </div>
-                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {sectionFiles.map((ws) => (
-                      <WorksheetCard
-                        key={ws.id}
-                        worksheet={ws}
-                        guestTitleOnly={!isAuthenticated}
-                      />
-                    ))}
-                  </div>
-                </section>
-              );
-            })}
-          </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {displayedWorksheets.map((ws) => (
-              <WorksheetCard
-                key={ws.id}
-                worksheet={ws}
-                guestTitleOnly={!isAuthenticated}
-              />
+          <div className="space-y-8">
+            {visibleLessonGroups.map((grp) => (
+              <section
+                key={grp.key}
+                className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-5"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4 dark:border-slate-800">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-950/70 dark:text-amber-300">
+                      <FolderOpen className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="text-lg font-black text-slate-900 dark:text-white">
+                          {grp.titleAr}
+                        </h2>
+                        <span className="rounded-full bg-blue-50 px-3 py-0.5 text-xs font-extrabold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
+                          {grp.items.length} {grp.items.length === 1 ? "ملف" : "ملفات"}
+                        </span>
+                        {grp.endorsedCount > 0 && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-0.5 text-xs font-black text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300">
+                            <Award className="h-3.5 w-3.5 text-amber-600" />
+                            <span>{grp.endorsedCount} معتمد بيداغوجياً</span>
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        {grp.semesterLabelAr}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {grp.items.map((ws) => (
+                    <WorksheetCard
+                      key={ws.id}
+                      worksheet={ws}
+                      guestTitleOnly={!isAuthenticated}
+                    />
+                  ))}
+                </div>
+              </section>
             ))}
           </div>
         )}
@@ -18525,6 +19137,7 @@ import {
   SUBJECT_SUBDIVISIONS,
   ADMINISTRATIVE_CATEGORY,
   SCHOOL_TRIMESTERS,
+  SCHOOL_SEMESTERS,
 } from "@/config/constants";
 import { extractPdfThumbnailAndPages } from "@/lib/utils/pdf-thumbnail";
 import type {
@@ -19176,7 +19789,7 @@ export default function UploadWorksheetPage() {
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
                 <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                <span>وسم الثلاثي المدرسي (اختيار سريع بضغطة زر)</span>
+                <span>الثلاثي والسداسي الدراسي</span>
               </label>
               {(selectedTrimester || tags.some((t) => SCHOOL_TRIMESTERS.some((st) => st.tag === t))) && (
                 <button
@@ -19196,6 +19809,30 @@ export default function UploadWorksheetPage() {
             <p className="text-xs text-slate-500 dark:text-slate-400">
               اختر الثلاثي لوسم الملف بيداغوجياً وتيسير عثور المعلمين والتلاميذ عليه في الفلترة والبحث:
             </p>
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              {SCHOOL_SEMESTERS.map((sem) => {
+                const isSelected = tags.includes(sem.tag);
+                return (
+                  <button
+                    key={sem.id}
+                    type="button"
+                    onClick={() => {
+                      const withoutSem = tags.filter(
+                        (t) => !SCHOOL_SEMESTERS.some((s) => s.tag === t)
+                      );
+                      setTags(isSelected ? withoutSem : [...withoutSem, sem.tag]);
+                    }}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold border-2 transition-all cursor-pointer text-center ${
+                      isSelected
+                        ? "bg-amber-500 text-slate-950 border-amber-500 shadow-sm"
+                        : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-amber-400"
+                    }`}
+                  >
+                    {sem.nameAr}
+                  </button>
+                );
+              })}
+            </div>
             <div className="grid grid-cols-3 gap-2 pt-1">
               {SCHOOL_TRIMESTERS.map((trim) => {
                 const isSelected = selectedTrimester === trim.tag || tags.includes(trim.tag);
@@ -19229,13 +19866,13 @@ export default function UploadWorksheetPage() {
               className="w-full px-4 py-3 rounded-xl border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-900 text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-blue-600"
             >
               <option value="ALL">
-                نشر للجميع (يظهر اسم الملف للزوار، ويُقرأ ويُحمّل من جميع الحسابات)
+                متاح للجميع
               </option>
               <option value="TEACHERS_AND_STUDENTS">
                 للمعلمين والتلاميذ (تمارين ودروس)
               </option>
               <option value="TEACHERS_ONLY">
-                للمعلمين والمتفقدين فقط — مخفي عن التلاميذ (مثل الإصلاح والجذاذات)
+                خاص بالمعلمين والمتفقدين
               </option>
               <option value="SAME_ROLE_ONLY">
                 حصر النشرة داخل نفس فئة حسابي فقط
@@ -20951,9 +21588,9 @@ const QUICK_SUPPORT_CARDS = [
   {
     id: "unlock",
     category: "TECHNICAL",
-    title: "🔓 طلب فك قفل الحساب (6 محاولات كلمة مرور)",
-    desc: "إذا قُفل حسابك بعد 6 محاولات خاطئة لكلمة المرور، اضغط هنا لمراسلة المشرف أو المسؤول لفك القفل.",
-    defaultSubject: "طلب فك قفل حسابي بعد استنفاد محاولات كلمة المرور",
+    title: "🔓 مساعدة في تسجيل الدخول واستعادة الحساب",
+    desc: "إذا واجهت صعوبة في تسجيل الدخول إلى حسابك، اضغط هنا لمراسلة الإدارة لتفعيل حسابك.",
+    defaultSubject: "طلب مساعدة في تسجيل الدخول وتفعيل الحساب",
     icon: Unlock,
     badgeClass: "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800",
   },
@@ -20988,7 +21625,7 @@ const QUICK_SUPPORT_CARDS = [
 
 const SUPPORT_INSTANT_ANSWERS = [
   {
-    q: "كيف أستعيد الدخول إذا تم قفل حسابي بعد 6 محاولات كلمة مرور؟",
+    q: "كيف أستعيد الدخول إذا تعذر عليّ تسجيل الدخول إلى حسابي؟",
     a: "اختر بطاقة «طلب فك قفل الحساب» أعلاه واكتب بريدك الإلكتروني أو معرفك @username، وسيقوم المشرف العام أو المسؤول الإداري بفك غلق حسابك وتصفير العداد فوراً من لوحة التحكم.",
   },
   {
@@ -21140,10 +21777,10 @@ export default function SupportAndCustomerServicePage() {
               </a>
             )}
 
-            {/* Channel 2: Institutions & Inspectors (76907101) */}
+            {/* Channel 2: Institutions & Inspectors (46907101) */}
             {showInstitution && (
               <a
-                href="https://wa.me/21676907101?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%20%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9%20%D9%85%D9%86%D8%B5%D8%A9%20%D8%A7%D9%84%D9%85%D8%B3%D9%86%D8%AF%D8%8C%20%D8%A3%D8%AA%D9%88%D8%A7%D8%B5%D9%84%20%D9%85%D8%B9%D9%83%D9%85%20%D8%B9%D8%A8%D8%B1%20%D8%AE%D8%B7%20%D8%A7%D9%84%D9%85%D8%A4%D8%B3%D8%B3%D8%A7%D8%AA%20%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%88%D9%8A%D8%A9%20%D9%88%D8%A7%D9%84%D9%85%D8%AA%D9%81%D9%82%D8%AF%D9%8A%D9%86%3A"
+                href="https://wa.me/21646907101?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%20%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9%20%D9%85%D9%86%D8%B5%D8%A9%20%D8%A7%D9%84%D9%85%D8%B3%D9%86%D8%AF%D8%8C%20%D8%A3%D8%AA%D9%88%D8%A7%D8%B5%D9%84%20%D9%85%D8%B9%D9%83%D9%85%20%D8%B9%D8%A8%D8%B1%20%D8%AE%D8%B7%20%D8%A7%D9%84%D9%85%D8%A4%D8%B3%D8%B3%D8%A7%D8%AA%20%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%88%D9%8A%D8%A9%20%D9%88%D8%A7%D9%84%D9%85%D8%AA%D9%81%D9%82%D8%AF%D9%8A%D9%86%3A"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group relative overflow-hidden rounded-3xl border-2 border-indigo-300 dark:border-indigo-800/80 bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-indigo-950/40 dark:via-slate-900 dark:to-purple-950/20 p-6 shadow-sm hover:shadow-md hover:border-indigo-500 transition flex items-start gap-4"
@@ -21169,7 +21806,7 @@ export default function SupportAndCustomerServicePage() {
                   <div className="pt-2 flex items-center gap-2 text-sm font-black text-indigo-700 dark:text-indigo-300" dir="ltr">
                     <span>+216 46 907 101</span>
                     <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-950 text-indigo-800 dark:text-indigo-300">
-                      WhatsApp: 76907101
+                      WhatsApp: 46907101
                     </span>
                   </div>
                 </div>
@@ -21592,6 +22229,7 @@ import {
   HelpCircle,
   Eye,
   EyeOff,
+  ArrowLeft,
 } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { signInSchema } from "@/lib/validators/auth";
@@ -21599,6 +22237,15 @@ import { useAppPreferences } from "@/context/AppPreferencesContext";
 import { ROLE_VISUAL_CARDS } from "@/components/auth/AuthRoleModal";
 import { MAX_LOGIN_PASSWORD_ATTEMPTS } from "@/config/constants";
 import type { AccountRoleOption } from "@/types/api";
+
+const PORTAL_NAMES_AR: Record<string, string> = {
+  INSTITUTION: "فضاء المؤسسات التربوية",
+  INSPECTOR: "فضاء المتفقد التربوي",
+  TEACHER: "فضاء المعلم والأستاذ",
+  STUDENT: "فضاء التلميذ والولي",
+  MODERATOR: "لوحة المسؤول الإداري",
+  ADMIN: "لوحة المشرف العام",
+};
 
 function GoogleIcon() {
   return (
@@ -21629,16 +22276,13 @@ function LoginContent() {
   const redirectTo = searchParams?.get("redirectTo") || "/";
   const errorParam = searchParams?.get("error");
   const roleParam = searchParams?.get("role");
+  const actualRoleParam = searchParams?.get("actualRole");
 
   const { t } = useAppPreferences();
 
   const [selectedRole, setSelectedRole] = useState<string | null>(
-    roleParam || null
+    roleParam ? roleParam.toUpperCase() : null
   );
-
-  useEffect(() => {
-    if (roleParam) setSelectedRole(roleParam);
-  }, [roleParam]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21646,23 +22290,53 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [suggestedPortalRole, setSuggestedPortalRole] = useState<string | null>(null);
 
   const [isAccountLocked, setIsAccountLocked] = useState<boolean>(
     errorParam === "account-locked"
   );
-  const [remainingAttempts, setRemainingAttempts] = useState<number>(
+  const [, setRemainingAttempts] = useState<number>(
     MAX_LOGIN_PASSWORD_ATTEMPTS
   );
 
-  const executeLogin = async (overrideEmail?: string, overridePassword?: string, overrideRole?: string) => {
+  useEffect(() => {
+    if (roleParam) setSelectedRole(roleParam.toUpperCase());
+  }, [roleParam]);
+
+  useEffect(() => {
+    if (errorParam === "portal-mismatch" && actualRoleParam) {
+      const actualUpper = actualRoleParam.toUpperCase();
+      setSuggestedPortalRole(actualUpper);
+      setError(
+        `عذراً، هذا الحساب مسجل في «${
+          PORTAL_NAMES_AR[actualUpper] || actualUpper
+        }» ولا يمكنه تسجيل الدخول من هذا الفضاء. يجب على كل فئة تسجيل الدخول من الفضاء الخاص بها فقط.`
+      );
+    } else if (errorParam === "account-locked") {
+      setIsAccountLocked(true);
+      setError("تم تعليق الدخول مؤقتاً لحماية الحساب. يرجى التواصل مع الدعم الفني لتفعيل الحساب.");
+    }
+  }, [errorParam, actualRoleParam]);
+
+  const executeLogin = async (
+    overrideEmail?: string,
+    overridePassword?: string,
+    overrideRole?: string
+  ) => {
     if (loading) return;
     setError(null);
+    setSuggestedPortalRole(null);
+
+    const portalRole = (overrideRole || selectedRole || "").toUpperCase();
+    if (!portalRole) {
+      setError("يرجى اختيار الفضاء المخصص لنوع حسابك أولاً.");
+      return;
+    }
 
     const emailToUse = overrideEmail || email;
     const passwordToUse = overridePassword || password;
     const rawInput = emailToUse.trim().toLowerCase();
 
-    // In production, restrict demo accounts (@musnad.tn) strictly to development environment
     const isProduction = process.env.NODE_ENV === "production";
     const isMusnadDemo =
       rawInput.endsWith("@musnad.tn") ||
@@ -21677,20 +22351,11 @@ function LoginContent() {
       return;
     }
 
-    const isPrimaryAdmin =
-      rawInput === "bjasser123@gmail.com" ||
-      rawInput === "@bjasser" ||
-      rawInput === "bjasser";
-
-    const roleToUse = isPrimaryAdmin
-      ? "ADMIN"
-      : overrideRole || selectedRole || "TEACHER";
-
     const parsed = signInSchema.safeParse({
       email: emailToUse,
       password: passwordToUse,
-      role: ["INSTITUTION", "INSPECTOR", "TEACHER", "STUDENT"].includes(roleToUse)
-        ? (roleToUse as any)
+      role: ["INSTITUTION", "INSPECTOR", "TEACHER", "STUDENT"].includes(portalRole)
+        ? (portalRole as any)
         : undefined,
     });
 
@@ -21703,9 +22368,11 @@ function LoginContent() {
       setLoading(true);
       const rawIdentifier = parsed.data.email.trim();
 
-      // Step 1: Pre-check if email/username is registered and whether account is locked
+      // Step 1: Pre-check if email/username is registered, whether account is locked,
+      // and whether the user is logging in from their rightful portal!
       let loginEmail = rawIdentifier;
-      let resolvedRole = roleToUse;
+      let resolvedRole = portalRole;
+      let resolvedVerified = false;
       let existsInDb = false;
 
       try {
@@ -21715,6 +22382,7 @@ function LoginContent() {
           body: JSON.stringify({
             action: "PRECHECK",
             identifier: rawIdentifier,
+            selectedRole: portalRole,
           }),
         });
         const preJson = await preRes.json();
@@ -21726,6 +22394,7 @@ function LoginContent() {
           if (preJson.data.role) {
             resolvedRole = preJson.data.role;
           }
+          resolvedVerified = Boolean(preJson.data.isVerified);
           if (typeof preJson.data.remainingAttempts === "number") {
             setRemainingAttempts(preJson.data.remainingAttempts);
           }
@@ -21733,7 +22402,20 @@ function LoginContent() {
             setIsAccountLocked(true);
             setError(
               preJson.data.lockMessage ||
-                "🔒 هذا الحساب مقفل حالياً. رجاءً تواصل مع المسؤول أو المشرف العام لفك قفل الحساب."
+                "هذا الحساب موقوف مؤقتاً. يرجى التواصل مع الدعم الفني."
+            );
+            return;
+          }
+
+          // Strict Portal-Specific Login Enforcement:
+          // Only ADMIN and MODERATOR can log in from any portal.
+          if (preJson.data.portalMismatch) {
+            if (preJson.data.actualRole) {
+              setSuggestedPortalRole(preJson.data.actualRole);
+            }
+            setError(
+              preJson.data.portalMismatchMessage ||
+                "عذراً، لا يمكنك تسجيل الدخول من هذا الفضاء. يرجى الدخول من الفضاء المخصص لنوع حسابك."
             );
             return;
           }
@@ -21768,7 +22450,7 @@ function LoginContent() {
               }
               setError(
                 failJson.data.message ||
-                  "❌ كلمة المرور خاطئة لهذا الحساب المسجل. تنبيه: لديك 6 محاولات كحد أقصى قبل قفل الحساب."
+                  "كلمة المرور غير صحيحة، يرجى المحاولة مرة أخرى."
               );
               return;
             }
@@ -21776,7 +22458,7 @@ function LoginContent() {
             // fallback
           }
           setError(
-            "❌ البريد الإلكتروني مسجل في المنصة ولكن كلمة المرور خاطئة! تنبيه: لديك فرصة 6 مرات فقط لكتابة كلمة المرور قبل قفل الحساب."
+            "كلمة المرور المدخلة غير صحيحة، يرجى المحاولة مرة أخرى."
           );
           return;
         }
@@ -21787,7 +22469,43 @@ function LoginContent() {
         return;
       }
 
-      // Step 3: Reset failed attempts counter on successful login
+      // Step 3: Verify synced profile role from /api/auth/me (catches accounts that were not in DB before login)
+      try {
+        const meRes = await fetch("/api/auth/me", { cache: "no-store" });
+        if (meRes.ok) {
+          const meJson = await meRes.json();
+          if (meJson.success && meJson.data) {
+            resolvedRole = meJson.data.role || resolvedRole;
+            resolvedVerified = Boolean(meJson.data.isVerified);
+
+            const isStaff =
+              resolvedRole === "ADMIN" ||
+              resolvedRole === "MODERATOR" ||
+              loginEmail.toLowerCase() === "bjasser123@gmail.com";
+
+            if (
+              !isStaff &&
+              ["INSTITUTION", "INSPECTOR", "TEACHER", "STUDENT"].includes(portalRole) &&
+              resolvedRole !== portalRole
+            ) {
+              await supabase.auth.signOut();
+              setSuggestedPortalRole(resolvedRole);
+              setError(
+                `عذراً، هذا الحساب مسجل في «${
+                  PORTAL_NAMES_AR[resolvedRole] || resolvedRole
+                }» ولا يمكنه تسجيل الدخول من «${
+                  PORTAL_NAMES_AR[portalRole] || portalRole
+                }». يجب على كل حساب تسجيل الدخول من الفضاء المخصص لفئته فقط.`
+              );
+              return;
+            }
+          }
+        }
+      } catch {
+        // ignore
+      }
+
+      // Step 4: Reset failed attempts counter on successful login
       await fetch("/api/auth/login-guard", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -21800,19 +22518,24 @@ function LoginContent() {
       const isAdminAccount =
         loginEmail.toLowerCase() === "bjasser123@gmail.com" ||
         loginEmail.toLowerCase() === "admin@musnad.tn" ||
-        resolvedRole === "ADMIN" ||
-        roleToUse === "ADMIN";
+        resolvedRole === "ADMIN";
 
       const targetDestination = isAdminAccount
         ? "/admin/dashboard"
-        : resolvedRole === "MODERATOR" || roleToUse === "MODERATOR"
+        : resolvedRole === "MODERATOR"
         ? "/moderator/dashboard"
-        : resolvedRole === "INSPECTOR" || roleToUse === "INSPECTOR"
-        ? "/inspector/dashboard"
-        : resolvedRole === "INSTITUTION" || roleToUse === "INSTITUTION"
-        ? (redirectTo && redirectTo !== "/" ? redirectTo : "/#institutions-hub")
-        : resolvedRole === "TEACHER" || roleToUse === "TEACHER"
-        ? (redirectTo && redirectTo !== "/" ? redirectTo : "/#teachers-hub")
+        : resolvedRole === "INSPECTOR"
+        ? resolvedVerified
+          ? "/inspector/dashboard"
+          : "/#inspectors-hub"
+        : resolvedRole === "INSTITUTION"
+        ? redirectTo && redirectTo !== "/"
+          ? redirectTo
+          : "/#institutions-hub"
+        : resolvedRole === "TEACHER"
+        ? redirectTo && redirectTo !== "/"
+          ? redirectTo
+          : "/#teachers-hub"
         : redirectTo;
 
       router.push(targetDestination);
@@ -21846,7 +22569,7 @@ function LoginContent() {
       const roleToPass = selectedRole || "TEACHER";
       const callbackUrl = `${window.location.origin}/api/auth/callback?role=${encodeURIComponent(
         roleToPass
-      )}&next=${encodeURIComponent(redirectTo)}`;
+      )}&mode=login&next=${encodeURIComponent(redirectTo)}`;
 
       const { data, error: oauthErr } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -21883,7 +22606,6 @@ function LoginContent() {
 
   return (
     <div className="max-w-7xl w-full mx-auto py-8 px-4 space-y-8" dir={t.dir}>
-
       {!selectedRole ? (
         <div className="space-y-6">
           <div className="text-center space-y-3 max-w-2xl mx-auto">
@@ -21891,7 +22613,7 @@ function LoginContent() {
               {t.authModal.loginTitle}
             </h1>
             <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400">
-              {t.authModal.loginSubtitle}
+              اختر الفضاء الخاص بنوع حسابك لتسجيل الدخول (يُسمح لكل حساب بالدخول من فضائه الخاص فقط)
             </p>
           </div>
 
@@ -21903,7 +22625,11 @@ function LoginContent() {
                 <button
                   key={card.role}
                   type="button"
-                  onClick={() => setSelectedRole(card.role)}
+                  onClick={() => {
+                    setError(null);
+                    setSuggestedPortalRole(null);
+                    setSelectedRole(card.role);
+                  }}
                   className={`group relative text-start bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 ${card.borderHover} rounded-3xl p-6 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col justify-between cursor-pointer overflow-hidden`}
                 >
                   <div
@@ -21942,11 +22668,15 @@ function LoginContent() {
           <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100 dark:border-slate-800">
             <button
               type="button"
-              onClick={() => setSelectedRole(null)}
+              onClick={() => {
+                setError(null);
+                setSuggestedPortalRole(null);
+                setSelectedRole(null);
+              }}
               className="text-xs font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white transition flex items-center gap-1 cursor-pointer"
             >
               <span>←</span>
-              <span>تغيير الفئة المحددة</span>
+              <span>تغيير الفضاء المحدد</span>
             </button>
             <span className="text-xs font-black text-blue-600 bg-blue-50 dark:bg-blue-950 px-2.5 py-1 rounded-lg">
               {selectedRole === "ADMIN"
@@ -21976,10 +22706,29 @@ function LoginContent() {
           </div>
 
           {error && (
-            <div className="mb-5 p-3.5 rounded-2xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800/80 text-red-700 dark:text-red-300 text-xs font-semibold leading-relaxed flex items-start gap-2">
+            <div className="mb-5 p-4 rounded-2xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800/80 text-red-700 dark:text-red-300 text-xs font-semibold leading-relaxed flex items-start gap-2.5">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
-              <div className="space-y-1">
+              <div className="space-y-2 flex-1">
                 <p>{error}</p>
+                {suggestedPortalRole &&
+                  ["INSTITUTION", "INSPECTOR", "TEACHER", "STUDENT"].includes(
+                    suggestedPortalRole
+                  ) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedRole(suggestedPortalRole);
+                        setError(null);
+                        setSuggestedPortalRole(null);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-[11px] font-black transition cursor-pointer"
+                    >
+                      <span>
+                        الانتقال إلى {PORTAL_NAMES_AR[suggestedPortalRole] || suggestedPortalRole}
+                      </span>
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 {isAccountLocked && (
                   <Link
                     href="/support"
@@ -22088,7 +22837,7 @@ function LoginContent() {
               href={`/register?role=${selectedRole}`}
               className="font-black text-blue-600 dark:text-blue-400 hover:underline"
             >
-              ليس لديك حساب؟ أنشئ حسابك الآن ←
+              ليس لديك حساب في هذا الفضاء؟ أنشئ حسابك الآن ←
             </Link>
           </div>
         </div>
@@ -22201,7 +22950,7 @@ function RegisterContent() {
       const supabase = createSupabaseBrowserClient();
       const callbackUrl = `${window.location.origin}/api/auth/callback?role=${encodeURIComponent(
         selectedRole
-      )}&next=/`;
+      )}&mode=register&next=/`;
 
       const { data, error: oauthErr } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -22292,7 +23041,7 @@ function RegisterContent() {
         `${parsed.data.email.split("@")[0].toLowerCase().replace(/[^a-z0-9_.]/g, "")}`;
 
       const supabase = createSupabaseBrowserClient();
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: parsed.data.email,
         password: parsed.data.password,
         options: {
@@ -22302,6 +23051,7 @@ function RegisterContent() {
             school: parsed.data.school,
             student_grade: parsed.data.studentGrade,
             role: selectedRole,
+            inspector_pending: selectedRole === "INSPECTOR",
           },
         },
       });
@@ -22309,6 +23059,23 @@ function RegisterContent() {
       if (signUpError) {
         setError(signUpError.message);
         return;
+      }
+
+      if (signUpData?.user?.id) {
+        await fetch("/api/auth/login-guard", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "REGISTER_SYNC",
+            userId: signUpData.user.id,
+            email: parsed.data.email,
+            username: fallbackUname,
+            name: parsed.data.name,
+            school: parsed.data.school,
+            studentGrade: parsed.data.studentGrade,
+            role: selectedRole,
+          }),
+        }).catch(() => null);
       }
 
       // Show the Post-Registration Thank You & Identity Verification Notice Screen
@@ -22905,12 +23672,26 @@ export default function InspectorDashboardPage() {
           <p className="mt-2 text-[11px] text-slate-600 dark:text-slate-400">
             لا يمكن للمسؤول الإداري أو غيره الانتقال إلى لوحة المتفقد؛ كل رتبة تكتفي بالصلاحيات واللوحة المخصصة لها فقط.
           </p>
-          <Link
-            href="/"
-            className="mt-5 inline-block rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-bold text-white"
-          >
-            العودة للرئيسية
-          </Link>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href="/profile?tab=verification"
+              className="rounded-xl bg-amber-600 hover:bg-amber-700 px-5 py-2.5 text-xs font-extrabold text-white"
+            >
+              إدخال كود توثيق المتفقد ←
+            </Link>
+            <Link
+              href="/support"
+              className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-bold text-slate-700"
+            >
+              التواصل مع المشرف العام
+            </Link>
+            <Link
+              href="/"
+              className="rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-bold text-white"
+            >
+              العودة للرئيسية
+            </Link>
+          </div>
         </div>
       </div>
     );

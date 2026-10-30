@@ -834,7 +834,7 @@ export default function Navbar() {
                           </div>
                         )}
 
-                        {user.role === "INSPECTOR" && (
+                        {user.role === "INSPECTOR" && user.isVerified && (
                           <div className="my-1.5 p-1.5 rounded-2xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/70">
                             <Link
                               href="/inspector/dashboard"
@@ -1064,7 +1064,7 @@ export default function Navbar() {
                     <span>مسؤول إداري • لوحة التحكم</span>
                   </Link>
                 )}
-                {user.role === "INSPECTOR" && (
+                {user.role === "INSPECTOR" && user.isVerified && (
                   <Link
                     href="/inspector/dashboard"
                     onClick={() => setMobileMenuOpen(false)}
