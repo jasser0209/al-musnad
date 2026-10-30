@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { canUserAccessWorksheet } from "@/services/worksheet.service";
-import { getSignedDownloadUrl } from "@/services/storage.service";
+import { getFileStream, getSignedDownloadUrl } from "@/services/storage.service";
 import { errorResponse } from "@/lib/utils/api-response";
 import {
   ForbiddenError,
@@ -85,40 +85,37 @@ export async function GET(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const signedUrl = await getSignedDownloadUrl(worksheet.fileUrl, 3600);
     const disposition =
       request.nextUrl.searchParams.get("disposition") === "attachment"
         ? "attachment"
         : "inline";
-    const forceRedirect = request.nextUrl.searchParams.get("redirect") === "1";
-    const shouldStream = !forceRedirect;
 
-    if (shouldStream) {
-      try {
-        const upstream = await fetch(signedUrl);
-        if (upstream.ok && upstream.body) {
-          const contentType = inferMimeType(worksheet.fileName);
-          const encodedName = encodeURIComponent(worksheet.fileName || "document.pdf");
-          const headers: Record<string, string> = {
-            "Content-Type": contentType,
-            "Content-Disposition": `${disposition}; filename*=UTF-8''${encodedName}`,
-            "Cache-Control": "private, max-age=1800",
-          };
-          const contentLength = upstream.headers.get("content-length");
-          if (contentLength) {
-            headers["Content-Length"] = contentLength;
-          }
-          return new NextResponse(upstream.body, {
-            status: 200,
-            headers,
-          });
-        }
-      } catch (streamError) {
-        console.warn("[FileRoute] Stream error on primary URL:", streamError);
+    // Direct streaming from R2 / Supabase Storage with zero external redirects
+    const fileResult = await getFileStream(worksheet.fileUrl);
+    if (fileResult) {
+      const contentType = inferMimeType(worksheet.fileName) || fileResult.contentType || "application/pdf";
+      const encodedName = encodeURIComponent(worksheet.fileName || "document.pdf");
+      const headers: Record<string, string> = {
+        "Content-Type": contentType,
+        "Content-Disposition": `${disposition}; filename*=UTF-8''${encodedName}`,
+        "Cache-Control": "private, max-age=1800",
+      };
+      if (fileResult.contentLength) {
+        headers["Content-Length"] = String(fileResult.contentLength);
       }
+      return new NextResponse(fileResult.stream, {
+        status: 200,
+        headers,
+      });
     }
 
-    return NextResponse.redirect(signedUrl, { status: 302 });
+    // Secondary fallback: generate verified signed download URL
+    try {
+      const signedUrl = await getSignedDownloadUrl(worksheet.fileUrl, 3600);
+      return NextResponse.redirect(signedUrl, { status: 302 });
+    } catch {
+      throw new NotFoundError("الملف المطلوب غير موجود في مساحة التخزين السحابية");
+    }
   } catch (error) {
     return errorResponse(error);
   }

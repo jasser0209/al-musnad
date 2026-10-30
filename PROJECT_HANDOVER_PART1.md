@@ -299,7 +299,7 @@ const config: Config = {
   darkMode: "class",
   content: [
     "./src/pages*.{js,ts,jsx,tsx,mdx}",
-    "./src/context*.{js,ts,jsx,tsx,mdx}",
+    "./src/app*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
@@ -2259,6 +2259,120 @@ export const SCHOOL_TRIMESTERS = [
 ] as const;
 
 export type SchoolTrimesterSlug = (typeof SCHOOL_TRIMESTERS)[number]["slug"];
+
+// Official School Semesters (السداسيات الدراسية التونسية) — v16.0
+export const SCHOOL_SEMESTERS = [
+  {
+    id: "s1",
+    name: "Semestre 1",
+    nameAr: "السداسي الأول",
+    slug: "semester-1",
+    tag: "السداسي الأول",
+    sortOrder: 1,
+  },
+  {
+    id: "s2",
+    name: "Semestre 2",
+    nameAr: "السداسي الثاني",
+    slug: "semester-2",
+    tag: "السداسي الثاني",
+    sortOrder: 2,
+  },
+] as const;
+
+export type SchoolSemesterSlug = (typeof SCHOOL_SEMESTERS)[number]["slug"];
+
+export function extractLessonTopicAndSemester(worksheet: {
+  title?: string | null;
+  titleAr?: string | null;
+  description?: string | null;
+  descriptionAr?: string | null;
+  tags?: string[] | null;
+}): { semester: "semester-1" | "semester-2" | "unassigned"; lessonTopic: string } {
+  const combined = [
+    worksheet.titleAr || "",
+    worksheet.title || "",
+    worksheet.descriptionAr || "",
+    worksheet.description || "",
+    ...(worksheet.tags || []),
+  ].join(" ").toLowerCase();
+
+  let semester: "semester-1" | "semester-2" | "unassigned" = "unassigned";
+
+  if (
+    combined.includes("السداسي الأول") ||
+    combined.includes("سداسي 1") ||
+    combined.includes("سداسي أول") ||
+    combined.includes("semester-1") ||
+    combined.includes("الثلاثي الأول") ||
+    combined.includes("ثلاثي 1")
+  ) {
+    semester = "semester-1";
+  } else if (
+    combined.includes("السداسي الثاني") ||
+    combined.includes("سداسي 2") ||
+    combined.includes("سداسي ثان") ||
+    combined.includes("semester-2") ||
+    combined.includes("الثلاثي الثاني") ||
+    combined.includes("الثلاثي الثالث") ||
+    combined.includes("ثلاثي 2") ||
+    combined.includes("ثلاثي 3")
+  ) {
+    semester = "semester-2";
+  }
+
+  const rawTitle = worksheet.titleAr || worksheet.title || "درس عام";
+  let cleanTopic = rawTitle
+    .replace(/(من اعداد|إعداد|إنجاز|الأستاذ|المعلم|saboura\.tn|tunisie|موقع|روضة|مدرسة)[^\n-]*/gi, "")
+    .replace(/^(درس|جذاذة|امتحان|تمرين|نشاط|تقييم|فحص|ملخص|شرح|مراجعة|كراس)[:\s-]+/gi, "")
+    .replace(/[\[\]\(\)\{\}«»"']/g, "")
+    .replace(/\s*-\s*$/, "")
+    .replace(/^\s*-\s*/, "")
+    .trim();
+
+  if (!cleanTopic || cleanTopic.length < 2) {
+    cleanTopic = rawTitle.trim();
+  }
+
+  return { semester, lessonTopic: cleanTopic };
+}
+
+export function sortWorksheetsDifferentially<
+  T extends {
+    isEndorsed?: boolean | null;
+    ratingAvg?: number | null;
+    downloadCount?: number | null;
+    favoriteCount?: number | null;
+    createdAt?: Date | string | null;
+  }
+>(items: T[]): T[] {
+  return [...items].sort((a, b) => {
+    // 1. Endorsement priority
+    const endA = a.isEndorsed ? 1 : 0;
+    const endB = b.isEndorsed ? 1 : 0;
+    if (endA !== endB) return endB - endA;
+
+    // 2. Rating average
+    const rateA = Number(a.ratingAvg || 0);
+    const rateB = Number(b.ratingAvg || 0);
+    if (rateA !== rateB) return rateB - rateA;
+
+    // 3. Downloads count
+    const downA = Number(a.downloadCount || 0);
+    const downB = Number(b.downloadCount || 0);
+    if (downA !== downB) return downB - downA;
+
+    // 4. Favorites count
+    const favA = Number(a.favoriteCount || 0);
+    const favB = Number(b.favoriteCount || 0);
+    if (favA !== favB) return favB - favA;
+
+    // 5. Creation date
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return dateB - dateA;
+  });
+}
 
 
 ```
@@ -4686,6 +4800,60 @@ export async function getSignedDownloadUrl(
   );
 }
 
+export async function getFileStream(filePath: string): Promise<{
+  stream: ReadableStream;
+  contentLength?: number;
+  contentType?: string;
+} | null> {
+  const candidateKeys = buildCandidateKeys(filePath);
+  const cfg = resolveR2Config();
+
+  // 1. Try Cloudflare R2
+  if (cfg.isValid) {
+    const r2Client = getR2Client();
+    for (const key of candidateKeys) {
+      try {
+        const res = await r2Client.send(
+          new GetObjectCommand({
+            Bucket: cfg.bucketName,
+            Key: key,
+          })
+        );
+        if (res.Body) {
+          return {
+            stream: res.Body.transformToWebStream(),
+            contentLength: res.ContentLength,
+            contentType: res.ContentType,
+          };
+        }
+      } catch {
+        // Try next candidate or fallback
+      }
+    }
+  }
+
+  // 2. Fallback to Supabase Storage
+  const supabase = createSupabaseAdminClient();
+  for (const key of candidateKeys) {
+    try {
+      const { data, error } = await supabase.storage
+        .from(SUPABASE_BUCKET_NAME)
+        .download(key);
+      if (!error && data) {
+        return {
+          stream: data.stream(),
+          contentLength: data.size,
+          contentType: data.type,
+        };
+      }
+    } catch {
+      // Try next
+    }
+  }
+
+  return null;
+}
+
 export function getPublicDownloadUrl(filePath: string): string {
   const cleanKey = normalizeStorageObjectPath(filePath);
   const cfg = resolveR2Config();
@@ -6977,7 +7145,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { canUserAccessWorksheet } from "@/services/worksheet.service";
-import { getSignedDownloadUrl } from "@/services/storage.service";
+import { getFileStream, getSignedDownloadUrl } from "@/services/storage.service";
 import { errorResponse } from "@/lib/utils/api-response";
 import {
   ForbiddenError,
@@ -7060,40 +7228,37 @@ export async function GET(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const signedUrl = await getSignedDownloadUrl(worksheet.fileUrl, 3600);
     const disposition =
       request.nextUrl.searchParams.get("disposition") === "attachment"
         ? "attachment"
         : "inline";
-    const forceRedirect = request.nextUrl.searchParams.get("redirect") === "1";
-    const shouldStream = !forceRedirect;
 
-    if (shouldStream) {
-      try {
-        const upstream = await fetch(signedUrl);
-        if (upstream.ok && upstream.body) {
-          const contentType = inferMimeType(worksheet.fileName);
-          const encodedName = encodeURIComponent(worksheet.fileName || "document.pdf");
-          const headers: Record<string, string> = {
-            "Content-Type": contentType,
-            "Content-Disposition": `${disposition}; filename*=UTF-8''${encodedName}`,
-            "Cache-Control": "private, max-age=1800",
-          };
-          const contentLength = upstream.headers.get("content-length");
-          if (contentLength) {
-            headers["Content-Length"] = contentLength;
-          }
-          return new NextResponse(upstream.body, {
-            status: 200,
-            headers,
-          });
-        }
-      } catch (streamError) {
-        console.warn("[FileRoute] Stream error on primary URL:", streamError);
+    // Direct streaming from R2 / Supabase Storage with zero external redirects
+    const fileResult = await getFileStream(worksheet.fileUrl);
+    if (fileResult) {
+      const contentType = inferMimeType(worksheet.fileName) || fileResult.contentType || "application/pdf";
+      const encodedName = encodeURIComponent(worksheet.fileName || "document.pdf");
+      const headers: Record<string, string> = {
+        "Content-Type": contentType,
+        "Content-Disposition": `${disposition}; filename*=UTF-8''${encodedName}`,
+        "Cache-Control": "private, max-age=1800",
+      };
+      if (fileResult.contentLength) {
+        headers["Content-Length"] = String(fileResult.contentLength);
       }
+      return new NextResponse(fileResult.stream, {
+        status: 200,
+        headers,
+      });
     }
 
-    return NextResponse.redirect(signedUrl, { status: 302 });
+    // Secondary fallback: generate verified signed download URL
+    try {
+      const signedUrl = await getSignedDownloadUrl(worksheet.fileUrl, 3600);
+      return NextResponse.redirect(signedUrl, { status: 302 });
+    } catch {
+      throw new NotFoundError("الملف المطلوب غير موجود في مساحة التخزين السحابية");
+    }
   } catch (error) {
     return errorResponse(error);
   }

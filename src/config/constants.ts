@@ -206,3 +206,124 @@ export const SCHOOL_TRIMESTERS = [
 
 export type SchoolTrimesterSlug = (typeof SCHOOL_TRIMESTERS)[number]["slug"];
 
+// Official School Semesters (السداسيات الدراسية التونسية) — v16.0
+export const SCHOOL_SEMESTERS = [
+  {
+    id: "s1",
+    name: "Semestre 1",
+    nameAr: "السداسي الأول",
+    slug: "semester-1",
+    tag: "السداسي الأول",
+    sortOrder: 1,
+  },
+  {
+    id: "s2",
+    name: "Semestre 2",
+    nameAr: "السداسي الثاني",
+    slug: "semester-2",
+    tag: "السداسي الثاني",
+    sortOrder: 2,
+  },
+] as const;
+
+export type SchoolSemesterSlug = (typeof SCHOOL_SEMESTERS)[number]["slug"];
+
+/**
+ * يستخرج السداسي ويوحد عنوان الدرس لتجميع منشورات المعلمين لنفس الدرس داخل المادة
+ */
+export function extractLessonTopicAndSemester(worksheet: {
+  title?: string | null;
+  titleAr?: string | null;
+  description?: string | null;
+  descriptionAr?: string | null;
+  tags?: string[] | null;
+}): { semester: "semester-1" | "semester-2" | "unassigned"; lessonTopic: string } {
+  const combined = [
+    worksheet.titleAr || "",
+    worksheet.title || "",
+    worksheet.descriptionAr || "",
+    worksheet.description || "",
+    ...(worksheet.tags || []),
+  ].join(" ").toLowerCase();
+
+  let semester: "semester-1" | "semester-2" | "unassigned" = "unassigned";
+
+  if (
+    combined.includes("السداسي الأول") ||
+    combined.includes("سداسي 1") ||
+    combined.includes("سداسي أول") ||
+    combined.includes("semester-1") ||
+    combined.includes("الثلاثي الأول") ||
+    combined.includes("ثلاثي 1")
+  ) {
+    semester = "semester-1";
+  } else if (
+    combined.includes("السداسي الثاني") ||
+    combined.includes("سداسي 2") ||
+    combined.includes("سداسي ثان") ||
+    combined.includes("semester-2") ||
+    combined.includes("الثلاثي الثاني") ||
+    combined.includes("الثلاثي الثالث") ||
+    combined.includes("ثلاثي 2") ||
+    combined.includes("ثلاثي 3")
+  ) {
+    semester = "semester-2";
+  }
+
+  const rawTitle = worksheet.titleAr || worksheet.title || "درس عام";
+  let cleanTopic = rawTitle
+    .replace(/(من اعداد|إعداد|إنجاز|الأستاذ|المعلم|saboura\.tn|tunisie|موقع|روضة|مدرسة)[^\n-]*/gi, "")
+    .replace(/^(درس|جذاذة|امتحان|تمرين|نشاط|تقييم|فحص|ملخص|شرح|مراجعة|كراس)[:\s-]+/gi, "")
+    .replace(/[\[\]\(\)\{\}«»"']/g, "")
+    .replace(/\s*-\s*$/, "")
+    .replace(/^\s*-\s*/, "")
+    .trim();
+
+  if (!cleanTopic || cleanTopic.length < 2) {
+    cleanTopic = rawTitle.trim();
+  }
+
+  return { semester, lessonTopic: cleanTopic };
+}
+
+/**
+ * الترتيب التفاضلي: المنشورات المعتمدة (isEndorsed === true) في الصدارة دائماً،
+ * ثم التقييم (ratingAvg)، ثم التحميلات (downloadCount)، ثم التفضيلات (favoriteCount) ثم التاريخ.
+ */
+export function sortWorksheetsDifferentially<
+  T extends {
+    isEndorsed?: boolean | null;
+    ratingAvg?: number | null;
+    downloadCount?: number | null;
+    favoriteCount?: number | null;
+    createdAt?: Date | string | null;
+  }
+>(items: T[]): T[] {
+  return [...items].sort((a, b) => {
+    // 1. Endorsement priority
+    const endA = a.isEndorsed ? 1 : 0;
+    const endB = b.isEndorsed ? 1 : 0;
+    if (endA !== endB) return endB - endA;
+
+    // 2. Rating average
+    const rateA = Number(a.ratingAvg || 0);
+    const rateB = Number(b.ratingAvg || 0);
+    if (rateA !== rateB) return rateB - rateA;
+
+    // 3. Downloads count
+    const downA = Number(a.downloadCount || 0);
+    const downB = Number(b.downloadCount || 0);
+    if (downA !== downB) return downB - downA;
+
+    // 4. Favorites count
+    const favA = Number(a.favoriteCount || 0);
+    const favB = Number(b.favoriteCount || 0);
+    if (favA !== favB) return favB - favA;
+
+    // 5. Creation date
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return dateB - dateA;
+  });
+}
+

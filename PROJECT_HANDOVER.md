@@ -299,7 +299,7 @@ const config: Config = {
   darkMode: "class",
   content: [
     "./src/pages*.{js,ts,jsx,tsx,mdx}",
-    "./src/context*.{js,ts,jsx,tsx,mdx}",
+    "./src/app*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
@@ -2259,6 +2259,120 @@ export const SCHOOL_TRIMESTERS = [
 ] as const;
 
 export type SchoolTrimesterSlug = (typeof SCHOOL_TRIMESTERS)[number]["slug"];
+
+// Official School Semesters (السداسيات الدراسية التونسية) — v16.0
+export const SCHOOL_SEMESTERS = [
+  {
+    id: "s1",
+    name: "Semestre 1",
+    nameAr: "السداسي الأول",
+    slug: "semester-1",
+    tag: "السداسي الأول",
+    sortOrder: 1,
+  },
+  {
+    id: "s2",
+    name: "Semestre 2",
+    nameAr: "السداسي الثاني",
+    slug: "semester-2",
+    tag: "السداسي الثاني",
+    sortOrder: 2,
+  },
+] as const;
+
+export type SchoolSemesterSlug = (typeof SCHOOL_SEMESTERS)[number]["slug"];
+
+export function extractLessonTopicAndSemester(worksheet: {
+  title?: string | null;
+  titleAr?: string | null;
+  description?: string | null;
+  descriptionAr?: string | null;
+  tags?: string[] | null;
+}): { semester: "semester-1" | "semester-2" | "unassigned"; lessonTopic: string } {
+  const combined = [
+    worksheet.titleAr || "",
+    worksheet.title || "",
+    worksheet.descriptionAr || "",
+    worksheet.description || "",
+    ...(worksheet.tags || []),
+  ].join(" ").toLowerCase();
+
+  let semester: "semester-1" | "semester-2" | "unassigned" = "unassigned";
+
+  if (
+    combined.includes("السداسي الأول") ||
+    combined.includes("سداسي 1") ||
+    combined.includes("سداسي أول") ||
+    combined.includes("semester-1") ||
+    combined.includes("الثلاثي الأول") ||
+    combined.includes("ثلاثي 1")
+  ) {
+    semester = "semester-1";
+  } else if (
+    combined.includes("السداسي الثاني") ||
+    combined.includes("سداسي 2") ||
+    combined.includes("سداسي ثان") ||
+    combined.includes("semester-2") ||
+    combined.includes("الثلاثي الثاني") ||
+    combined.includes("الثلاثي الثالث") ||
+    combined.includes("ثلاثي 2") ||
+    combined.includes("ثلاثي 3")
+  ) {
+    semester = "semester-2";
+  }
+
+  const rawTitle = worksheet.titleAr || worksheet.title || "درس عام";
+  let cleanTopic = rawTitle
+    .replace(/(من اعداد|إعداد|إنجاز|الأستاذ|المعلم|saboura\.tn|tunisie|موقع|روضة|مدرسة)[^\n-]*/gi, "")
+    .replace(/^(درس|جذاذة|امتحان|تمرين|نشاط|تقييم|فحص|ملخص|شرح|مراجعة|كراس)[:\s-]+/gi, "")
+    .replace(/[\[\]\(\)\{\}«»"']/g, "")
+    .replace(/\s*-\s*$/, "")
+    .replace(/^\s*-\s*/, "")
+    .trim();
+
+  if (!cleanTopic || cleanTopic.length < 2) {
+    cleanTopic = rawTitle.trim();
+  }
+
+  return { semester, lessonTopic: cleanTopic };
+}
+
+export function sortWorksheetsDifferentially<
+  T extends {
+    isEndorsed?: boolean | null;
+    ratingAvg?: number | null;
+    downloadCount?: number | null;
+    favoriteCount?: number | null;
+    createdAt?: Date | string | null;
+  }
+>(items: T[]): T[] {
+  return [...items].sort((a, b) => {
+    // 1. Endorsement priority
+    const endA = a.isEndorsed ? 1 : 0;
+    const endB = b.isEndorsed ? 1 : 0;
+    if (endA !== endB) return endB - endA;
+
+    // 2. Rating average
+    const rateA = Number(a.ratingAvg || 0);
+    const rateB = Number(b.ratingAvg || 0);
+    if (rateA !== rateB) return rateB - rateA;
+
+    // 3. Downloads count
+    const downA = Number(a.downloadCount || 0);
+    const downB = Number(b.downloadCount || 0);
+    if (downA !== downB) return downB - downA;
+
+    // 4. Favorites count
+    const favA = Number(a.favoriteCount || 0);
+    const favB = Number(b.favoriteCount || 0);
+    if (favA !== favB) return favB - favA;
+
+    // 5. Creation date
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return dateB - dateA;
+  });
+}
 
 
 ```
@@ -4686,6 +4800,60 @@ export async function getSignedDownloadUrl(
   );
 }
 
+export async function getFileStream(filePath: string): Promise<{
+  stream: ReadableStream;
+  contentLength?: number;
+  contentType?: string;
+} | null> {
+  const candidateKeys = buildCandidateKeys(filePath);
+  const cfg = resolveR2Config();
+
+  // 1. Try Cloudflare R2
+  if (cfg.isValid) {
+    const r2Client = getR2Client();
+    for (const key of candidateKeys) {
+      try {
+        const res = await r2Client.send(
+          new GetObjectCommand({
+            Bucket: cfg.bucketName,
+            Key: key,
+          })
+        );
+        if (res.Body) {
+          return {
+            stream: res.Body.transformToWebStream(),
+            contentLength: res.ContentLength,
+            contentType: res.ContentType,
+          };
+        }
+      } catch {
+        // Try next candidate or fallback
+      }
+    }
+  }
+
+  // 2. Fallback to Supabase Storage
+  const supabase = createSupabaseAdminClient();
+  for (const key of candidateKeys) {
+    try {
+      const { data, error } = await supabase.storage
+        .from(SUPABASE_BUCKET_NAME)
+        .download(key);
+      if (!error && data) {
+        return {
+          stream: data.stream(),
+          contentLength: data.size,
+          contentType: data.type,
+        };
+      }
+    } catch {
+      // Try next
+    }
+  }
+
+  return null;
+}
+
 export function getPublicDownloadUrl(filePath: string): string {
   const cleanKey = normalizeStorageObjectPath(filePath);
   const cfg = resolveR2Config();
@@ -6977,7 +7145,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { canUserAccessWorksheet } from "@/services/worksheet.service";
-import { getSignedDownloadUrl } from "@/services/storage.service";
+import { getFileStream, getSignedDownloadUrl } from "@/services/storage.service";
 import { errorResponse } from "@/lib/utils/api-response";
 import {
   ForbiddenError,
@@ -7060,40 +7228,37 @@ export async function GET(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const signedUrl = await getSignedDownloadUrl(worksheet.fileUrl, 3600);
     const disposition =
       request.nextUrl.searchParams.get("disposition") === "attachment"
         ? "attachment"
         : "inline";
-    const forceRedirect = request.nextUrl.searchParams.get("redirect") === "1";
-    const shouldStream = !forceRedirect;
 
-    if (shouldStream) {
-      try {
-        const upstream = await fetch(signedUrl);
-        if (upstream.ok && upstream.body) {
-          const contentType = inferMimeType(worksheet.fileName);
-          const encodedName = encodeURIComponent(worksheet.fileName || "document.pdf");
-          const headers: Record<string, string> = {
-            "Content-Type": contentType,
-            "Content-Disposition": `${disposition}; filename*=UTF-8''${encodedName}`,
-            "Cache-Control": "private, max-age=1800",
-          };
-          const contentLength = upstream.headers.get("content-length");
-          if (contentLength) {
-            headers["Content-Length"] = contentLength;
-          }
-          return new NextResponse(upstream.body, {
-            status: 200,
-            headers,
-          });
-        }
-      } catch (streamError) {
-        console.warn("[FileRoute] Stream error on primary URL:", streamError);
+    // Direct streaming from R2 / Supabase Storage with zero external redirects
+    const fileResult = await getFileStream(worksheet.fileUrl);
+    if (fileResult) {
+      const contentType = inferMimeType(worksheet.fileName) || fileResult.contentType || "application/pdf";
+      const encodedName = encodeURIComponent(worksheet.fileName || "document.pdf");
+      const headers: Record<string, string> = {
+        "Content-Type": contentType,
+        "Content-Disposition": `${disposition}; filename*=UTF-8''${encodedName}`,
+        "Cache-Control": "private, max-age=1800",
+      };
+      if (fileResult.contentLength) {
+        headers["Content-Length"] = String(fileResult.contentLength);
       }
+      return new NextResponse(fileResult.stream, {
+        status: 200,
+        headers,
+      });
     }
 
-    return NextResponse.redirect(signedUrl, { status: 302 });
+    // Secondary fallback: generate verified signed download URL
+    try {
+      const signedUrl = await getSignedDownloadUrl(worksheet.fileUrl, 3600);
+      return NextResponse.redirect(signedUrl, { status: 302 });
+    } catch {
+      throw new NotFoundError("الملف المطلوب غير موجود في مساحة التخزين السحابية");
+    }
   } catch (error) {
     return errorResponse(error);
   }
@@ -13463,6 +13628,7 @@ import {
   Briefcase,
   ShieldCheck,
   Layers,
+  Lock,
 } from "lucide-react";
 import WorksheetCard from "@/components/worksheets/WorksheetCard";
 import { CURRICULUM_GRADES } from "@/config/constants";
@@ -13708,6 +13874,47 @@ export default function RolePersonalizedHub({
                 {tab.label}
               </button>
             ))}
+          </div>
+        </div>
+      )}
+
+      {!isStaff && viewerRole && !viewerIsVerified && (viewerRole === "INSPECTOR" || viewerRole === "TEACHER" || viewerRole === "INSTITUTION") && (
+        <div className="mb-8 rounded-3xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 via-white to-amber-50 p-6 shadow-md dark:border-amber-700 dark:bg-slate-900 dark:from-amber-950/40 dark:via-slate-900 dark:to-amber-950/40">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-md shadow-amber-500/25">
+                <Lock className="h-6 w-6" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[11px] font-black text-amber-800 dark:text-amber-300">
+                    🔒 قيد انتظار التوثيق الأمني
+                  </span>
+                  <span className="text-xs font-bold text-slate-500">حساب {viewerRole === "INSPECTOR" ? "متفقد تربوي" : viewerRole === "TEACHER" ? "معلم" : "مؤسسة تربوية"} غير موثق</span>
+                </div>
+                <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                  الملفات الحساسة والداخلية مقفلة مؤقتاً حتى إثبات وتوثيق هويتك
+                </h3>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl">
+                  حرصاً على سلامة الوثائق الرسمية والتربوية، يُتاح لحسابك حالياً استعراض الملفات العامة فقط. لفتح الصلاحيات الكاملة والوصول إلى الملفات الداخلية الخاصة بفئتك، يرجى استكمال إجراءات إثبات الهوية.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5 w-full sm:w-auto">
+              <Link
+                href="/profile?tab=verification"
+                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-black shadow-sm transition"
+              >
+                <span>إثبات الهوية الآن</span>
+                <ShieldCheck className="w-4 h-4" />
+              </Link>
+              <Link
+                href="/support"
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-300 text-xs font-bold hover:bg-amber-100 transition"
+              >
+                <span>الدعم الفني</span>
+              </Link>
+            </div>
           </div>
         </div>
       )}
@@ -14903,8 +15110,20 @@ export default function WorksheetCard({
   // Guest Title-Only View: Shows the file title & full classification badges (Subject + Grade + Section + File Type)
   if (guestTitleOnly) {
     return (
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm flex flex-col justify-between gap-4">
+      <div
+        className={`rounded-2xl border p-4 shadow-sm flex flex-col justify-between gap-4 transition-all ${
+          worksheet.isEndorsed
+            ? "border-2 border-amber-400 ring-4 ring-amber-400/25 bg-gradient-to-b from-amber-50/45 via-white to-white dark:from-amber-950/20 dark:via-slate-900 dark:to-slate-900 shadow-lg shadow-amber-500/20"
+            : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+        }`}
+      >
         <div className="space-y-2.5">
+          {worksheet.isEndorsed && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500 text-white text-[11px] font-extrabold w-fit shadow-sm">
+              <BadgeCheck className="w-3.5 h-3.5 shrink-0" />
+              <span>معتمد بيداغوجياً وفي صدارة الترتيب</span>
+            </div>
+          )}
           <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
             <span
               className="px-2.5 py-0.5 rounded-md font-bold text-white"
@@ -14975,21 +15194,21 @@ export default function WorksheetCard({
 
   return (
     <div
-      className={`group bg-white dark:bg-slate-900 rounded-2xl border transition-all duration-200 flex flex-col justify-between overflow-hidden ${
+      className={`group rounded-2xl border transition-all duration-300 flex flex-col justify-between overflow-hidden ${
         worksheet.isEndorsed
-          ? "border-2 border-amber-400 shadow-md shadow-amber-500/10"
-          : "border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-slate-300"
+          ? "border-2 border-amber-400 ring-4 ring-amber-400/25 bg-gradient-to-b from-amber-50/45 via-white to-white dark:from-amber-950/20 dark:via-slate-900 dark:to-slate-900 shadow-lg shadow-amber-500/20"
+          : "bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-slate-300"
       }`}
     >
       <div>
         {worksheet.isEndorsed && (
-          <div className="bg-gradient-to-r from-amber-500 via-amber-600 to-orange-500 text-white px-3.5 py-1.5 text-[11px] font-extrabold flex items-center justify-between">
+          <div className="bg-gradient-to-r from-amber-500 via-amber-600 to-amber-500 text-white px-3.5 py-1.5 text-[11px] font-extrabold flex items-center justify-between shadow-sm">
             <span className="flex items-center gap-1.5">
               <BadgeCheck className="w-4 h-4 shrink-0" />
-              <span>توثيق واعتماد بيداغوجي من المتفقد</span>
+              <span>توثيق واعتماد بيداغوجي من المتفقد (صدارة الترتيب)</span>
             </span>
-            <span className="bg-white/20 px-2 py-0.5 rounded-full text-[10px]">
-              معتمد ★
+            <span className="bg-black/20 px-2 py-0.5 rounded-full text-[10px] font-black tracking-wide">
+              معتمد ذهبي ★
             </span>
           </div>
         )}
@@ -18127,6 +18346,9 @@ import {
   CURRICULUM_GRADES,
   CURRICULUM_SUBJECTS,
   SUBJECT_SUBDIVISIONS,
+  SCHOOL_SEMESTERS,
+  extractLessonTopicAndSemester,
+  sortWorksheetsDifferentially,
 } from "@/config/constants";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
@@ -18136,7 +18358,7 @@ import SubjectIcon from "@/components/ui/SubjectIcon";
 
 interface SubjectPublicationsPageProps {
   params: Promise<{ gradeSlug: string; subjectSlug: string }>;
-  searchParams: Promise<{ category?: string; search?: string }>;
+  searchParams: Promise<{ category?: string; semester?: string; search?: string }>;
 }
 
 export default async function SubjectPublicationsPage(
@@ -18145,6 +18367,7 @@ export default async function SubjectPublicationsPage(
   const { gradeSlug, subjectSlug } = await props.params;
   const sp = await props.searchParams;
   const activeCategorySlug = sp.category || "ALL";
+  const activeSemester = sp.semester || "ALL";
   const searchQuery = sp.search || "";
 
   const gradeInfo = CURRICULUM_GRADES.find((g) => g.slug === gradeSlug);
@@ -18160,13 +18383,15 @@ export default async function SubjectPublicationsPage(
   } = await supabase.auth.getUser();
 
   let viewerRole: string | null = null;
+  let viewerIsVerified: boolean = false;
   if (user) {
     try {
       const dbUser = await db.user.findUnique({
         where: { id: user.id },
-        select: { role: true },
+        select: { role: true, isVerified: true },
       });
       viewerRole = dbUser?.role || "TEACHER";
+      viewerIsVerified = Boolean(dbUser?.isVerified);
     } catch {
       viewerRole = "TEACHER";
     }
@@ -18186,12 +18411,20 @@ export default async function SubjectPublicationsPage(
         sort: "newest",
       },
       viewerRole,
-      user?.id
+      user?.id,
+      viewerIsVerified
     );
     allSubjectWorksheets = result.data;
   } catch {
     allSubjectWorksheets = [];
   }
+
+  // Filter by semester if chosen
+  const semesterFilteredWorksheets = allSubjectWorksheets.filter((ws) => {
+    if (activeSemester === "ALL") return true;
+    const { semester } = extractLessonTopicAndSemester(ws);
+    return semester === activeSemester || semester === "unassigned";
+  });
 
   // Group files into their exact pedagogical section (درس، تمرين، امتحان، جذاذة، نشاط تفاعلي، أخرى)
   const validSlugs = new Set(SUBJECT_SUBDIVISIONS.map((s) => s.slug));
@@ -18200,7 +18433,7 @@ export default async function SubjectPublicationsPage(
     groupedBySection[sub.slug] = [];
   }
 
-  for (const ws of allSubjectWorksheets) {
+  for (const ws of semesterFilteredWorksheets) {
     const cSlug = ws.category?.slug;
     if (cSlug && validSlugs.has(cSlug as any)) {
       groupedBySection[cSlug].push(ws);
@@ -18211,8 +18444,25 @@ export default async function SubjectPublicationsPage(
 
   const displayedWorksheets =
     activeCategorySlug === "ALL"
-      ? allSubjectWorksheets
+      ? semesterFilteredWorksheets
       : groupedBySection[activeCategorySlug] || [];
+
+  // Group worksheets by unified lesson topic and sort differentially (endorsed gold on top)
+  const lessonGroupsMap = new Map<string, any[]>();
+  for (const ws of displayedWorksheets) {
+    const { lessonTopic } = extractLessonTopicAndSemester(ws);
+    if (!lessonGroupsMap.has(lessonTopic)) {
+      lessonGroupsMap.set(lessonTopic, []);
+    }
+    lessonGroupsMap.get(lessonTopic)!.push(ws);
+  }
+
+  const lessonGroups = Array.from(lessonGroupsMap.entries()).map(
+    ([topic, items]) => ({
+      topic,
+      worksheets: sortWorksheetsDifferentially(items),
+    })
+  );
 
   return (
     <div dir="rtl" className="min-h-screen bg-slate-50/60 py-10 dark:bg-slate-950">
@@ -18299,16 +18549,48 @@ export default async function SubjectPublicationsPage(
             </div>
           </div>
 
-          <div className="mt-5 flex flex-wrap items-center gap-2">
+          <div className="mt-5 flex flex-wrap items-center gap-2 border-b border-slate-100 pb-4 dark:border-slate-800">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">
+              السداسي الدراسي:
+            </span>
             <Link
-              href={`/levels/${gradeInfo.slug}/subjects/${subjectInfo.slug}`}
+              href={`/levels/${gradeInfo.slug}/subjects/${subjectInfo.slug}?category=${activeCategorySlug}&semester=ALL`}
+              className={`rounded-xl px-3.5 py-1.5 text-xs font-extrabold transition ${
+                activeSemester === "ALL"
+                  ? "bg-amber-600 text-white shadow-sm"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+              }`}
+            >
+              كل السداسيات ({allSubjectWorksheets.length})
+            </Link>
+            {SCHOOL_SEMESTERS.map((sem) => {
+              const active = activeSemester === sem.slug;
+              return (
+                <Link
+                  key={sem.slug}
+                  href={`/levels/${gradeInfo.slug}/subjects/${subjectInfo.slug}?category=${activeCategorySlug}&semester=${sem.slug}`}
+                  className={`rounded-xl px-3.5 py-1.5 text-xs font-extrabold transition ${
+                    active
+                      ? "bg-amber-600 text-white shadow-sm"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                  }`}
+                >
+                  {sem.nameAr}
+                </Link>
+              );
+            })}
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Link
+              href={`/levels/${gradeInfo.slug}/subjects/${subjectInfo.slug}?semester=${activeSemester}&category=ALL`}
               className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
                 activeCategorySlug === "ALL"
                   ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
                   : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
               }`}
             >
-              جميع الأقسام ({allSubjectWorksheets.length})
+              جميع الأقسام ({semesterFilteredWorksheets.length})
             </Link>
             {SUBJECT_SUBDIVISIONS.map((sub) => {
               const active = activeCategorySlug === sub.slug;
@@ -18316,7 +18598,7 @@ export default async function SubjectPublicationsPage(
               return (
                 <Link
                   key={sub.slug}
-                  href={`/levels/${gradeInfo.slug}/subjects/${subjectInfo.slug}?category=${sub.slug}`}
+                  href={`/levels/${gradeInfo.slug}/subjects/${subjectInfo.slug}?semester=${activeSemester}&category=${sub.slug}`}
                   className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
                     active
                       ? "bg-blue-700 text-white shadow-sm"
@@ -18330,64 +18612,47 @@ export default async function SubjectPublicationsPage(
           </div>
         </div>
 
-        {displayedWorksheets.length === 0 ? (
+        {lessonGroups.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-14 text-center dark:border-slate-800 dark:bg-slate-900">
             <FileText className="mx-auto mb-3 h-10 w-10 text-slate-300" />
             <h3 className="text-base font-extrabold text-slate-800 dark:text-white">
-              لا توجد ملفات مرفوعة في هذا القسم حالياً
+              لا توجد ملفات مرفوعة في هذا القسم أو السداسي حالياً
             </h3>
             <p className="mt-1 text-xs text-slate-500">
               كن أول من يثري مادة «{subjectInfo.nameAr}» ({gradeInfo.nameAr}) بنشر ملف تربوي جديد.
             </p>
           </div>
-        ) : activeCategorySlug === "ALL" ? (
-          <div className="space-y-8">
-            {SUBJECT_SUBDIVISIONS.map((sub) => {
-              const sectionFiles = groupedBySection[sub.slug] || [];
-              if (sectionFiles.length === 0) return null;
-              return (
-                <section
-                  key={sub.slug}
-                  className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-                >
-                  <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
-                    <div className="flex items-center gap-2.5">
-                      <FolderOpen className="h-5 w-5 text-blue-600" />
-                      <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
-                        قسم: {sub.nameAr}
-                      </h2>
-                      <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-extrabold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
-                        {sectionFiles.length} ملف
-                      </span>
-                    </div>
-                    <Link
-                      href={`/levels/${gradeInfo.slug}/subjects/${subjectInfo.slug}?category=${sub.slug}`}
-                      className="text-xs font-bold text-blue-600 hover:underline"
-                    >
-                      عرض هذا القسم فقط ←
-                    </Link>
-                  </div>
-                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {sectionFiles.map((ws) => (
-                      <WorksheetCard
-                        key={ws.id}
-                        worksheet={ws}
-                        guestTitleOnly={!isAuthenticated}
-                      />
-                    ))}
-                  </div>
-                </section>
-              );
-            })}
-          </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {displayedWorksheets.map((ws) => (
-              <WorksheetCard
-                key={ws.id}
-                worksheet={ws}
-                guestTitleOnly={!isAuthenticated}
-              />
+          <div className="space-y-8">
+            {lessonGroups.map((group) => (
+              <section
+                key={group.topic}
+                className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+              >
+                <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3.5 dark:border-slate-800">
+                  <div className="flex items-center gap-2.5">
+                    <FolderOpen className="h-5 w-5 text-amber-500" />
+                    <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
+                      قسم الدرس: {group.topic}
+                    </h2>
+                    <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-extrabold text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                      {group.worksheets.length} مساهمات من المعلمين
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-semibold text-slate-400">
+                    الترتيب التفاضلي: المعتمد بيداغوجياً بالإطار الذهبي في الصدارة
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {group.worksheets.map((ws) => (
+                    <WorksheetCard
+                      key={ws.id}
+                      worksheet={ws}
+                      guestTitleOnly={!isAuthenticated}
+                    />
+                  ))}
+                </div>
+              </section>
             ))}
           </div>
         )}
@@ -18578,6 +18843,7 @@ import {
   SUBJECT_SUBDIVISIONS,
   ADMINISTRATIVE_CATEGORY,
   SCHOOL_TRIMESTERS,
+  SCHOOL_SEMESTERS,
 } from "@/config/constants";
 import { extractPdfThumbnailAndPages } from "@/lib/utils/pdf-thumbnail";
 import type {
@@ -18628,6 +18894,24 @@ export default function UploadWorksheetPage() {
   const [tagInput, setTagInput] = useState<string>("");
   const [tags, setTags] = useState<string[]>([]);
   const [selectedTrimester, setSelectedTrimester] = useState<string>("");
+  const [selectedSemester, setSelectedSemester] = useState<string>("");
+
+  function handleToggleSemester(semTag: string) {
+    if (selectedSemester === semTag) {
+      setSelectedSemester("");
+      setTags((prev) =>
+        prev.filter((t) => !SCHOOL_SEMESTERS.some((s) => s.tag === t))
+      );
+    } else {
+      setSelectedSemester(semTag);
+      setTags((prev) => {
+        const withoutSem = prev.filter(
+          (t) => !SCHOOL_SEMESTERS.some((s) => s.tag === t)
+        );
+        return [...withoutSem, semTag];
+      });
+    }
+  }
 
   function handleToggleTrimester(trimesterTag: string) {
     if (selectedTrimester === trimesterTag) {
@@ -19222,6 +19506,51 @@ export default function UploadWorksheetPage() {
               </div>
             </div>
           )}
+
+          <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 text-xs sm:text-sm font-bold text-amber-950 dark:text-amber-200">
+                <Calendar className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                <span>وسم السداسي الدراسي (تجميع دروس المادة)</span>
+              </label>
+              {(selectedSemester || tags.some((t) => SCHOOL_SEMESTERS.some((ss) => ss.tag === t))) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedSemester("");
+                    setTags((prev) =>
+                      prev.filter((t) => !SCHOOL_SEMESTERS.some((ss) => ss.tag === t))
+                    );
+                  }}
+                  className="text-[11px] font-bold text-rose-600 hover:underline cursor-pointer"
+                >
+                  إلغاء وسم السداسي ✕
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-amber-800/80 dark:text-amber-300/80">
+              اختر السداسي الدراسي لتجميع منشورات نفس الدرس مع بقية المعلمين بترتيب تفاضلي:
+            </p>
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              {SCHOOL_SEMESTERS.map((sem) => {
+                const isSelected = selectedSemester === sem.tag || tags.includes(sem.tag);
+                return (
+                  <button
+                    key={sem.id}
+                    type="button"
+                    onClick={() => handleToggleSemester(sem.tag)}
+                    className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold border-2 transition-all cursor-pointer text-center ${
+                      isSelected
+                        ? "bg-amber-600 text-white border-amber-600 shadow-sm ring-2 ring-amber-600/20"
+                        : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-amber-200 dark:border-amber-800/60 hover:border-amber-500"
+                    }`}
+                  >
+                    {sem.nameAr}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-2.5">
             <div className="flex items-center justify-between">

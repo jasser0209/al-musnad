@@ -14,6 +14,7 @@ import {
   Briefcase,
   ShieldCheck,
   Layers,
+  Lock,
 } from "lucide-react";
 import WorksheetCard from "@/components/worksheets/WorksheetCard";
 import { CURRICULUM_GRADES } from "@/config/constants";
@@ -259,6 +260,48 @@ export default function RolePersonalizedHub({
                 {tab.label}
               </button>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* بطاقة قفل أمني للحسابات غير الموثقة */}
+      {!isStaff && viewerRole && !viewerIsVerified && (viewerRole === "INSPECTOR" || viewerRole === "TEACHER" || viewerRole === "INSTITUTION") && (
+        <div className="mb-8 rounded-3xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 via-white to-amber-50 p-6 shadow-md dark:border-amber-700 dark:bg-slate-900 dark:from-amber-950/40 dark:via-slate-900 dark:to-amber-950/40">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-md shadow-amber-500/25">
+                <Lock className="h-6 w-6" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[11px] font-black text-amber-800 dark:text-amber-300">
+                    🔒 قيد انتظار التوثيق الأمني
+                  </span>
+                  <span className="text-xs font-bold text-slate-500">حساب {viewerRole === "INSPECTOR" ? "متفقد تربوي" : viewerRole === "TEACHER" ? "معلم" : "مؤسسة تربوية"} غير موثق</span>
+                </div>
+                <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                  الملفات الحساسة والداخلية مقفلة مؤقتاً حتى إثبات وتوثيق هويتك
+                </h3>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl">
+                  حرصاً على سلامة الوثائق الرسمية والتربوية، يُتاح لحسابك حالياً استعراض الملفات العامة فقط. لفتح الصلاحيات الكاملة والوصول إلى الملفات الداخلية الخاصة بفئتك، يرجى استكمال إجراءات إثبات الهوية.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5 w-full sm:w-auto">
+              <Link
+                href="/profile?tab=verification"
+                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-black shadow-sm transition"
+              >
+                <span>إثبات الهوية الآن</span>
+                <ShieldCheck className="w-4 h-4" />
+              </Link>
+              <Link
+                href="/support"
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-300 text-xs font-bold hover:bg-amber-100 transition"
+              >
+                <span>الدعم الفني</span>
+              </Link>
+            </div>
           </div>
         </div>
       )}

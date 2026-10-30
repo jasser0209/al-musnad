@@ -106,8 +106,20 @@ export default function WorksheetCard({
   // Guest Title-Only View: Shows the file title & full classification badges (Subject + Grade + Section + File Type)
   if (guestTitleOnly) {
     return (
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm flex flex-col justify-between gap-4">
+      <div
+        className={`rounded-2xl border p-4 shadow-sm flex flex-col justify-between gap-4 transition-all ${
+          worksheet.isEndorsed
+            ? "border-2 border-amber-400 ring-4 ring-amber-400/25 bg-gradient-to-b from-amber-50/45 via-white to-white dark:from-amber-950/20 dark:via-slate-900 dark:to-slate-900 shadow-lg shadow-amber-500/20"
+            : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+        }`}
+      >
         <div className="space-y-2.5">
+          {worksheet.isEndorsed && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500 text-white text-[11px] font-extrabold w-fit shadow-sm">
+              <BadgeCheck className="w-3.5 h-3.5 shrink-0" />
+              <span>معتمد بيداغوجياً وفي صدارة الترتيب</span>
+            </div>
+          )}
           <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
             <span
               className="px-2.5 py-0.5 rounded-md font-bold text-white"
@@ -178,21 +190,21 @@ export default function WorksheetCard({
 
   return (
     <div
-      className={`group bg-white dark:bg-slate-900 rounded-2xl border transition-all duration-200 flex flex-col justify-between overflow-hidden ${
+      className={`group rounded-2xl border transition-all duration-300 flex flex-col justify-between overflow-hidden ${
         worksheet.isEndorsed
-          ? "border-2 border-amber-400 shadow-md shadow-amber-500/10"
-          : "border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-slate-300"
+          ? "border-2 border-amber-400 ring-4 ring-amber-400/25 bg-gradient-to-b from-amber-50/45 via-white to-white dark:from-amber-950/20 dark:via-slate-900 dark:to-slate-900 shadow-lg shadow-amber-500/20"
+          : "bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-slate-300"
       }`}
     >
       <div>
         {worksheet.isEndorsed && (
-          <div className="bg-gradient-to-r from-amber-500 via-amber-600 to-orange-500 text-white px-3.5 py-1.5 text-[11px] font-extrabold flex items-center justify-between">
+          <div className="bg-gradient-to-r from-amber-500 via-amber-600 to-amber-500 text-white px-3.5 py-1.5 text-[11px] font-extrabold flex items-center justify-between shadow-sm">
             <span className="flex items-center gap-1.5">
               <BadgeCheck className="w-4 h-4 shrink-0" />
-              <span>توثيق واعتماد بيداغوجي من المتفقد</span>
+              <span>توثيق واعتماد بيداغوجي من المتفقد (صدارة الترتيب)</span>
             </span>
-            <span className="bg-white/20 px-2 py-0.5 rounded-full text-[10px]">
-              معتمد ★
+            <span className="bg-black/20 px-2 py-0.5 rounded-full text-[10px] font-black tracking-wide">
+              معتمد ذهبي ★
             </span>
           </div>
         )}

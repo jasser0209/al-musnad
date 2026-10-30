@@ -410,6 +410,60 @@ export async function getSignedDownloadUrl(
   );
 }
 
+export async function getFileStream(filePath: string): Promise<{
+  stream: ReadableStream;
+  contentLength?: number;
+  contentType?: string;
+} | null> {
+  const candidateKeys = buildCandidateKeys(filePath);
+  const cfg = resolveR2Config();
+
+  // 1. Try Cloudflare R2
+  if (cfg.isValid) {
+    const r2Client = getR2Client();
+    for (const key of candidateKeys) {
+      try {
+        const res = await r2Client.send(
+          new GetObjectCommand({
+            Bucket: cfg.bucketName,
+            Key: key,
+          })
+        );
+        if (res.Body) {
+          return {
+            stream: res.Body.transformToWebStream(),
+            contentLength: res.ContentLength,
+            contentType: res.ContentType,
+          };
+        }
+      } catch {
+        // Try next candidate or fallback
+      }
+    }
+  }
+
+  // 2. Fallback to Supabase Storage
+  const supabase = createSupabaseAdminClient();
+  for (const key of candidateKeys) {
+    try {
+      const { data, error } = await supabase.storage
+        .from(SUPABASE_BUCKET_NAME)
+        .download(key);
+      if (!error && data) {
+        return {
+          stream: data.stream(),
+          contentLength: data.size,
+          contentType: data.type,
+        };
+      }
+    } catch {
+      // Try next
+    }
+  }
+
+  return null;
+}
+
 export function getPublicDownloadUrl(filePath: string): string {
   const cleanKey = normalizeStorageObjectPath(filePath);
   const cfg = resolveR2Config();

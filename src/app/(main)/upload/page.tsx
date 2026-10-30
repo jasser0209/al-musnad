@@ -30,6 +30,7 @@ import {
   SUBJECT_SUBDIVISIONS,
   ADMINISTRATIVE_CATEGORY,
   SCHOOL_TRIMESTERS,
+  SCHOOL_SEMESTERS,
 } from "@/config/constants";
 import { extractPdfThumbnailAndPages } from "@/lib/utils/pdf-thumbnail";
 import type {
@@ -80,6 +81,24 @@ export default function UploadWorksheetPage() {
   const [tagInput, setTagInput] = useState<string>("");
   const [tags, setTags] = useState<string[]>([]);
   const [selectedTrimester, setSelectedTrimester] = useState<string>("");
+  const [selectedSemester, setSelectedSemester] = useState<string>("");
+
+  function handleToggleSemester(semTag: string) {
+    if (selectedSemester === semTag) {
+      setSelectedSemester("");
+      setTags((prev) =>
+        prev.filter((t) => !SCHOOL_SEMESTERS.some((s) => s.tag === t))
+      );
+    } else {
+      setSelectedSemester(semTag);
+      setTags((prev) => {
+        const withoutSem = prev.filter(
+          (t) => !SCHOOL_SEMESTERS.some((s) => s.tag === t)
+        );
+        return [...withoutSem, semTag];
+      });
+    }
+  }
 
   function handleToggleTrimester(trimesterTag: string) {
     if (selectedTrimester === trimesterTag) {
@@ -674,6 +693,52 @@ export default function UploadWorksheetPage() {
               </div>
             </div>
           )}
+
+          {/* السداسي الدراسي */}
+          <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 text-xs sm:text-sm font-bold text-amber-950 dark:text-amber-200">
+                <Calendar className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                <span>وسم السداسي الدراسي (تجميع دروس المادة)</span>
+              </label>
+              {(selectedSemester || tags.some((t) => SCHOOL_SEMESTERS.some((ss) => ss.tag === t))) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedSemester("");
+                    setTags((prev) =>
+                      prev.filter((t) => !SCHOOL_SEMESTERS.some((ss) => ss.tag === t))
+                    );
+                  }}
+                  className="text-[11px] font-bold text-rose-600 hover:underline cursor-pointer"
+                >
+                  إلغاء وسم السداسي ✕
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-amber-800/80 dark:text-amber-300/80">
+              اختر السداسي الدراسي لتجميع منشورات نفس الدرس مع بقية المعلمين بترتيب تفاضلي:
+            </p>
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              {SCHOOL_SEMESTERS.map((sem) => {
+                const isSelected = selectedSemester === sem.tag || tags.includes(sem.tag);
+                return (
+                  <button
+                    key={sem.id}
+                    type="button"
+                    onClick={() => handleToggleSemester(sem.tag)}
+                    className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold border-2 transition-all cursor-pointer text-center ${
+                      isSelected
+                        ? "bg-amber-600 text-white border-amber-600 shadow-sm ring-2 ring-amber-600/20"
+                        : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-amber-200 dark:border-amber-800/60 hover:border-amber-500"
+                    }`}
+                  >
+                    {sem.nameAr}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-2.5">
             <div className="flex items-center justify-between">

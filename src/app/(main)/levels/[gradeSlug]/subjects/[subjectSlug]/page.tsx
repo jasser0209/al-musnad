@@ -12,6 +12,9 @@ import {
   CURRICULUM_GRADES,
   CURRICULUM_SUBJECTS,
   SUBJECT_SUBDIVISIONS,
+  SCHOOL_SEMESTERS,
+  extractLessonTopicAndSemester,
+  sortWorksheetsDifferentially,
 } from "@/config/constants";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
@@ -21,7 +24,7 @@ import SubjectIcon from "@/components/ui/SubjectIcon";
 
 interface SubjectPublicationsPageProps {
   params: Promise<{ gradeSlug: string; subjectSlug: string }>;
-  searchParams: Promise<{ category?: string; search?: string }>;
+  searchParams: Promise<{ category?: string; semester?: string; search?: string }>;
 }
 
 export default async function SubjectPublicationsPage(
@@ -30,6 +33,7 @@ export default async function SubjectPublicationsPage(
   const { gradeSlug, subjectSlug } = await props.params;
   const sp = await props.searchParams;
   const activeCategorySlug = sp.category || "ALL";
+  const activeSemester = sp.semester || "ALL";
   const searchQuery = sp.search || "";
 
   const gradeInfo = CURRICULUM_GRADES.find((g) => g.slug === gradeSlug);
@@ -45,13 +49,15 @@ export default async function SubjectPublicationsPage(
   } = await supabase.auth.getUser();
 
   let viewerRole: string | null = null;
+  let viewerIsVerified: boolean = false;
   if (user) {
     try {
       const dbUser = await db.user.findUnique({
         where: { id: user.id },
-        select: { role: true },
+        select: { role: true, isVerified: true },
       });
       viewerRole = dbUser?.role || "TEACHER";
+      viewerIsVerified = Boolean(dbUser?.isVerified);
     } catch {
       viewerRole = "TEACHER";
     }
@@ -71,12 +77,20 @@ export default async function SubjectPublicationsPage(
         sort: "newest",
       },
       viewerRole,
-      user?.id
+      user?.id,
+      viewerIsVerified
     );
     allSubjectWorksheets = result.data;
   } catch {
     allSubjectWorksheets = [];
   }
+
+  // Filter by semester if chosen
+  const semesterFilteredWorksheets = allSubjectWorksheets.filter((ws) => {
+    if (activeSemester === "ALL") return true;
+    const { semester } = extractLessonTopicAndSemester(ws);
+    return semester === activeSemester || semester === "unassigned";
+  });
 
   // Group files into their exact pedagogical section (درس، تمرين، امتحان، جذاذة، نشاط تفاعلي، أخرى)
   const validSlugs = new Set(SUBJECT_SUBDIVISIONS.map((s) => s.slug));
@@ -85,7 +99,7 @@ export default async function SubjectPublicationsPage(
     groupedBySection[sub.slug] = [];
   }
 
-  for (const ws of allSubjectWorksheets) {
+  for (const ws of semesterFilteredWorksheets) {
     const cSlug = ws.category?.slug;
     if (cSlug && validSlugs.has(cSlug as any)) {
       groupedBySection[cSlug].push(ws);
@@ -96,8 +110,25 @@ export default async function SubjectPublicationsPage(
 
   const displayedWorksheets =
     activeCategorySlug === "ALL"
-      ? allSubjectWorksheets
+      ? semesterFilteredWorksheets
       : groupedBySection[activeCategorySlug] || [];
+
+  // Group worksheets by unified lesson topic and sort differentially (endorsed gold on top)
+  const lessonGroupsMap = new Map<string, any[]>();
+  for (const ws of displayedWorksheets) {
+    const { lessonTopic } = extractLessonTopicAndSemester(ws);
+    if (!lessonGroupsMap.has(lessonTopic)) {
+      lessonGroupsMap.set(lessonTopic, []);
+    }
+    lessonGroupsMap.get(lessonTopic)!.push(ws);
+  }
+
+  const lessonGroups = Array.from(lessonGroupsMap.entries()).map(
+    ([topic, items]) => ({
+      topic,
+      worksheets: sortWorksheetsDifferentially(items),
+    })
+  );
 
   return (
     <div dir="rtl" className="min-h-screen bg-slate-50/60 py-10 dark:bg-slate-950">
@@ -184,16 +215,50 @@ export default async function SubjectPublicationsPage(
             </div>
           </div>
 
-          <div className="mt-5 flex flex-wrap items-center gap-2">
+          {/* تبويبات السداسي الدراسي */}
+          <div className="mt-5 flex flex-wrap items-center gap-2 border-b border-slate-100 pb-4 dark:border-slate-800">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">
+              السداسي الدراسي:
+            </span>
             <Link
-              href={`/levels/${gradeInfo.slug}/subjects/${subjectInfo.slug}`}
+              href={`/levels/${gradeInfo.slug}/subjects/${subjectInfo.slug}?category=${activeCategorySlug}&semester=ALL`}
+              className={`rounded-xl px-3.5 py-1.5 text-xs font-extrabold transition ${
+                activeSemester === "ALL"
+                  ? "bg-amber-600 text-white shadow-sm"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+              }`}
+            >
+              كل السداسيات ({allSubjectWorksheets.length})
+            </Link>
+            {SCHOOL_SEMESTERS.map((sem) => {
+              const active = activeSemester === sem.slug;
+              return (
+                <Link
+                  key={sem.slug}
+                  href={`/levels/${gradeInfo.slug}/subjects/${subjectInfo.slug}?category=${activeCategorySlug}&semester=${sem.slug}`}
+                  className={`rounded-xl px-3.5 py-1.5 text-xs font-extrabold transition ${
+                    active
+                      ? "bg-amber-600 text-white shadow-sm"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                  }`}
+                >
+                  {sem.nameAr}
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* تبويبات الأقسام البيداغوجية */}
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Link
+              href={`/levels/${gradeInfo.slug}/subjects/${subjectInfo.slug}?semester=${activeSemester}&category=ALL`}
               className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
                 activeCategorySlug === "ALL"
                   ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
                   : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
               }`}
             >
-              جميع الأقسام ({allSubjectWorksheets.length})
+              جميع الأقسام ({semesterFilteredWorksheets.length})
             </Link>
             {SUBJECT_SUBDIVISIONS.map((sub) => {
               const active = activeCategorySlug === sub.slug;
@@ -201,7 +266,7 @@ export default async function SubjectPublicationsPage(
               return (
                 <Link
                   key={sub.slug}
-                  href={`/levels/${gradeInfo.slug}/subjects/${subjectInfo.slug}?category=${sub.slug}`}
+                  href={`/levels/${gradeInfo.slug}/subjects/${subjectInfo.slug}?semester=${activeSemester}&category=${sub.slug}`}
                   className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
                     active
                       ? "bg-blue-700 text-white shadow-sm"
@@ -215,64 +280,47 @@ export default async function SubjectPublicationsPage(
           </div>
         </div>
 
-        {displayedWorksheets.length === 0 ? (
+        {lessonGroups.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-14 text-center dark:border-slate-800 dark:bg-slate-900">
             <FileText className="mx-auto mb-3 h-10 w-10 text-slate-300" />
             <h3 className="text-base font-extrabold text-slate-800 dark:text-white">
-              لا توجد ملفات مرفوعة في هذا القسم حالياً
+              لا توجد ملفات مرفوعة في هذا القسم أو السداسي حالياً
             </h3>
             <p className="mt-1 text-xs text-slate-500">
               كن أول من يثري مادة «{subjectInfo.nameAr}» ({gradeInfo.nameAr}) بنشر ملف تربوي جديد.
             </p>
           </div>
-        ) : activeCategorySlug === "ALL" ? (
-          <div className="space-y-8">
-            {SUBJECT_SUBDIVISIONS.map((sub) => {
-              const sectionFiles = groupedBySection[sub.slug] || [];
-              if (sectionFiles.length === 0) return null;
-              return (
-                <section
-                  key={sub.slug}
-                  className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-                >
-                  <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
-                    <div className="flex items-center gap-2.5">
-                      <FolderOpen className="h-5 w-5 text-blue-600" />
-                      <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
-                        قسم: {sub.nameAr}
-                      </h2>
-                      <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-extrabold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
-                        {sectionFiles.length} ملف
-                      </span>
-                    </div>
-                    <Link
-                      href={`/levels/${gradeInfo.slug}/subjects/${subjectInfo.slug}?category=${sub.slug}`}
-                      className="text-xs font-bold text-blue-600 hover:underline"
-                    >
-                      عرض هذا القسم فقط ←
-                    </Link>
-                  </div>
-                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {sectionFiles.map((ws) => (
-                      <WorksheetCard
-                        key={ws.id}
-                        worksheet={ws}
-                        guestTitleOnly={!isAuthenticated}
-                      />
-                    ))}
-                  </div>
-                </section>
-              );
-            })}
-          </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {displayedWorksheets.map((ws) => (
-              <WorksheetCard
-                key={ws.id}
-                worksheet={ws}
-                guestTitleOnly={!isAuthenticated}
-              />
+          <div className="space-y-8">
+            {lessonGroups.map((group) => (
+              <section
+                key={group.topic}
+                className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+              >
+                <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3.5 dark:border-slate-800">
+                  <div className="flex items-center gap-2.5">
+                    <FolderOpen className="h-5 w-5 text-amber-500" />
+                    <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
+                      قسم الدرس: {group.topic}
+                    </h2>
+                    <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-extrabold text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                      {group.worksheets.length} مساهمات من المعلمين
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-semibold text-slate-400">
+                    الترتيب التفاضلي: المعتمد بيداغوجياً بالإطار الذهبي في الصدارة
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {group.worksheets.map((ws) => (
+                    <WorksheetCard
+                      key={ws.id}
+                      worksheet={ws}
+                      guestTitleOnly={!isAuthenticated}
+                    />
+                  ))}
+                </div>
+              </section>
             ))}
           </div>
         )}
