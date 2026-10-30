@@ -1,18 +1,5 @@
 "use server";
 
-/**
- * Moderator Actions (المستوى الرقابي الثاني: المسؤول) — Al-Musnad v8.0
- *
- * Moderator Powers (`Role.MODERATOR` & `Role.ADMIN`):
- * 1. حذف المنشورات (`deleteWorksheetModeratorAction`) أو تغيير حالتها (`updateWorksheetStatusModeratorAction`)
- * 2. حظر المستخدمين (`toggleBanUserModeratorAction`) — لا يملك صلاحية حظر مشرف أو مسؤول
- * 3. إدارة قسم الدعم الفني (`replySupportTicketModeratorAction`) ومعالجة البلاغات (`resolveReportModeratorAction`)
- * 4. التواصل المباشر مع الناشر (`sendDirectMessageToPublisherAction`) مع دعم الإشارة `@username`
- *
- * ملاحظة صارمة: المسؤول (`MODERATOR`) لا يملك صلاحية تفعيل التوثيق (`isVerified`) ولا إنشاء الأكواد؛
- * فهذه ميزة حصرية للمشرف العام (`ADMIN`) في قمة الهرم.
- */
-
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { createSupabaseServerClient } from "@/lib/supabase/server";

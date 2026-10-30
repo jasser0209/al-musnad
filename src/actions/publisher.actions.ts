@@ -1,12 +1,5 @@
 "use server";
 
-/**
- * Publisher Social & Bookmark Actions — Al-Musnad v5.0
- *
- * Enforces strict authentication AND filters publisher publications so that
- * the viewing account ONLY sees publications the publisher made available to its role.
- */
-
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { createSupabaseServerClient } from "@/lib/supabase/server";

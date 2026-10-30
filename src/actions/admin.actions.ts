@@ -1,15 +1,5 @@
 "use server";
 
-/**
- * Top-Tier Admin Actions (المستوى الرقابي الثالث في القمة: المشرف) — Al-Musnad v9.0
- *
- * Admin Exclusive Powers (in addition to all Inspector & Moderator powers):
- * 1. إمكانية تفعيل التوثيق المباشر للحسابات (`toggleVerifyUserAdminAction`) — مقتصرة حصرياً على المشرف!
- * 2. إمكانية إنشاء وتوليد أكواد التوثيق في الداشبورد للمشرف (`createVerificationCodeAdminAction`, `deleteVerificationCodeAdminAction`).
- * 3. التحكم الكامل في الموقع والأدوار (بما في ذلك تعيين المسؤولين `MODERATOR` والمتفقدين `INSPECTOR`).
- * 4. متابعة سجلات النشاطات والأمن الشاملة (`AuditLog`).
- */
-
 import { revalidatePath } from "next/cache";
 import crypto from "crypto";
 import { db } from "@/lib/db";

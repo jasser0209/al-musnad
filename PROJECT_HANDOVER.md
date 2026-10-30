@@ -1,7 +1,7 @@
 # 🏛️ Project Handover & Master Technical Audit — Al-Musnad (v16.0) (Complete Single-File Edition < 1 MB)
 **Project:** Al-Musnad (المسند) — Integrated Educational & Pedagogical Platform  
 **Architecture:** Next.js 15 (App Router) + TypeScript + Prisma ORM + PostgreSQL (Supabase) + Cloudflare R2 + Tailwind CSS + Lucide Icons  
-**Version:** 16.0.0 (Master Production Handover — Complete Source Code, Security Configs & Commands)  
+**Version:** 15.0.0 (Optimized Handover Archive — Complete Source Code, Security Configs & Commands)  
 **Date:** October 2026  
 **Primary Admin Account:** `bjasser123@gmail.com` (Password: `Jasserbes1M` — Role: `ADMIN`)  
 **Live Production URL:** [https://al-musnad.vercel.app](https://al-musnad.vercel.app)  
@@ -11,11 +11,11 @@
 
 ## 🤖 القواعد الصارمة والتعليمات الإلزامية للمشروع (PROJECT ARCHITECTURE & RULES)
 
-أنت المهندس المعماري المسؤول عن تطوير وصيانة منصة **«المسند» (Al-Musnad v16.0)**. عند قراءة هذا الملف أو تنفيذ أي تعديل مستقبلي، **يجب الالتزام الصارم بالقواعد التالية**:
+أنت المهندس المعماري المسؤول عن تطوير وصيانة منصة **«المسند» (Al-Musnad v15.0)**. عند قراءة هذا الملف أو تنفيذ أي تعديل مستقبلي، **يجب الالتزام الصارم بالقواعد التالية**:
 
 1. **قاعدة الحجم الأقصى (< 1 MB) ومنع التكرار**:
    - الحجم الأقصى لملف `PROJECT_HANDOVER.md` يجب أن يبقى دائماً **أقل من 1 ميجابايت (1,000 KB)**.
-   - عدم تضمين حزم JSON الضخمة المكررة داخل الملف للحفاظ على خفته وسرعة معالجته من قبل أدوات الذكاء الاصطناعي الخارجية.
+   - عدم تضمين حزم JSON الضخمة المكررة داخل الملف للحفاظ على خفته وسرعة معالجته.
 2. **منع اختصار الأكواد (Zero Truncation Policy)**:
    - يُمنع استخدام تعليقات الاختصار مثل `// ... rest of code`. جميع الأكواد المضمنة كاملة وقابلة للتشغيل الفوري.
 3. **شروط الاستخدام والملكية الفكرية وحماية المؤلف (/terms)**:
@@ -53,24 +53,12 @@
     - المشرف العام (`ADMIN`): قمة الهرم والتحكم الإداري الكامل والتبديل بين اللوحات.
     - المسؤول الإداري (`MODERATOR`): محصور في `/moderator/dashboard`.
     - المتفقد التربوي (`INSPECTOR`): محصور في `/inspector/dashboard`.
-12. **حصرية شارات المتفقد والمؤسسة والظهور الفوري للمعلم والتلميذ (v16.0)**:
-    - شارة «متفقد معتمد» وشارة «مؤسسة معتمدة» والإطار الذهبي والأرجواني محظورة تماماً على الحسابات غير الموثقة (`isVerified: false`).
-    - شارة «معلم» و«تلميذ» تظهر فورياً بمجرد تسجيل الدخول لتعزيز الهوية التربوية.
-13. **إلغاء تنشيط وحذف الحسابات وتأمين إعادة الدخول (v16.0)**:
-    - عند قيام المستخدم بحذف حسابه، يُمسح فورياً من `public.users` ومن `auth.users` لمنع الدخول بحساب ملغى.
-    - صفحة تسجيل الدخول `/login` ترصد الحسابات المحذوفة وترفض إعادة إنشائها تلقائياً وتوجه المستخدم إلى `/register` لإنشاء حساب شرعي جديد.
-14. **لوحة تحكم الإدارة ومؤشرات الأداء KPI (v16.0)**:
-    - إحصائية «إجمالي الحسابات في الموقع» (`totalUsers`) معروضة في قمة لوحة المشرف العام إلى جانب الحسابات الموثقة والمنشورات.
-15. **استقرار تسجيل الخروج وعزل الـ CSS (v16.0)**:
-    - استبدال التوجيه المتزامن بـ `window.location.replace("/login")` لضمان مسح الذاكرة العشوائية وعدم سقوط الـ CSS.
-16. **تحصين فضاءات الأدوار المتخصصة (Role Personalized Hubs - v16.0)**:
-    - عزل أقسام المتفقدين والمؤسسات والمعلمين أمام الحسابات غير الموثقة واستبدالها برابط طلب التوثيق.
 
 ---
 
 ## 🛠️ أوامر التشغيل والترقية الرسمية (Official CLI Commands)
 
-- **1. تشغيل سكريبت ترقية الإصدار 16.0 الشامل:**
+- **1. تشغيل سكريبت ترقية الإصدار 15.0 الشامل:**
   ```bash
   node apply-musnad-v16-upgrade.mjs
   ```
@@ -401,31 +389,53 @@ ADMIN_NAME="الأستاذ أسامة مرزوقي — المشرف العام"
 ### File: `README.md`
 
 ```markdown
-# منصة المسند التربوية والبيداغوجية (Al-Musnad) — v16.0
+# منصة «المسند» التربوية والبيداغوجية (Al-Musnad) — v3.0
 
-منصة تربوية وبيداغوجية متكاملة للمؤسسات التعليمية، المتفقدين التربويين، المعلمين، والتلاميذ؛ لتبادل واعتماد النشرات والوثائق البيداغوجية والإدارية في إطار منظومة تربوية حديثة وآمنة.
+منصة تربوية وبيداغوجية معتمدة ومتكاملة للمؤسسات التعليمية، المتفقدين التربويين، المعلمين، والتلاميذ، تتيح استكشاف، تدقيق، اعتماد، ومشاركة الأنشطة والوثائق البيداغوجية بمستويات خصوصية وأمان عالية.
 
 ---
 
-## 🚀 أبرز ميزات وتحسينات الإصدار v16.0
+## 🌟 الميزات والمحاور الرئيسية للإصدار الثالث (v3.0)
 
-1. **إصلاح مشغل قاعدة البيانات والحفاظ التام على رتبة المتفقد (Trigger & Role Fix)**:
-   - تحديث دالة `public.handle_new_user()` في Supabase PostgreSQL لإنشاء كل حساب برتبته الحقيقية المختارة فوراً دون تحويله لمعلم.
-   - تصحيح تلقائي لجميع حسابات المتفقدين السابقة لتعود لرتبتها الصحيحة `Role.INSPECTOR`.
+1. **الهوية المعتمدة «المسند» (Al-Musnad)**:
+   - حذف أي إشارة إلى "مجانية المنصة" والتأكيد على الاعتماد والجودة البيداغوجية.
+   - دعم التدويل الكامل (العربية، الفرنسية، الإنجليزية) والوضع الليلي (Dark Mode).
 
-2. **إلزام تسجيل الدخول حسب الفضاء المخصص لكل حساب (Portal-Specific Login)**:
-   - يُلزم كل مستخدم (`INSTITUTION`, `INSPECTOR`, `TEACHER`, `STUDENT`) بالدخول حصراً من فضائه المخصص.
-   - يستثنى المشرف العام (`ADMIN`) والمسؤول الإداري (`MODERATOR`) حيث يملكان حق الدخول من أي فضاء.
+2. **اعتماد المتفقد التربوي (Pedagogical Endorsement)**:
+   - وسام فحص واعتماد رسمي يمنحه المتفقد التربوي أو المشرف (`isEndorsed: true`).
+   - تصدر الأنشطة المعتمدة قائمة العرض والبحث تلقائياً (`orderBy: [{ isEndorsed: 'desc' }, ...]`).
 
-3. **العزل الأمني الصارم للحسابات غير الموثقة (`isVerified === false`)**:
-   - حجب لوحة تحكم المتفقد وميزة الاعتماد البيداغوجي والتعليقات الخاصة حتى إثبات الهوية.
-   - حجب المنشورات الحصرية والخاصة (`TEACHERS_ONLY`, `INSTITUTIONS_ONLY`, `SAME_ROLE_ONLY`) عن الحسابات غير الموثقة.
+3. **جرس الإشعارات وقائمة الملف الشخصي المنسدلة**:
+   - إشعارات فورية مع عداد غير مقروء في الشريط العلوي (اعتمادات، متابعات، موافقات الحساب).
+   - قائمة منسدلة أنيقة تشمل: مساحة العمل، الملف الشخصي العام، تعديل البيانات، خطط الاشتراك، الإعدادات، وتسجيل الخروج.
 
-4. **تجميع الدروس حسب السداسي والإطار الذهبي البصري وتنظيف الواجهة**:
-   - تقسيم المواد الدراسية إلى السداسي الأول والسداسي الثاني مع فهرس تجميعي للمحاور المتشابهة.
-   - تمييز المنشورات المعتمدة بإطار ذهبي بصري فائق الأناقة دون كتابة العبارة نصياً.
-   - تنظيف صندوق اسم المستخدم في الهيدر والبطاقات.
-   - توحيد أرقام الدعم الفني الرسمية عبر واتساب (27764985 للمعلمين والتلاميذ، و46907101 للمؤسسات والمتفقدين).
+4. **إخضاع تعديل الملف الشخصي لموافقة المشرف العام**:
+   - حماية هوية المؤسسات والمعلمين والمتفقدين؛ تخزن التعديلات في حالة انتظار (`PENDING`) مع إشعار للمشرف في لوحة التحكم `/admin/dashboard` للمراجعة والاعتماد.
+
+5. **صفحة الناشر العامة (`/publisher/[id]`)**:
+   - صفحة استعراض متكاملة للناشر مع إحصائيات المتابعين والمنشورات.
+   - دعم ميزة المتابعة (`PublisherFollow`) والإضافة للناشرين المفضلين (`FavoritePublisher`).
+
+6. **تخصيص جمهور النشر والوثائق الحصرية (`TargetAudience`)**:
+   - خيارات نشر دقيقة: لكافة المنصة، لنفس الفئة فقط، للمعلمين فقط، أو للمعلمين والتلاميذ معاً.
+   - حجب فوري لإصلاحات الفروض ودلائل المعلم والوثائق الإدارية عن حسابات التلاميذ والزوار.
+
+---
+
+## 🛠️ التقنيات المستخدمة (Tech Stack)
+
+- **Framework**: Next.js 15 (App Router, Server Actions, React 19)
+- **Database & ORM**: PostgreSQL (Supabase) + Prisma ORM 6
+- **Authentication & Storage**: Supabase Auth (Multi-Role SSR) + Private Storage Bucket
+- **Styling**: Tailwind CSS + Lucide Icons + Google Cairo Font
+- **Validation**: Zod Schemas
+
+---
+
+## 🚀 البدء والتشغيل السريع
+
+### 1. إعداد المتغيرات البيئية
+انسخ ملف `.env.example` إلى `.env.local` وضع بيانات مشروع Supabase الخاص بك:
 ```
 
 ---
@@ -666,23 +676,23 @@ function getLanguage(filePath) {
 }
 
 const strictHeader = (titleSuffix = "") => `# 🏛️ Project Handover & Master Technical Audit — Al-Musnad (v16.0) ${titleSuffix}
-**Project:** Al-Musnad (المسند) — Integrated Educational & Pedagogical Platform
-**Architecture:** Next.js 15 (App Router) + TypeScript + Prisma ORM + PostgreSQL (Supabase) + Cloudflare R2 + Tailwind CSS + Lucide Icons
-**Version:** 16.0.0 (Master Production Handover — Complete Source Code, Security Configs & Commands)
-**Date:** October 2026
-**Primary Admin Account:** \`bjasser123@gmail.com\` (Password: \`Jasserbes1M\` — Role: \`ADMIN\`)
-**Live Production URL:** [https://al-musnad.vercel.app](https://al-musnad.vercel.app)
-**GitHub Repository:** [https://github.com/jasser0209/al-musnad.git](https://github.com/jasser0209/al-musnad.git)
+**Project:** Al-Musnad (المسند) — Integrated Educational & Pedagogical Platform  
+**Architecture:** Next.js 15 (App Router) + TypeScript + Prisma ORM + PostgreSQL (Supabase) + Cloudflare R2 + Tailwind CSS + Lucide Icons  
+**Version:** 15.0.0 (Optimized Handover Archive — Complete Source Code, Security Configs & Commands)  
+**Date:** October 2026  
+**Primary Admin Account:** \`bjasser123@gmail.com\` (Password: \`Jasserbes1M\` — Role: \`ADMIN\`)  
+**Live Production URL:** [https://al-musnad.vercel.app](https://al-musnad.vercel.app)  
+**GitHub Repository:** [https://github.com/jasser0209/al-musnad.git](https://github.com/jasser0209/al-musnad.git)  
 
 ---
 
 ## 🤖 القواعد الصارمة والتعليمات الإلزامية للمشروع (PROJECT ARCHITECTURE & RULES)
 
-أنت المهندس المعماري المسؤول عن تطوير وصيانة منصة **«المسند» (Al-Musnad v16.0)**. عند قراءة هذا الملف أو تنفيذ أي تعديل مستقبلي، **يجب الالتزام الصارم بالقواعد التالية**:
+أنت المهندس المعماري المسؤول عن تطوير وصيانة منصة **«المسند» (Al-Musnad v15.0)**. عند قراءة هذا الملف أو تنفيذ أي تعديل مستقبلي، **يجب الالتزام الصارم بالقواعد التالية**:
 
 1. **قاعدة الحجم الأقصى (< 1 MB) ومنع التكرار**:
    - الحجم الأقصى لملف \`PROJECT_HANDOVER.md\` يجب أن يبقى دائماً **أقل من 1 ميجابايت (1,000 KB)**.
-   - عدم تضمين حزم JSON الضخمة المكررة داخل الملف للحفاظ على خفته وسرعة معالجته من قبل أدوات الذكاء الاصطناعي الخارجية.
+   - عدم تضمين حزم JSON الضخمة المكررة داخل الملف للحفاظ على خفته وسرعة معالجته.
 2. **منع اختصار الأكواد (Zero Truncation Policy)**:
    - يُمنع استخدام تعليقات الاختصار مثل \`// ... rest of code\`. جميع الأكواد المضمنة كاملة وقابلة للتشغيل الفوري.
 3. **شروط الاستخدام والملكية الفكرية وحماية المؤلف (/terms)**:
@@ -720,24 +730,12 @@ const strictHeader = (titleSuffix = "") => `# 🏛️ Project Handover & Master 
     - المشرف العام (\`ADMIN\`): قمة الهرم والتحكم الإداري الكامل والتبديل بين اللوحات.
     - المسؤول الإداري (\`MODERATOR\`): محصور في \`/moderator/dashboard\`.
     - المتفقد التربوي (\`INSPECTOR\`): محصور في \`/inspector/dashboard\`.
-12. **حصرية شارات المتفقد والمؤسسة والظهور الفوري للمعلم والتلميذ (v16.0)**:
-    - شارة «متفقد معتمد» وشارة «مؤسسة معتمدة» والإطار الذهبي والأرجواني محظورة تماماً على الحسابات غير الموثقة (\`isVerified: false\`).
-    - شارة «معلم» و«تلميذ» تظهر فورياً بمجرد تسجيل الدخول لتعزيز الهوية التربوية.
-13. **إلغاء تنشيط وحذف الحسابات وتأمين إعادة الدخول (v16.0)**:
-    - عند قيام المستخدم بحذف حسابه، يُمسح فورياً من \`public.users\` ومن \`auth.users\` لمنع الدخول بحساب ملغى.
-    - صفحة تسجيل الدخول \`/login\` ترصد الحسابات المحذوفة وترفض إعادة إنشائها تلقائياً وتوجه المستخدم إلى \`/register\` لإنشاء حساب شرعي جديد.
-14. **لوحة تحكم الإدارة ومؤشرات الأداء KPI (v16.0)**:
-    - إحصائية «إجمالي الحسابات في الموقع» (\`totalUsers\`) معروضة في قمة لوحة المشرف العام إلى جانب الحسابات الموثقة والمنشورات.
-15. **استقرار تسجيل الخروج وعزل الـ CSS (v16.0)**:
-    - استبدال التوجيه المتزامن بـ \`window.location.replace("/login")\` لضمان مسح الذاكرة العشوائية وعدم سقوط الـ CSS.
-16. **تحصين فضاءات الأدوار المتخصصة (Role Personalized Hubs - v16.0)**:
-    - عزل أقسام المتفقدين والمؤسسات والمعلمين أمام الحسابات غير الموثقة واستبدالها برابط طلب التوثيق.
 
 ---
 
 ## 🛠️ أوامر التشغيل والترقية الرسمية (Official CLI Commands)
 
-- **1. تشغيل سكريبت ترقية الإصدار 16.0 الشامل:**
+- **1. تشغيل سكريبت ترقية الإصدار 15.0 الشامل:**
   \`\`\`bash
   node apply-musnad-v16-upgrade.mjs
   \`\`\`
@@ -774,13 +772,11 @@ function buildMarkdownForFiles(fileList, titleSuffix, footerNote) {
       continue;
     }
     let fileContent = fs.readFileSync(fullPath, "utf-8");
-    fileContent = fileContent.replace(/\r\n/g, "\n").replace(/[ \t]+$/gm, "");
     if (relPath.endsWith(".ts") || relPath.endsWith(".tsx")) {
       fileContent = fileContent
         .replace(/^\/\*\*[\s\S]*?\*\/\s*/, "")
         .replace(/^("use client";\s*)\/\*\*[\s\S]*?\*\/\s*/, "$1");
     }
-    fileContent = fileContent.replace(/\n\s*\n+/g, "\n\n").trim();
     const lang = getLanguage(relPath);
     md += `\n### File: \`${relPath}\`\n\n\`\`\`${lang}\n${fileContent}\n\`\`\`\n\n---\n`;
     count++;
@@ -792,7 +788,7 @@ function buildMarkdownForFiles(fileList, titleSuffix, footerNote) {
 const fullMd = buildMarkdownForFiles(
   allFiles,
   "(Complete Single-File Edition < 1 MB)",
-  "End of Master Project Handover Document (v16.0 Complete Single-File Edition)"
+  "End of Master Project Handover Document (v12.0 Complete Single-File Edition)"
 );
 const part1Md = buildMarkdownForFiles(
   part1Files,
@@ -5108,8 +5104,8 @@ function createEmailTemplate({
     <div class="footer">
       <p style="margin: 0 0 8px 0;">
         هذه الرسالة تم إرسالها تلقائياً من خوادم <strong>منصة المسند</strong>.<br>
-        للدعم الفني والاستفسار، تواصل معنا عبر واتساب:
-        <a href="https://wa.me/21627764985">27764985</a> أو
+        للدعم الفني والاستفسار، تواصل معنا عبر واتساب: 
+        <a href="https://wa.me/21627764985">27764985</a> أو 
         <a href="https://wa.me/21646907101">46907101</a>
       </p>
       <p style="margin: 0; color: #94a3b8;">
@@ -8234,12 +8230,6 @@ export async function archiveWorksheetAction(id: string) {
 ```typescript
 "use server";
 
-/**
- * Favorite Server Actions
- *
- * Atomically toggles bookmark states and triggers Next.js path cache revalidation.
- */
-
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { toggleFavorite } from "@/services/favorite.service";
@@ -8272,10 +8262,6 @@ export async function toggleFavoriteAction(worksheetId: string) {
 
 ```typescript
 "use server";
-
-/**
- * Profile, Subscriptions & Account Deletion Actions — Al-Musnad v4.0
- */
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "@/lib/supabase/server";
@@ -8457,16 +8443,6 @@ export async function deleteMyAccountAction() {
 
 ```typescript
 "use server";
-
-/**
- * Top-Tier Admin Actions (المستوى الرقابي الثالث في القمة: المشرف) — Al-Musnad v9.0
- *
- * Admin Exclusive Powers (in addition to all Inspector & Moderator powers):
- * 1. إمكانية تفعيل التوثيق المباشر للحسابات (`toggleVerifyUserAdminAction`) — مقتصرة حصرياً على المشرف!
- * 2. إمكانية إنشاء وتوليد أكواد التوثيق في الداشبورد للمشرف (`createVerificationCodeAdminAction`, `deleteVerificationCodeAdminAction`).
- * 3. التحكم الكامل في الموقع والأدوار (بما في ذلك تعيين المسؤولين `MODERATOR` والمتفقدين `INSPECTOR`).
- * 4. متابعة سجلات النشاطات والأمن الشاملة (`AuditLog`).
- */
 
 import { revalidatePath } from "next/cache";
 import crypto from "crypto";
@@ -9174,19 +9150,6 @@ export async function unlockUserAccountAdminAction(targetUserId: string) {
 ```typescript
 "use server";
 
-/**
- * Moderator Actions (المستوى الرقابي الثاني: المسؤول) — Al-Musnad v8.0
- *
- * Moderator Powers (`Role.MODERATOR` & `Role.ADMIN`):
- * 1. حذف المنشورات (`deleteWorksheetModeratorAction`) أو تغيير حالتها (`updateWorksheetStatusModeratorAction`)
- * 2. حظر المستخدمين (`toggleBanUserModeratorAction`) — لا يملك صلاحية حظر مشرف أو مسؤول
- * 3. إدارة قسم الدعم الفني (`replySupportTicketModeratorAction`) ومعالجة البلاغات (`resolveReportModeratorAction`)
- * 4. التواصل المباشر مع الناشر (`sendDirectMessageToPublisherAction`) مع دعم الإشارة `@username`
- *
- * ملاحظة صارمة: المسؤول (`MODERATOR`) لا يملك صلاحية تفعيل التوثيق (`isVerified`) ولا إنشاء الأكواد؛
- * فهذه ميزة حصرية للمشرف العام (`ADMIN`) في قمة الهرم.
- */
-
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -9703,17 +9666,6 @@ export async function unlockUserAccountModeratorAction(targetUserId: string) {
 
 ```typescript
 "use server";
-
-/**
- * Inspector Actions (المستوى الرقابي الأول: المتفقد) & Identity Verification — Al-Musnad v8.0
- *
- * Inspector Powers:
- * 1. وضع علامات التوثيق البيداغوجي للمنشورات (`toggleWorksheetEndorsementAction`)
- * 2. إضافة تعليقات ترى في الصدارة (`addInspectorCommentAction` with `isOfficialDirective: true`)
- * 3. رفع تعليق خاص مباشرة إلى الناشر (`addInspectorCommentAction` with `isPrivateToPublisher: true`)
- * 4. القيام بإبلاغات تصل إلى المشرف مباشرة (`submitInspectorDirectReportToAdminAction` with `isInspectorPriority: true`)
- * 5. تفعيل كود التوثيق الصادر من المشرف (`activateInspectorCodeAction` — يدعم جدول `VerificationCode` وأكواد المستخدمين)
- */
 
 import { revalidatePath } from "next/cache";
 import crypto from "crypto";
@@ -10301,13 +10253,6 @@ export async function toggleWorksheetEndorsementAction(worksheetId: string) {
 ```typescript
 "use server";
 
-/**
- * Publisher Social & Bookmark Actions — Al-Musnad v5.0
- *
- * Enforces strict authentication AND filters publisher publications so that
- * the viewing account ONLY sees publications the publisher made available to its role.
- */
-
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -10611,10 +10556,6 @@ export async function getMyFavoritePublishersAction() {
 
 ```typescript
 "use server";
-
-/**
- * Reports (التبليغات) & Technical Support / Customer Service (الدعم الفني وخدمة العملاء) — Al-Musnad v4.0
- */
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
@@ -17690,6 +17631,7 @@ export default async function HomePage(props: HomePageProps) {
 
   return (
     <div className="space-y-12 pb-16">
+      
 
       {/* Hero Section: المسند */}
       <section className="relative overflow-hidden bg-gradient-to-b from-blue-700 via-indigo-800 to-slate-900 text-white pt-14 pb-16 px-4 sm:px-6 lg:px-8">
@@ -26469,4 +26411,4 @@ export default function AdminDashboardPage() {
 
 ---
 
-*End of Master Project Handover Document (v16.0 Complete Single-File Edition) — Total included files: 115.*
+*End of Master Project Handover Document (v12.0 Complete Single-File Edition) — Total included files: 115.*

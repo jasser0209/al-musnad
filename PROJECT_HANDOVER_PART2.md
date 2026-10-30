@@ -1,7 +1,7 @@
 # 🏛️ Project Handover & Master Technical Audit — Al-Musnad (v16.0) — الجزء الثاني: المكونات، الواجهات، مستودع المواد، ولوحات الإشراف الثلاث (Part 2 of 2)
 **Project:** Al-Musnad (المسند) — Integrated Educational & Pedagogical Platform  
 **Architecture:** Next.js 15 (App Router) + TypeScript + Prisma ORM + PostgreSQL (Supabase) + Cloudflare R2 + Tailwind CSS + Lucide Icons  
-**Version:** 16.0.0 (Master Production Handover — Complete Source Code, Security Configs & Commands)  
+**Version:** 15.0.0 (Optimized Handover Archive — Complete Source Code, Security Configs & Commands)  
 **Date:** October 2026  
 **Primary Admin Account:** `bjasser123@gmail.com` (Password: `Jasserbes1M` — Role: `ADMIN`)  
 **Live Production URL:** [https://al-musnad.vercel.app](https://al-musnad.vercel.app)  
@@ -11,11 +11,11 @@
 
 ## 🤖 القواعد الصارمة والتعليمات الإلزامية للمشروع (PROJECT ARCHITECTURE & RULES)
 
-أنت المهندس المعماري المسؤول عن تطوير وصيانة منصة **«المسند» (Al-Musnad v16.0)**. عند قراءة هذا الملف أو تنفيذ أي تعديل مستقبلي، **يجب الالتزام الصارم بالقواعد التالية**:
+أنت المهندس المعماري المسؤول عن تطوير وصيانة منصة **«المسند» (Al-Musnad v15.0)**. عند قراءة هذا الملف أو تنفيذ أي تعديل مستقبلي، **يجب الالتزام الصارم بالقواعد التالية**:
 
 1. **قاعدة الحجم الأقصى (< 1 MB) ومنع التكرار**:
    - الحجم الأقصى لملف `PROJECT_HANDOVER.md` يجب أن يبقى دائماً **أقل من 1 ميجابايت (1,000 KB)**.
-   - عدم تضمين حزم JSON الضخمة المكررة داخل الملف للحفاظ على خفته وسرعة معالجته من قبل أدوات الذكاء الاصطناعي الخارجية.
+   - عدم تضمين حزم JSON الضخمة المكررة داخل الملف للحفاظ على خفته وسرعة معالجته.
 2. **منع اختصار الأكواد (Zero Truncation Policy)**:
    - يُمنع استخدام تعليقات الاختصار مثل `// ... rest of code`. جميع الأكواد المضمنة كاملة وقابلة للتشغيل الفوري.
 3. **شروط الاستخدام والملكية الفكرية وحماية المؤلف (/terms)**:
@@ -53,24 +53,12 @@
     - المشرف العام (`ADMIN`): قمة الهرم والتحكم الإداري الكامل والتبديل بين اللوحات.
     - المسؤول الإداري (`MODERATOR`): محصور في `/moderator/dashboard`.
     - المتفقد التربوي (`INSPECTOR`): محصور في `/inspector/dashboard`.
-12. **حصرية شارات المتفقد والمؤسسة والظهور الفوري للمعلم والتلميذ (v16.0)**:
-    - شارة «متفقد معتمد» وشارة «مؤسسة معتمدة» والإطار الذهبي والأرجواني محظورة تماماً على الحسابات غير الموثقة (`isVerified: false`).
-    - شارة «معلم» و«تلميذ» تظهر فورياً بمجرد تسجيل الدخول لتعزيز الهوية التربوية.
-13. **إلغاء تنشيط وحذف الحسابات وتأمين إعادة الدخول (v16.0)**:
-    - عند قيام المستخدم بحذف حسابه، يُمسح فورياً من `public.users` ومن `auth.users` لمنع الدخول بحساب ملغى.
-    - صفحة تسجيل الدخول `/login` ترصد الحسابات المحذوفة وترفض إعادة إنشائها تلقائياً وتوجه المستخدم إلى `/register` لإنشاء حساب شرعي جديد.
-14. **لوحة تحكم الإدارة ومؤشرات الأداء KPI (v16.0)**:
-    - إحصائية «إجمالي الحسابات في الموقع» (`totalUsers`) معروضة في قمة لوحة المشرف العام إلى جانب الحسابات الموثقة والمنشورات.
-15. **استقرار تسجيل الخروج وعزل الـ CSS (v16.0)**:
-    - استبدال التوجيه المتزامن بـ `window.location.replace("/login")` لضمان مسح الذاكرة العشوائية وعدم سقوط الـ CSS.
-16. **تحصين فضاءات الأدوار المتخصصة (Role Personalized Hubs - v16.0)**:
-    - عزل أقسام المتفقدين والمؤسسات والمعلمين أمام الحسابات غير الموثقة واستبدالها برابط طلب التوثيق.
 
 ---
 
 ## 🛠️ أوامر التشغيل والترقية الرسمية (Official CLI Commands)
 
-- **1. تشغيل سكريبت ترقية الإصدار 16.0 الشامل:**
+- **1. تشغيل سكريبت ترقية الإصدار 15.0 الشامل:**
   ```bash
   node apply-musnad-v16-upgrade.mjs
   ```
@@ -6968,6 +6956,7 @@ export default async function HomePage(props: HomePageProps) {
 
   return (
     <div className="space-y-12 pb-16">
+      
 
       {/* Hero Section: المسند */}
       <section className="relative overflow-hidden bg-gradient-to-b from-blue-700 via-indigo-800 to-slate-900 text-white pt-14 pb-16 px-4 sm:px-6 lg:px-8">

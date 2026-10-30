@@ -1,11 +1,5 @@
 "use server";
 
-/**
- * Favorite Server Actions
- *
- * Atomically toggles bookmark states and triggers Next.js path cache revalidation.
- */
-
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { toggleFavorite } from "@/services/favorite.service";

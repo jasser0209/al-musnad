@@ -392,6 +392,7 @@ export default async function HomePage(props: HomePageProps) {
 
   return (
     <div className="space-y-12 pb-16">
+      
 
       {/* Hero Section: المسند */}
       <section className="relative overflow-hidden bg-gradient-to-b from-blue-700 via-indigo-800 to-slate-900 text-white pt-14 pb-16 px-4 sm:px-6 lg:px-8">
