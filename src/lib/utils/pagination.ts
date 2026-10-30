@@ -49,4 +49,4 @@ export function buildPaginationMeta(
     total: safeTotal,
     totalPages,
   };
-}
+}

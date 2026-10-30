@@ -231,7 +231,7 @@ function LoginContent() {
 
       // Step 2: Attempt Supabase Auth login
       const supabase = createSupabaseBrowserClient();
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      const { error: authError } = await supabase.auth.signInWithPassword({
         email: loginEmail,
         password: parsed.data.password,
       });
@@ -242,7 +242,10 @@ function LoginContent() {
             const failRes = await fetch("/api/auth/login-guard", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ action: "FAILED_ATTEMPT", identifier: loginEmail }),
+              body: JSON.stringify({
+                action: "FAILED_ATTEMPT",
+                identifier: loginEmail,
+              }),
             });
             const failJson = await failRes.json();
             if (failJson.success && failJson.data) {
@@ -250,25 +253,28 @@ function LoginContent() {
               if (typeof failJson.data.remainingAttempts === "number") {
                 setRemainingAttempts(failJson.data.remainingAttempts);
               }
-              setError(failJson.data.message || "كلمة المرور غير صحيحة، يرجى المحاولة مرة أخرى.");
+              setError(
+                failJson.data.message ||
+                  "كلمة المرور غير صحيحة، يرجى المحاولة مرة أخرى."
+              );
               return;
             }
           } catch {
             // fallback
           }
-          setError("كلمة المرور المدخلة غير صحيحة، يرجى المحاولة مرة أخرى.");
+          setError(
+            "كلمة المرور المدخلة غير صحيحة، يرجى المحاولة مرة أخرى."
+          );
           return;
         }
-        setError("هذا البريد الإلكتروني أو المعرف غير مسجل في المنصة، أو أن البيانات غير صحيحة.");
+
+        setError(
+          "هذا البريد الإلكتروني أو المعرف غير مسجل في المنصة، أو أن البيانات غير صحيحة."
+        );
         return;
       }
 
-      // Step 3: Strict Portal Isolation Check from session metadata AND /api/auth/me
-      const sessionMetaRole = String(authData?.user?.user_metadata?.role || "").trim().toUpperCase();
-      if (sessionMetaRole) {
-        resolvedRole = sessionMetaRole;
-      }
-
+      // Step 3: Verify synced profile role from /api/auth/me (catches accounts that were not in DB before login)
       try {
         const meRes = await fetch("/api/auth/me", { cache: "no-store" });
         if (meRes.ok) {
@@ -276,35 +282,42 @@ function LoginContent() {
           if (meJson.success && meJson.data) {
             resolvedRole = meJson.data.role || resolvedRole;
             resolvedVerified = Boolean(meJson.data.isVerified);
+
+            const isStaff =
+              resolvedRole === "ADMIN" ||
+              resolvedRole === "MODERATOR" ||
+              loginEmail.toLowerCase() === "bjasser123@gmail.com";
+
+            if (
+              !isStaff &&
+              ["INSTITUTION", "INSPECTOR", "TEACHER", "STUDENT"].includes(portalRole) &&
+              resolvedRole !== portalRole
+            ) {
+              await supabase.auth.signOut();
+              setSuggestedPortalRole(resolvedRole);
+              setError(
+                `عذراً، هذا الحساب مسجل في «${
+                  PORTAL_NAMES_AR[resolvedRole] || resolvedRole
+                }» ولا يمكنه تسجيل الدخول من «${
+                  PORTAL_NAMES_AR[portalRole] || portalRole
+                }». يجب على كل حساب تسجيل الدخول من الفضاء المخصص لفئته فقط.`
+              );
+              return;
+            }
           }
         }
       } catch {
-        // fallback to sessionMetaRole
+        // ignore
       }
 
-      const isAdminOrModerator =
-        resolvedRole === "ADMIN" ||
-        resolvedRole === "MODERATOR" ||
-        loginEmail.toLowerCase() === "bjasser123@gmail.com" ||
-        loginEmail.toLowerCase() === "admin@musnad.tn";
-
-      if (
-        !isAdminOrModerator &&
-        ["INSTITUTION", "INSPECTOR", "TEACHER", "STUDENT"].includes(portalRole) &&
-        resolvedRole !== portalRole
-      ) {
-        await supabase.auth.signOut();
-        setSuggestedPortalRole(resolvedRole);
-        setError(
-          `عذراً، هذا الحساب مسجل في «${PORTAL_NAMES_AR[resolvedRole] || resolvedRole}» ولا يمكنه تسجيل الدخول من «${PORTAL_NAMES_AR[portalRole] || portalRole}». المشرف العام والمسؤول الإداري فقط يملكان صلاحية الدخول من أي فضاء.`
-        );
-        return;
-      }
-
-      void fetch("/api/auth/login-guard", {
+      // Step 4: Reset failed attempts counter on successful login
+      await fetch("/api/auth/login-guard", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "RESET_SUCCESS", identifier: loginEmail }),
+        body: JSON.stringify({
+          action: "RESET_SUCCESS",
+          identifier: loginEmail,
+        }),
       }).catch(() => null);
 
       const isAdminAccount =
@@ -653,4 +666,4 @@ export default function LoginPage() {
       </Suspense>
     </main>
   );
-}
+}

@@ -62,4 +62,4 @@ export default function SubjectIcon({
     default:
       return <Sparkles className={className} />;
   }
-}
+}

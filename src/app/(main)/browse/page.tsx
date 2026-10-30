@@ -16,4 +16,4 @@ export default async function BrowsePage(props: BrowseProps) {
 
   const query = params.toString();
   redirect(`/${query ? `?${query}#catalog` : "#catalog"}`);
-}
+}

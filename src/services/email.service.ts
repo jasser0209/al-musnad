@@ -304,4 +304,4 @@ export async function sendEndorsementNotification(
   });
 
   return sendEmail({ to, subject, html });
-}
+}

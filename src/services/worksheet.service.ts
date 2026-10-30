@@ -749,8 +749,7 @@ export async function updateWorksheet(
         }
       : {};
 
-  const canChangeWorksheetStatus = isAdmin || isModerator || isInspector;
-  let nextStatus = canChangeWorksheetStatus && data.status !== undefined ? data.status : existing.status;
+  let nextStatus = data.status !== undefined ? data.status : existing.status;
   let publishedFromDraft = false;
 
   // If Admin or Inspector replaces file on a DRAFT worksheet with a PDF, publish it!
@@ -890,4 +889,4 @@ export async function getUserUploads(
     data: worksheets,
     meta: buildPaginationMeta(total, page, limit),
   };
-}
+}

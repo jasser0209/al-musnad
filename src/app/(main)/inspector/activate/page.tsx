@@ -102,4 +102,4 @@ export default function InspectorActivatePage() {
       </div>
     </main>
   );
-}
+}

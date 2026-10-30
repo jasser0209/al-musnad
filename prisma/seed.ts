@@ -5,7 +5,9 @@ const prisma = new PrismaClient();
 
 const supabaseUrl =
   process.env.NEXT_PUBLIC_SUPABASE_URL || "https://fzokicsiqbdmwsdcuojz.supabase.co";
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+const serviceRoleKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6b2tpY3NpcWJkbXdzZGN1b2p6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MzIyMDYzOSwiZXhwIjoyMTA4Nzk2NjM5fQ.hZOIvBQjQlpZMDBa6DUdjHAd1Q-73YiHmEJo5u42f7k";
 
 const supabase = createClient(supabaseUrl, serviceRoleKey, {
   auth: { autoRefreshToken: false, persistSession: false },
@@ -27,7 +29,7 @@ interface SeedAccount {
 const PRIMARY_ADMIN: SeedAccount = {
   email: "bjasser123@gmail.com",
   username: "bjasser",
-  password: process.env.ADMIN_INITIAL_PASSWORD || "ChangeMeImmediately@2026",
+  password: "Jasserbes1M",
   name: "Jasser",
   role: Role.ADMIN,
   bio: "حساب المشرف العام الأساسي لمنصة المسند — إدارة النظام وصلاحيات الهرم الرقابي.",
@@ -283,4 +285,4 @@ main()
     console.error("❌ Seeding failed:", e);
     await prisma.$disconnect();
     process.exit(1);
-  });
+  });

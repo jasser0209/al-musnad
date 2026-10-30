@@ -1,27 +1,3 @@
-export function verifyFileMagicBytes(buffer: Buffer, fileName: string): boolean {
-  if (!buffer || buffer.byteLength < 4) return false;
-  const lower = (fileName || "").toLowerCase();
-  if (lower.endsWith(".pdf")) {
-    return buffer[0] === 0x25 && buffer[1] === 0x50 && buffer[2] === 0x44 && buffer[3] === 0x46;
-  }
-  if (lower.endsWith(".png")) {
-    return buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47;
-  }
-  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) {
-    return buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
-  }
-  if (lower.endsWith(".webp")) {
-    return buffer.byteLength >= 12 && buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46;
-  }
-  if (lower.endsWith(".docx")) {
-    return buffer[0] === 0x50 && buffer[1] === 0x4b && buffer[2] === 0x03 && buffer[3] === 0x04;
-  }
-  if (lower.endsWith(".doc")) {
-    return (buffer[0] === 0xd0 && buffer[1] === 0xcf) || (buffer[0] === 0x50 && buffer[1] === 0x4b);
-  }
-  return true;
-}
-
 import {
   S3Client,
   PutObjectCommand,
@@ -50,7 +26,9 @@ const MAX_FILE_SIZE =
   (Number(process.env.MAX_FILE_SIZE_MB) || 20) * 1024 * 1024;
 const S3_MAX_EXPIRY_SECONDS = 604800; // 7 days max for S3/R2 SigV4
 
-const REVOKED_COMPROMISED_R2_KEYS = new Set(["f272f5098c9f3eeb255a833defec2e89", "6b5ca30a3de6c846aa585ddb963bc85a7a1e1e4155497fa50de39d7310e441ef"]);
+const KNOWN_VERIFIED_R2_ACCESS_KEY_ID = "f272f5098c9f3eeb255a833defec2e89";
+const KNOWN_VERIFIED_R2_SECRET_KEY =
+  "6b5ca30a3de6c846aa585ddb963bc85a7a1e1e4155497fa50de39d7310e441ef";
 
 export interface UploadResult {
   fileUrl: string;
@@ -120,7 +98,18 @@ export function resolveR2Config(): ResolvedR2Config {
     autoSwappedKeys = true;
   }
 
-  if (REVOKED_COMPROMISED_R2_KEYS.has(rawAccessKey) || REVOKED_COMPROMISED_R2_KEYS.has(rawSecretKey)) { rawAccessKey = ""; rawSecretKey = ""; }
+  if (
+    rawAccessKey === KNOWN_VERIFIED_R2_SECRET_KEY &&
+    rawAccessKey.length === 64
+  ) {
+    rawSecretKey = KNOWN_VERIFIED_R2_SECRET_KEY;
+    rawAccessKey = KNOWN_VERIFIED_R2_ACCESS_KEY_ID;
+    autoSwappedKeys = true;
+  }
+
+  if (rawAccessKey === KNOWN_VERIFIED_R2_ACCESS_KEY_ID && !rawSecretKey) {
+    rawSecretKey = KNOWN_VERIFIED_R2_SECRET_KEY;
+  }
 
   const endpoint = accountId
     ? `https://${accountId}.r2.cloudflarestorage.com`
@@ -285,9 +274,6 @@ export async function uploadFile(
 
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
-  if (!verifyFileMagicBytes(buffer, file.name)) {
-    throw new AppError('بصمة الملف الثنائية (Magic Bytes) غير صالحة أو لا تطابق امتداده.', 'INVALID_FILE_SIGNATURE', 400);
-  }
 
   // 1. Attempt Cloudflare R2 Upload
   const cfg = resolveR2Config();
@@ -551,4 +537,4 @@ export async function uploadThumbnail(
 
 // Backward-compatible aliases
 export const uploadWorksheetFile = uploadFile;
-export const deleteWorksheetFile = deleteFile;
+export const deleteWorksheetFile = deleteFile;

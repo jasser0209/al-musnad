@@ -154,4 +154,4 @@ export default async function GradeSubjectsPage(props: GradeSubjectsPageProps) {
       </div>
     </div>
   );
-}
+}

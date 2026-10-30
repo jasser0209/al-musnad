@@ -193,9 +193,7 @@ export default function ReviewSection({
         return;
       }
 
-      const savedReview: ReviewItem = json.data.review ?? json.data;
-      if (typeof json.data.ratingAvg === "number") setRatingAvg(json.data.ratingAvg);
-      if (typeof json.data.reviewCount === "number") setReviewCount(json.data.reviewCount);
+      const savedReview: ReviewItem = json.data;
       setReviews((prev) => {
         const combined = [savedReview, ...prev];
         return combined.sort((a, b) => {
@@ -495,4 +493,4 @@ export default function ReviewSection({
       </div>
     </section>
   );
-}
+}

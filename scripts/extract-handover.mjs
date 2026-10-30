@@ -30,4 +30,4 @@ for (const file of inputFiles) {
   }
 }
 
-console.log(`✅ تم استخراج وتثبيت ${totalExtracted} ملفاً برمجياً بنجاح 100%!`);
+console.log(`✅ تم استخراج وتثبيت ${totalExtracted} ملفاً برمجياً بنجاح 100%!`);

@@ -217,4 +217,4 @@ export default function FilterBar({ grades, subjects, categories }: FilterBarPro
   );
 }
 
-export { FilterBar };
+export { FilterBar };

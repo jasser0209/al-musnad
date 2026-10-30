@@ -146,4 +146,4 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
   } catch (error) {
     return errorResponse(error);
   }
-}
+}

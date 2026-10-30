@@ -47,7 +47,168 @@ const ROLE_LABELS_AR: Record<string, string> = {
   ADMIN: "حساب مشرف عام",
 };
 
-const DEMO_WORKSHEETS: any[] = [];
+const DEMO_WORKSHEETS = [
+  {
+    id: "demo-fr-1",
+    title: "Leçon de lecture et vocabulaire — Français",
+    titleAr: "درس القراءة والمفردات الأساسية في اللغة الفرنسية",
+    description: "French lesson",
+    descriptionAr: "درس متكامل في اللغة الفرنسية للسنة الأولى ابتدائي.",
+    fileUrl: "/sample.pdf",
+    fileName: "francais-lecon1.pdf",
+    thumbnailUrl: null,
+    fileSize: 1024 * 640,
+    pageCount: 3,
+    status: "PUBLISHED" as const,
+    audience: "ALL" as const,
+    isEndorsed: true,
+    downloadCount: 210,
+    favoriteCount: 75,
+    ratingAvg: 4.9,
+    reviewCount: 14,
+    tags: ["فرنسية", "درس", "الثلاثي الأول"],
+    createdAt: new Date("2026-10-28"),
+    updatedAt: new Date("2026-10-28"),
+    gradeId: "g1",
+    subjectId: "s4",
+    categoryId: "c1",
+    uploadedBy: "u1",
+    grade: CURRICULUM_GRADES[0],
+    subject: CURRICULUM_SUBJECTS[3],
+    category: SUBJECT_SUBDIVISIONS[0],
+    uploader: {
+      id: "u1",
+      name: "معلم ناشر",
+      school: "مدرسة ابتدائية",
+      role: "TEACHER",
+      isVerified: true,
+      isBanned: false,
+      avatarUrl: null,
+    },
+  },
+  {
+    id: "demo-inst-1",
+    title: "Institutional Annual Project & Charter",
+    titleAr: "مشروع المؤسسة التربوية السنوي وميثاق العمل المشترك بين المدارس",
+    description: "Institution publication",
+    descriptionAr: "مبادرة تربوية ونموذج تنسيقي مخصص للتفاعل بين المؤسسات التربوية.",
+    fileUrl: "/sample.pdf",
+    fileName: "institution-project.pdf",
+    thumbnailUrl: null,
+    fileSize: 1024 * 820,
+    pageCount: 5,
+    status: "PUBLISHED" as const,
+    audience: "INSTITUTIONS_ONLY" as const,
+    isEndorsed: true,
+    downloadCount: 165,
+    favoriteCount: 52,
+    ratingAvg: 4.9,
+    reviewCount: 11,
+    tags: ["مؤسسات", "مشروع مؤسسة", "الثلاثي الأول"],
+    createdAt: new Date("2026-10-27"),
+    updatedAt: new Date("2026-10-27"),
+    gradeId: "g1",
+    subjectId: "s3",
+    categoryId: "c6",
+    uploadedBy: "u2",
+    grade: CURRICULUM_GRADES[0],
+    subject: CURRICULUM_SUBJECTS[2],
+    category: SUBJECT_SUBDIVISIONS[5],
+    uploader: {
+      id: "u2",
+      name: "مؤسسة تربوية نموذجية",
+      school: "مدرسة ابتدائية",
+      role: "INSTITUTION",
+      isVerified: true,
+      isBanned: false,
+      avatarUrl: null,
+    },
+  },
+  {
+    id: "demo-fr-3",
+    title: "Fiche pédagogique — Français (للمعلمين فقط)",
+    titleAr: "جذاذة بيداغوجية وإصلاح تقييم اللغة الفرنسية",
+    description: "Teacher fiche",
+    descriptionAr: "جذاذة بيداغوجية مخصصة للمعلمين والمتفقدين فقط.",
+    fileUrl: "/sample.pdf",
+    fileName: "francais-fiche.pdf",
+    thumbnailUrl: null,
+    fileSize: 1024 * 750,
+    pageCount: 4,
+    status: "PUBLISHED" as const,
+    audience: "TEACHERS_ONLY" as const,
+    isEndorsed: true,
+    downloadCount: 185,
+    favoriteCount: 64,
+    ratingAvg: 5.0,
+    reviewCount: 15,
+    tags: ["فرنسية", "جذاذات", "إصلاح", "الثلاثي الثاني"],
+    createdAt: new Date("2026-10-27"),
+    updatedAt: new Date("2026-10-27"),
+    gradeId: "g1",
+    subjectId: "s4",
+    categoryId: "c4",
+    uploadedBy: "u1",
+    grade: CURRICULUM_GRADES[0],
+    subject: CURRICULUM_SUBJECTS[3],
+    category: SUBJECT_SUBDIVISIONS[3],
+    uploader: {
+      id: "u1",
+      name: "متفقد تربوي",
+      school: "دائرة التفقد التربوي",
+      role: "INSPECTOR",
+      isVerified: true,
+      isBanned: false,
+      avatarUrl: null,
+    },
+  },
+  {
+    id: "demo-admin-1",
+    title: "Teacher Administrative Schedule & Annual Plan",
+    titleAr: "نموذج جدول الأوقات والتوزيع السنوي ومحضر الجلسة البيداغوجية",
+    description: "Administrative document for teachers",
+    descriptionAr: "وثيقة إدارية تنظيمية خاصة بالمعلم والمؤسسة التربوية.",
+    fileUrl: "/sample.pdf",
+    fileName: "admin-schedule-doc.pdf",
+    thumbnailUrl: null,
+    fileSize: 1024 * 540,
+    pageCount: 2,
+    status: "PUBLISHED" as const,
+    audience: "ALL" as const,
+    isEndorsed: true,
+    downloadCount: 310,
+    favoriteCount: 95,
+    ratingAvg: 4.9,
+    reviewCount: 22,
+    tags: ["وثائق إدارية", "جداول الأوقات", "مذكرات ومراسلات", "الثلاثي الثالث"],
+    createdAt: new Date("2026-10-26"),
+    updatedAt: new Date("2026-10-26"),
+    gradeId: "g1",
+    subjectId: "s10",
+    categoryId: "c7",
+    uploadedBy: "u1",
+    grade: CURRICULUM_GRADES[0],
+    subject: {
+      id: "s10",
+      name: "Administration",
+      nameAr: "المعاملات والوثائق الإدارية",
+      slug: "administration",
+      color: "#334155",
+      icon: "briefcase",
+      sortOrder: 10,
+    },
+    category: ADMINISTRATIVE_CATEGORY,
+    uploader: {
+      id: "u1",
+      name: "إدارة المسند",
+      school: "الدائرة التربوية",
+      role: "INSPECTOR",
+      isVerified: true,
+      isBanned: false,
+      avatarUrl: null,
+    },
+  },
+];
 
 export default async function HomePage(props: HomePageProps) {
   const resolvedParams = await props.searchParams;
@@ -174,10 +335,34 @@ export default async function HomePage(props: HomePageProps) {
     meta = fetchedCatalog.meta;
   } catch {
     isDbConnected = false;
-    worksheets = [];
-    explorerWorksheets = [];
+    let visibleDemo = isAuthenticated
+      ? DEMO_WORKSHEETS.filter((w) =>
+          canUserAccessWorksheet(w, viewerRole, viewerUserId)
+        )
+      : DEMO_WORKSHEETS.filter((w) => w.audience === "ALL");
+
+    if (trimester) {
+      const rawTrim = trimester.toLowerCase();
+      const targetTerm =
+        rawTrim === "trimester-1" || rawTrim.includes("أول") || rawTrim.includes("اول")
+          ? "الثلاثي الأول"
+          : rawTrim === "trimester-2" || rawTrim.includes("ثاني")
+          ? "الثلاثي الثاني"
+          : rawTrim === "trimester-3" || rawTrim.includes("ثالث")
+          ? "الثلاثي الثالث"
+          : trimester;
+      visibleDemo = visibleDemo.filter(
+        (w) =>
+          w.tags.includes(targetTerm) ||
+          w.title.includes(targetTerm) ||
+          (w.titleAr && w.titleAr.includes(targetTerm))
+      );
+    }
+
+    worksheets = visibleDemo;
+    explorerWorksheets = visibleDemo;
     meta = {
-      total: 0,
+      total: visibleDemo.length,
       page: 1,
       limit: 12,
       totalPages: 1,
@@ -472,4 +657,4 @@ export default async function HomePage(props: HomePageProps) {
       <PlatformIdentityAndFaqSection />
     </div>
   );
-}
+}

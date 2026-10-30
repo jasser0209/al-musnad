@@ -65,4 +65,4 @@ export class InvalidFileTypeError extends AppError {
       415
     );
   }
-}
+}

@@ -36,4 +36,4 @@ export default function MentionText({ text, className = "" }: MentionTextProps) 
       })}
     </span>
   );
-}
+}

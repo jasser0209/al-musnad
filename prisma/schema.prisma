@@ -233,7 +233,6 @@ model Worksheet {
   @@index([isEndorsed(sort: Desc), createdAt(sort: Desc)])
   @@index([subjectId, isEndorsed(sort: Desc), createdAt(sort: Desc)])
   @@index([gradeId, subjectId])
-  @@index([tags], type: Gin)
   @@map("worksheets")
 }
 
@@ -392,4 +391,4 @@ model AuditLog {
   @@index([action])
   @@index([createdAt(sort: Desc)])
   @@map("audit_logs")
-}
+}

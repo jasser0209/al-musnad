@@ -42,4 +42,4 @@ export default async function UsernameRedirectPage(props: UsernamePageProps) {
   }
 
   redirect(`/publisher/${targetUser.id}`);
-}
+}

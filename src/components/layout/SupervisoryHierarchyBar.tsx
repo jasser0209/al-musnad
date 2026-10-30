@@ -89,4 +89,4 @@ export default function SupervisoryHierarchyBar({
 
   // Case 2: Moderator or Inspector — Strictly isolated without permission disclosure
   return null;
-}
+}

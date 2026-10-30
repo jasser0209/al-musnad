@@ -58,4 +58,4 @@ export const searchSchema = z
   .string()
   .trim()
   .min(1, { message: "Search term cannot be empty" })
-  .max(200, { message: "Search term must be 200 characters or fewer" });
+  .max(200, { message: "Search term must be 200 characters or fewer" });

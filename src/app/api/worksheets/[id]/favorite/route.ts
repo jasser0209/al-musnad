@@ -34,4 +34,4 @@ export async function POST(
   } catch (error) {
     return errorResponse(error);
   }
-}
+}

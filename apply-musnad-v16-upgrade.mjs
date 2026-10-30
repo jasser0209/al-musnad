@@ -20,4 +20,4 @@ try {
   console.log("✅ اكتملت ترقية وفحص منصة «المسند» v16.0 بنجاح 100%!");
 } catch (err) {
   console.warn("⚠️ يرجى التأكد من اتصال قاعدة البيانات وتشغيل `npx prisma generate` و `npm run build`.");
-}
+}

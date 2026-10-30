@@ -595,4 +595,4 @@ export default function RegisterPage() {
       </Suspense>
     </main>
   );
-}
+}

@@ -46,4 +46,4 @@ export async function archiveWorksheetAction(id: string) {
   revalidatePath("/browse");
   revalidatePath("/profile");
   return result;
-}
+}

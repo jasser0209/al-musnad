@@ -441,4 +441,4 @@ export default async function SubjectPublicationsPage(
       </div>
     </div>
   );
-}
+}

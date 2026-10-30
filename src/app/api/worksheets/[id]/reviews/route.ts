@@ -128,4 +128,4 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
   } catch (error) {
     return errorResponse(error);
   }
-}
+}

@@ -79,14 +79,31 @@ export async function POST(request: NextRequest) {
         finalUsername = `${baseUname}_${userId.replace(/-/g, "").slice(0, 4)}`;
       }
 
-      const existingCheck = await db.user.findUnique({ where: { id: userId }, select: { id: true, role: true, isVerified: true, createdAt: true } });
-      if (existingCheck && (existingCheck.isVerified || Date.now() - new Date(existingCheck.createdAt).getTime() > 45_000)) {
-        return successResponse({ synced: true, role: existingCheck.role, isVerified: existingCheck.isVerified });
-      }
       const syncedUser = await db.user.upsert({
         where: { id: userId },
-        update: { email, name: name || email.split("@")[0], username: finalUsername, school, studentGrade, role: assignedRole, isVerified: assignedRole === Role.ADMIN, inspectorPending: isInspectorPending },
-        create: { id: userId, email, name: name || email.split("@")[0], username: finalUsername, school, studentGrade, role: assignedRole, isVerified: assignedRole === Role.ADMIN, inspectorPending: isInspectorPending, presenceStatus: "ONLINE", lastSeenAt: new Date() },
+        update: {
+          email,
+          name: name || email.split("@")[0],
+          username: finalUsername,
+          school,
+          studentGrade,
+          role: assignedRole,
+          isVerified: assignedRole === Role.ADMIN,
+          inspectorPending: isInspectorPending,
+        },
+        create: {
+          id: userId,
+          email,
+          name: name || email.split("@")[0],
+          username: finalUsername,
+          school,
+          studentGrade,
+          role: assignedRole,
+          isVerified: assignedRole === Role.ADMIN,
+          inspectorPending: isInspectorPending,
+          presenceStatus: "ONLINE",
+          lastSeenAt: new Date(),
+        },
       });
 
       const roleTitles: Record<string, string> = {
@@ -315,4 +332,4 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return errorResponse(error);
   }
-}
+}
