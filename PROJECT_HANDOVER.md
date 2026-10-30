@@ -4,8 +4,8 @@
 **Version:** 15.0.0 (Optimized Handover Archive — Complete Source Code, Security Configs & Commands)  
 **Date:** October 2026  
 **Primary Admin Account:** `bjasser123@gmail.com` (Password: `Jasserbes1M` — Role: `ADMIN`)  
-**Live Production URL:** [https://al-musnad.vercel.app](https://www.google.com/url?sa=E&source=gmail&q=https://al-musnad.vercel.app)  
-**GitHub Repository:** [https://github.com/jasser0209/al-musnad.git](https://www.google.com/url?sa=E&source=gmail&q=https://github.com/jasser0209/al-musnad.git)  
+**Live Production URL:** [https://al-musnad.vercel.app](https://al-musnad.vercel.app)  
+**GitHub Repository:** [https://github.com/jasser0209/al-musnad.git](https://github.com/jasser0209/al-musnad.git)  
 
 ---
 
