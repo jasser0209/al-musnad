@@ -41,7 +41,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const [dbUser, worksheet] = await Promise.all([
       db.user.findUnique({
         where: { id: user.id },
-        select: { id: true, role: true },
+        select: { id: true, role: true, isVerified: true },
       }),
       db.worksheet.findUnique({
         where: { id },
@@ -69,25 +69,29 @@ export async function GET(request: NextRequest, context: RouteContext) {
       worksheet.status === "DRAFT" &&
       worksheet.uploadedBy !== dbUser.id &&
       dbUser.role !== "ADMIN" &&
-      dbUser.role !== "INSPECTOR"
+      !(dbUser.role === "INSPECTOR" && dbUser.isVerified)
     ) {
       throw new ForbiddenError(
         "هذا الملف قيد المراجعة وإعادة الصياغة إلى PDF من قِبل المشرف والمتفقد."
       );
     }
 
-    if (!canUserAccessWorksheet(worksheet, dbUser.role, dbUser.id)) {
+    if (!canUserAccessWorksheet(worksheet, dbUser.role, dbUser.id, dbUser.isVerified)) {
+      if (canUserAccessWorksheet(worksheet, dbUser.role, dbUser.id, true) && !dbUser.isVerified) {
+        throw new ForbiddenError('عذراً، هذا الملف حساس وموجه داخلياً لفئة حسابك الموثقين فقط. يرجى إثبات وتوثيق هويتك أولاً للوصول إليه.');
+      }
       throw new ForbiddenError(
         "غير مصرح لحسابك بمعاينة أو تحميل هذه النشرة حسب قيود الجمهور."
       );
     }
 
     const signedUrl = await getSignedDownloadUrl(worksheet.fileUrl, 3600);
-    const shouldStream = request.nextUrl.searchParams.get("stream") === "1";
     const disposition =
       request.nextUrl.searchParams.get("disposition") === "attachment"
         ? "attachment"
         : "inline";
+    const forceRedirect = request.nextUrl.searchParams.get("redirect") === "1";
+    const shouldStream = !forceRedirect;
 
     if (shouldStream) {
       try {
@@ -95,17 +99,22 @@ export async function GET(request: NextRequest, context: RouteContext) {
         if (upstream.ok && upstream.body) {
           const contentType = inferMimeType(worksheet.fileName);
           const encodedName = encodeURIComponent(worksheet.fileName || "document.pdf");
+          const headers: Record<string, string> = {
+            "Content-Type": contentType,
+            "Content-Disposition": `${disposition}; filename*=UTF-8''${encodedName}`,
+            "Cache-Control": "private, max-age=1800",
+          };
+          const contentLength = upstream.headers.get("content-length");
+          if (contentLength) {
+            headers["Content-Length"] = contentLength;
+          }
           return new NextResponse(upstream.body, {
             status: 200,
-            headers: {
-              "Content-Type": contentType,
-              "Content-Disposition": `${disposition}; filename*=UTF-8''${encodedName}`,
-              "Cache-Control": "private, max-age=1800",
-            },
+            headers,
           });
         }
-      } catch {
-        // Fallback to redirect below
+      } catch (streamError) {
+        console.warn("[FileRoute] Stream error on primary URL:", streamError);
       }
     }
 

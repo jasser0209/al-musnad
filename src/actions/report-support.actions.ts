@@ -1,9 +1,5 @@
 "use server";
 
-/**
- * Reports (التبليغات) & Technical Support / Customer Service (الدعم الفني وخدمة العملاء) — Al-Musnad v4.0
- */
-
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { createSupabaseServerClient } from "@/lib/supabase/server";

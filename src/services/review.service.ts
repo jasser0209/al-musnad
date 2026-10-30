@@ -31,9 +31,6 @@ export const publicReviewSelect = {
   },
 } as const;
 
-/**
- * Sends notifications to users mentioned with `@username`
- */
 export async function dispatchMentionNotifications(
   content: string,
   senderId: string,
@@ -148,21 +145,24 @@ export async function upsertWorksheetReview(
     throw new NotFoundError("Worksheet");
   }
 
-  if (!canUserAccessWorksheet(worksheet, userRole, userId)) {
+  const actor = await db.user.findUnique({
+    where: { id: userId },
+    select: { id: true, name: true, username: true, role: true, isVerified: true },
+  });
+
+  if (!canUserAccessWorksheet(worksheet, actor?.role || userRole, userId, actor?.isVerified)) {
     throw new ForbiddenError(
-      "غير مصرح لك بإضافة تعليق على هذه النشرة وفق شروط الجمهور المحدد لها"
+      "غير مصرح لك بإضافة تعليق على هذه النشرة قبل إثبات هوية حسابك أو وفق شروط الجمهور المحدد لها"
     );
   }
 
-  const actor = await db.user.findUnique({
-    where: { id: userId },
-    select: { id: true, name: true, username: true, role: true },
-  });
+  const isVerifiedInspectorOrAdmin =
+    userRole === Role.ADMIN ||
+    (userRole === Role.INSPECTOR && Boolean(actor?.isVerified));
 
   const isOfficialDirective =
-    input.isOfficialDirective ??
-    (!input.isPrivateToPublisher &&
-      (userRole === Role.INSPECTOR || userRole === Role.ADMIN));
+    isVerifiedInspectorOrAdmin &&
+    (input.isOfficialDirective ?? !input.isPrivateToPublisher);
 
   const isPrivate = Boolean(input.isPrivateToPublisher);
 

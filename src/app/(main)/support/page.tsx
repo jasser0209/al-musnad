@@ -153,7 +153,6 @@ export default function SupportAndCustomerServicePage() {
 
   return (
     <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10" dir="rtl">
-      {/* Header */}
       <div className="text-center max-w-2xl mx-auto space-y-3">
         <div className="w-14 h-14 rounded-2xl bg-blue-600 text-white flex items-center justify-center mx-auto shadow-md">
           <Headphones className="w-7 h-7" />
@@ -166,7 +165,6 @@ export default function SupportAndCustomerServicePage() {
         </p>
       </div>
 
-      {/* WhatsApp Direct Support Channels (الإصدار v14.0) */}
       {(() => {
         const isStaff = userRole === "ADMIN" || userRole === "MODERATOR";
         const isInstitutionOrInspector =
@@ -182,7 +180,6 @@ export default function SupportAndCustomerServicePage() {
                 : "grid-cols-1 max-w-2xl mx-auto w-full"
             }`}
           >
-            {/* Channel 1: Teachers & Students (27764985) */}
             {showTeacherStudent && (
               <a
                 href="https://wa.me/21627764985?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%20%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9%20%D9%85%D9%86%D8%B5%D8%A9%20%D8%A7%D9%84%D9%85%D8%B3%D9%86%D8%AF%D8%8C%20%D8%A3%D8%AA%D9%88%D8%A7%D8%B5%D9%84%20%D9%85%D8%B9%D9%83%D9%85%20%D8%B9%D8%A8%D8%B1%20%D8%AE%D8%B7%20%D8%A7%D9%84%D9%85%D8%B9%D9%84%D9%85%D9%8A%D9%86%20%D9%88%D8%A7%D9%84%D8%AA%D9%84%D8%A7%D9%85%D9%8A%D8%B0%3A"
@@ -218,7 +215,6 @@ export default function SupportAndCustomerServicePage() {
               </a>
             )}
 
-            {/* Channel 2: Institutions & Inspectors (76907101) */}
             {showInstitution && (
               <a
                 href="https://wa.me/21676907101?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%20%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9%20%D9%85%D9%86%D8%B5%D8%A9%20%D8%A7%D9%84%D9%85%D8%B3%D9%86%D8%AF%D8%8C%20%D8%A3%D8%AA%D9%88%D8%A7%D8%B5%D9%84%20%D9%85%D8%B9%D9%83%D9%85%20%D8%B9%D8%A8%D8%B1%20%D8%AE%D8%B7%20%D8%A7%D9%84%D9%85%D8%A4%D8%B3%D8%B3%D8%A7%D8%AA%20%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%88%D9%8A%D8%A9%20%D9%88%D8%A7%D9%84%D9%85%D8%AA%D9%81%D9%82%D8%AF%D9%8A%D9%86%3A"
@@ -257,7 +253,6 @@ export default function SupportAndCustomerServicePage() {
         );
       })()}
 
-      {/* Quick Service Selection Cards */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {QUICK_SUPPORT_CARDS.map((card) => {
           const Icon = card.icon;
@@ -294,7 +289,6 @@ export default function SupportAndCustomerServicePage() {
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Submit Ticket Form */}
         <section className="lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm space-y-5">
           <h2 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
             <MessageSquare className="w-5 h-5 text-blue-600" />
@@ -417,9 +411,7 @@ export default function SupportAndCustomerServicePage() {
           </form>
         </section>
 
-        {/* Live Ticket History & Instant FAQ Guide */}
         <div className="lg:col-span-5 space-y-6">
-          {/* Live User Tickets Tracker */}
           <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
             <h2 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
               <BadgeCheck className="w-4 h-4 text-emerald-600" />
@@ -479,7 +471,6 @@ export default function SupportAndCustomerServicePage() {
             )}
           </section>
 
-          {/* Quick FAQ Accordion */}
           <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
             <h2 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
               <HelpCircle className="w-4 h-4 text-amber-600" />

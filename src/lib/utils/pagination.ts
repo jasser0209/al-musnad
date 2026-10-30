@@ -8,9 +8,6 @@ export interface PaginationParams {
   limit: number;
 }
 
-/**
- * Normalizes input page and limit parameters and returns Prisma offset limits.
- */
 export function getPaginationParams(
   pageInput?: number | string | null,
   limitInput?: number | string | null
@@ -31,9 +28,6 @@ export function getPaginationParams(
   return { skip, take, page, limit };
 }
 
-/**
- * Builds standard PaginationMeta object for API responses.
- */
 export function buildPaginationMeta(
   total: number,
   page: number,

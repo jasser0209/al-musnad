@@ -255,13 +255,11 @@ export default function AdminDashboardPage() {
   return (
     <div dir="rtl" className="min-h-screen bg-slate-50/70 pb-16 pt-8 dark:bg-slate-950">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {/* Unified 3-Tier Supervisory Switcher Bar (Exclusive to ADMIN) */}
         <SupervisoryHierarchyBar
           viewerRole={data.admin.role}
           currentDashboard="ADMIN"
         />
 
-        {/* Top Header */}
         <div className="mb-8 rounded-3xl border border-blue-200/80 bg-gradient-to-l from-blue-50 via-white to-indigo-50/50 p-6 shadow-sm dark:border-blue-900/40 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/20">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -282,7 +280,6 @@ export default function AdminDashboardPage() {
             </div>
           </div>
 
-          {/* KPI Cards */}
           <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
             <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
               <span className="text-[11px] font-bold text-slate-500">إجمالي المنشورات</span>
@@ -348,7 +345,6 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* Navigation Tabs */}
         <div className="mb-6 flex flex-wrap gap-2 border-b border-slate-200 pb-3 dark:border-slate-800">
           <button
             type="button"
@@ -436,9 +432,6 @@ export default function AdminDashboardPage() {
           </button>
         </div>
 
-        {/* ================================================================= */}
-        {/* TAB: EXCLUSIVE ADMIN CODE GENERATOR (إنشاء الأكواد في الداشبورد للمشرف) */}
-        {/* ================================================================= */}
         {activeTab === "codes" && (
           <div className="space-y-6">
             <div className="rounded-3xl border border-amber-200 bg-white p-6 shadow-sm dark:border-amber-900/50 dark:bg-slate-900">
@@ -517,7 +510,6 @@ export default function AdminDashboardPage() {
               </form>
             </div>
 
-            {/* Generated Codes Table */}
             <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <div className="overflow-x-auto">
                 <table className="w-full text-right text-xs">
@@ -612,9 +604,6 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* ================================================================= */}
-        {/* TAB 1: WORKSHEETS MANAGEMENT                                      */}
-        {/* ================================================================= */}
         {activeTab === "worksheets" && (
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
@@ -770,9 +759,6 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* ================================================================= */}
-        {/* TAB 2: USERS, EXCLUSIVE VERIFICATION ACTIVATION, ROLES & BAN      */}
-        {/* ================================================================= */}
         {activeTab === "teachers" && (
           <div className="space-y-4">
             <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
@@ -840,7 +826,6 @@ export default function AdminDashboardPage() {
                             </div>
                           </td>
 
-                          {/* Role Selector including MODERATOR & INSPECTOR */}
                           <td className="px-4 py-4">
                             <select
                               value={t.role}
@@ -860,7 +845,6 @@ export default function AdminDashboardPage() {
                             </select>
                           </td>
 
-                          {/* Exclusive Admin Direct Verification Toggle */}
                           <td className="px-4 py-4">
                             <button
                               type="button"
@@ -877,7 +861,6 @@ export default function AdminDashboardPage() {
                             </button>
                           </td>
 
-                          {/* Generate Per-User Verification Code */}
                           <td className="px-4 py-4">
                             {t.inspectorCode ? (
                               <div className="flex items-center gap-1.5">
@@ -917,7 +900,6 @@ export default function AdminDashboardPage() {
                             )}
                           </td>
 
-                          {/* Direct Message & Ban */}
                           <td className="px-5 py-4">
                             <div className="flex items-center justify-end gap-1.5">
                               <button
@@ -976,7 +958,6 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* TAB 3: PROFILE EDITS */}
         {activeTab === "profile_edits" && (
           <div className="space-y-4">
             {data.pendingProfileUsers.length === 0 ? (
@@ -1037,7 +1018,6 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* TAB 4: REPORTS (Including Inspector Priority Escalations) */}
         {activeTab === "reports" && (
           <div className="space-y-4">
             {data.reports.map((rep) => (
@@ -1099,7 +1079,6 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* TAB 5: TECHNICAL SUPPORT */}
         {activeTab === "support" && (
           <div className="space-y-4">
             {data.supportTickets.map((t) => (
@@ -1160,9 +1139,6 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* ================================================================= */}
-        {/* TAB: AUDIT LOGS & SECURITY (🛡️ سجل النشاطات والأمن) */}
-        {/* ================================================================= */}
         {activeTab === "audit" && (
           <div className="space-y-6">
             <div className="rounded-3xl border border-violet-200/80 bg-gradient-to-l from-violet-50 via-white to-purple-50/40 p-6 shadow-sm dark:border-violet-900/40 dark:from-slate-900 dark:via-slate-900 dark:to-violet-950/20">
@@ -1188,7 +1164,6 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
-              {/* Filters & Search */}
               <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200/80 pt-4 dark:border-slate-800">
                 <div className="flex flex-1 flex-wrap items-center gap-2 min-w-[280px]">
                   <div className="relative flex-1">
@@ -1229,7 +1204,6 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            {/* Audit Logs Table */}
             <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <div className="overflow-x-auto">
                 <table className="w-full text-right text-xs">
@@ -1365,7 +1339,6 @@ export default function AdminDashboardPage() {
         )}
       </div>
 
-      {/* Direct Message Modal */}
       {dmTargetUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">

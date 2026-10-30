@@ -1,17 +1,11 @@
 import { z } from "zod";
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from "@/config/constants";
 
-/**
- * UUID v4 / Postgres gen_random_uuid validator.
- */
 export const uuidSchema = z
   .string()
   .trim()
   .uuid({ message: "Invalid UUID format" });
 
-/**
- * Pagination query parameter schema with automatic coercion and bounds checking.
- */
 export const paginationSchema = z.object({
   page: z.coerce
     .number()
@@ -26,9 +20,6 @@ export const paginationSchema = z.object({
     .default(DEFAULT_PAGE_SIZE),
 });
 
-/**
- * Supported sort options for worksheet queries (Added 'oldest' to match FilterBar UI).
- */
 export const worksheetSortSchema = z
   .enum(["newest", "oldest", "popular", "downloads", "title"], {
     errorMap: () => ({
@@ -38,9 +29,6 @@ export const worksheetSortSchema = z
   })
   .default("newest");
 
-/**
- * URL-friendly slug validator.
- */
 export const slugSchema = z
   .string()
   .trim()
@@ -51,9 +39,6 @@ export const slugSchema = z
       "Slug must contain only lowercase alphanumeric characters and hyphens",
   });
 
-/**
- * Generic search query validator.
- */
 export const searchSchema = z
   .string()
   .trim()

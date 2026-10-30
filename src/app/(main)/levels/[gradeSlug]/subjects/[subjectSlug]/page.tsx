@@ -142,7 +142,6 @@ export default async function SubjectPublicationsPage(
           )}
         </div>
 
-        {/* Subject Header */}
         <div className="mb-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 dark:border-slate-800 dark:bg-slate-900">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-6 dark:border-slate-800">
             <div className="flex items-start gap-4">
@@ -185,7 +184,6 @@ export default async function SubjectPublicationsPage(
             </div>
           </div>
 
-          {/* 6 Pedagogical Sub-divisions Filter Tabs (including أخرى) */}
           <div className="mt-5 flex flex-wrap items-center gap-2">
             <Link
               href={`/levels/${gradeInfo.slug}/subjects/${subjectInfo.slug}`}
@@ -217,7 +215,6 @@ export default async function SubjectPublicationsPage(
           </div>
         </div>
 
-        {/* Publications Organized by Section */}
         {displayedWorksheets.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-14 text-center dark:border-slate-800 dark:bg-slate-900">
             <FileText className="mx-auto mb-3 h-10 w-10 text-slate-300" />

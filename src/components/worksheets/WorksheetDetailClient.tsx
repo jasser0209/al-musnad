@@ -66,6 +66,7 @@ export default function WorksheetDetailClient({
   const [endorseLoading, setEndorseLoading] = useState<boolean>(false);
   const [viewerRole, setViewerRole] = useState<string | null>(null);
   const [viewerId, setViewerId] = useState<string | null>(null);
+  const [viewerIsVerified, setViewerIsVerified] = useState<boolean>(false);
 
   const [downloadCount, setDownloadCount] = useState<number>(
     initialWorksheet.downloadCount
@@ -162,6 +163,7 @@ export default function WorksheetDetailClient({
           if (meJson.success && meJson.data && isMounted) {
             setViewerRole(meJson.data.role || null);
             setViewerId(meJson.data.id || null);
+            setViewerIsVerified(Boolean(meJson.data.isVerified));
           }
         }
       } catch {
@@ -348,13 +350,12 @@ export default function WorksheetDetailClient({
   const displayTitle = worksheet.titleAr || worksheet.title;
   const displayDesc = worksheet.descriptionAr || worksheet.description;
   const subjectColor = worksheet.subject?.color || "#2563EB";
-  const canEndorse = viewerRole === "INSPECTOR" || viewerRole === "ADMIN";
+  const canEndorse = viewerRole === "ADMIN" || (viewerRole === "INSPECTOR" && viewerIsVerified);
   const isOwnerOrAdmin =
     (viewerId && viewerId === worksheet.uploadedBy) || viewerRole === "ADMIN";
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" dir="rtl">
-      {/* Breadcrumb */}
       <nav className="flex items-center justify-between gap-2 text-sm text-slate-500 mb-6">
         <div className="flex items-center gap-2">
           <Link
@@ -372,7 +373,6 @@ export default function WorksheetDetailClient({
           </span>
         </div>
 
-        {/* Report & Edit Quick Actions */}
         <div className="flex items-center gap-2">
           {isOwnerOrAdmin && (
             <button
@@ -397,7 +397,6 @@ export default function WorksheetDetailClient({
         </div>
       </nav>
 
-      {/* Official Inspector Endorsement Banner */}
       {isEndorsed && (
         <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-transparent border-2 border-amber-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -420,7 +419,6 @@ export default function WorksheetDetailClient({
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Right Column: Embedded PDF Viewer & Reviews */}
         <section className="lg:col-span-8 flex flex-col gap-6">
           {(() => {
             // Route preview through our verified same-origin server endpoint
@@ -518,7 +516,6 @@ export default function WorksheetDetailClient({
           />
         </section>
 
-        {/* Left Column */}
         <aside className="lg:col-span-4 flex flex-col gap-6">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col gap-5">
             <div className="flex flex-wrap items-center gap-2">
@@ -557,7 +554,6 @@ export default function WorksheetDetailClient({
               </p>
             )}
 
-            {/* Inspector Endorsement Action Button */}
             {canEndorse && (
               <div className="p-4 rounded-2xl bg-amber-50/90 dark:bg-amber-950/40 border-2 border-amber-300 dark:border-amber-700 space-y-2.5">
                 <div className="flex items-center gap-2 text-xs font-extrabold text-amber-900 dark:text-amber-300">
@@ -588,7 +584,6 @@ export default function WorksheetDetailClient({
               </div>
             )}
 
-            {/* Download, Favorite, Share Buttons */}
             <div className="flex flex-col gap-3 pt-2">
               <button
                 onClick={handleDownload}
@@ -642,7 +637,6 @@ export default function WorksheetDetailClient({
               </div>
             </div>
 
-            {/* Stats */}
             <div className="border-t border-slate-100 dark:border-slate-800 pt-4 grid grid-cols-4 gap-2 text-center">
               <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-2.5">
                 <span className="block text-xs text-slate-500">التحميلات</span>
@@ -675,7 +669,6 @@ export default function WorksheetDetailClient({
               </div>
             </div>
 
-            {/* Publisher Card */}
             <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
@@ -749,7 +742,6 @@ export default function WorksheetDetailClient({
         </aside>
       </div>
 
-      {/* Modal 1: Edit Worksheet (with Endorsement Loss Warning on File Change) */}
       {isEditOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl">
@@ -831,7 +823,6 @@ export default function WorksheetDetailClient({
                 />
               </div>
 
-              {/* Mandatory Warning Banner if replacing file on an Endorsed worksheet */}
               {replacementFile && isEndorsed && (
                 <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border-2 border-amber-400 text-amber-900 dark:text-amber-200 space-y-2.5">
                   <div className="flex items-start gap-2 text-xs font-extrabold">
@@ -882,7 +873,6 @@ export default function WorksheetDetailClient({
         </div>
       )}
 
-      {/* Modal 2: Report Publication */}
       {isReportOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl">

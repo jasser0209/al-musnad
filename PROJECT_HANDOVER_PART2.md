@@ -318,25 +318,18 @@ export default function RootLayout({
     <html lang="ar" dir="rtl" className={cairo.variable} suppressHydrationWarning>
       <body className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-cairo transition-colors">
         <AppPreferencesProvider>
-          {/* Global Top Navbar */}
           <Navbar />
 
-          {/* Fullscreen Role Selection Modal */}
           <AuthRoleModal />
 
-          {/* Main Content Area */}
           <main className="flex-1">{children}</main>
 
-          {/* Vercel Speed Insights */}
           <SpeedInsights />
 
-          {/* Smart PWA Install Banner */}
           <InstallPwaBanner />
 
-          {/* Global Bottom Footer with Technical Support & Customer Service at the bottom of the page */}
           <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 pt-12 pb-8 mt-16">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
-              {/* Dedicated Support & Customer Service Banner at the bottom of the page */}
               <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-blue-600 via-indigo-700 to-slate-900 text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-lg">
                 <div className="flex items-start sm:items-center gap-4">
                   <div className="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-md flex items-center justify-center shrink-0">
@@ -1114,7 +1107,6 @@ export default function AuthRoleModal() {
       className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-xl flex flex-col justify-between overflow-y-auto animate-fadeIn p-4 sm:p-8"
       dir={t.dir}
     >
-      {/* Top Bar */}
       <div className="max-w-7xl w-full mx-auto flex items-center justify-between py-2">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center font-black text-xl shadow-lg shadow-blue-500/30">
@@ -1138,7 +1130,6 @@ export default function AuthRoleModal() {
         </button>
       </div>
 
-      {/* Center Content: 4 Full-Screen Portals */}
       <div className="max-w-7xl w-full mx-auto my-auto py-8 space-y-8">
         <div className="text-center space-y-3 max-w-2xl mx-auto">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-200 text-xs font-bold">
@@ -1686,7 +1677,6 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-18 py-3 gap-4">
-          {/* Brand Logo: المسند */}
           <div className="flex items-center gap-6">
             <Link href="/" className="flex items-center gap-2.5 group shrink-0">
               <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center font-black text-xl shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
@@ -1724,9 +1714,7 @@ export default function Navbar() {
             </nav>
           </div>
 
-          {/* Action Area */}
           <div className="hidden md:flex items-center gap-2.5">
-            {/* Language Switcher */}
             <div className="relative" ref={langMenuRef}>
               <button
                 type="button"
@@ -1770,7 +1758,6 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Theme Toggle */}
             <button
               type="button"
               onClick={toggleTheme}
@@ -1787,7 +1774,6 @@ export default function Navbar() {
 
             <div className="h-5 w-px bg-slate-200 dark:bg-slate-700 mx-0.5" />
 
-            {/* Authenticated vs Unauthenticated */}
             {!loading && user ? (
               <div className="flex items-center gap-2.5">
                 {user.role !== "STUDENT" && !user.isBanned && (
@@ -1800,7 +1786,6 @@ export default function Navbar() {
                   </Link>
                 )}
 
-                {/* Notification Bell Icon */}
                 <div className="relative" ref={notifMenuRef}>
                   <button
                     type="button"
@@ -1883,7 +1868,6 @@ export default function Navbar() {
                   )}
                 </div>
 
-                {/* Unified Role-Distinguished Username Box & Dropdown Menu (Full Name + Colored Rank Border) */}
                 <div className="relative" ref={profileMenuRef}>
                   <button
                     type="button"
@@ -1920,7 +1904,6 @@ export default function Navbar() {
                         onClick={() => setProfileMenuOpen(false)}
                       />
                       <div className="absolute top-full mt-2 end-0 z-20 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-2.5 space-y-1">
-                        {/* User Summary, Role Hint & Presence Switcher */}
                         <div className="px-3 py-2.5 border-b border-slate-100 dark:border-slate-800 mb-1 space-y-2.5">
                           <div className="flex items-center justify-between gap-2">
                             <div className="truncate">
@@ -1990,7 +1973,6 @@ export default function Navbar() {
                           </div>
                         </div>
 
-                        {/* 1. ملفي الشخصي */}
                         <Link
                           href="/profile"
                           onClick={() => setProfileMenuOpen(false)}
@@ -2000,7 +1982,6 @@ export default function Navbar() {
                           <span>{t.nav.profile}</span>
                         </Link>
 
-                        {/* 2. صفحتي العامة كناشر */}
                         <Link
                           href={`/publisher/${user.id}`}
                           onClick={() => setProfileMenuOpen(false)}
@@ -2010,7 +1991,6 @@ export default function Navbar() {
                           <span>صفحتي العامة كناشر</span>
                         </Link>
 
-                        {/* 3. شارة الرتبة المدمجة مع لوحة التحكم مباشرة أسفل الملف الشخصي وصفحتي العامة كناشر */}
                         {user.role === "ADMIN" && (
                           <div className="my-1.5 p-2 rounded-2xl bg-gradient-to-l from-purple-50 via-blue-50 to-indigo-50 dark:from-purple-950/50 dark:via-slate-800 dark:to-indigo-950/40 border border-purple-200 dark:border-purple-800/70 space-y-1.5">
                             <Link
@@ -2067,20 +2047,47 @@ export default function Navbar() {
 
                         {user.role === "INSPECTOR" && (
                           <div className="my-1.5 p-1.5 rounded-2xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/70">
-                            <Link
-                              href="/inspector/dashboard"
-                              onClick={() => setProfileMenuOpen(false)}
-                              className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-xs font-black shadow-sm transition"
-                            >
-                              <span className="flex items-center gap-2">
-                                <BadgeCheck className="w-4 h-4 shrink-0" />
-                                <span>متفقد معتمد • لوحة التحكم</span>
-                              </span>
-                              <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-md">
-                                دخول
-                              </span>
-                            </Link>
+                            {user.isVerified ? (
+                              <Link
+                                href="/inspector/dashboard"
+                                onClick={() => setProfileMenuOpen(false)}
+                                className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-xs font-black shadow-sm transition"
+                              >
+                                <span className="flex items-center gap-2">
+                                  <BadgeCheck className="w-4 h-4 shrink-0" />
+                                  <span>متفقد معتمد • لوحة التحكم</span>
+                                </span>
+                                <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-md">
+                                  دخول
+                                </span>
+                              </Link>
+                            ) : (
+                              <Link
+                                href="/inspector/activate"
+                                onClick={() => setProfileMenuOpen(false)}
+                                className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-black shadow-sm transition"
+                              >
+                                <span className="flex items-center gap-2">
+                                  <ShieldAlert className="w-4 h-4 shrink-0" />
+                                  <span>إثبات هوية المتفقد لتفعيل الميزات</span>
+                                </span>
+                                <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-md">
+                                  تفعيل 🔒
+                                </span>
+                              </Link>
+                            )}
                           </div>
+                        )}
+
+                        {(user.role === "TEACHER" || user.role === "INSTITUTION") && !user.isVerified && (
+                          <Link
+                            href="/profile?tab=verification"
+                            onClick={() => setProfileMenuOpen(false)}
+                            className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-300 text-[11px] font-extrabold transition"
+                          >
+                            <span>🔒 إثبات الهوية لفتح الملفات الخاصة بفئتك</span>
+                            <span className="underline">توثيق</span>
+                          </Link>
                         )}
 
                         <Link
@@ -2171,7 +2178,6 @@ export default function Navbar() {
             ) : null}
           </div>
 
-          {/* Mobile Controls */}
           <div className="flex items-center gap-2 md:hidden">
             <button
               type="button"
@@ -2213,7 +2219,6 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 pt-3 pb-6 space-y-3">
           <nav className="flex flex-col gap-1">
@@ -2274,7 +2279,6 @@ export default function Navbar() {
                   صفحتي العامة كناشر
                 </Link>
 
-                {/* Merged Supervisory Badge + Control Panel right below Profile & Public Publisher Page */}
                 {user.role === "ADMIN" && (
                   <Link
                     href="/admin/dashboard"
@@ -2296,14 +2300,25 @@ export default function Navbar() {
                   </Link>
                 )}
                 {user.role === "INSPECTOR" && (
-                  <Link
-                    href="/inspector/dashboard"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white text-xs font-extrabold shadow-sm"
-                  >
-                    <BadgeCheck className="w-4 h-4" />
-                    <span>متفقد معتمد • لوحة التحكم</span>
-                  </Link>
+                  user.isVerified ? (
+                    <Link
+                      href="/inspector/dashboard"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white text-xs font-extrabold shadow-sm"
+                    >
+                      <BadgeCheck className="w-4 h-4" />
+                      <span>متفقد معتمد • لوحة التحكم</span>
+                    </Link>
+                  ) : (
+                    <Link
+                      href="/inspector/activate"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-amber-600 text-white text-xs font-extrabold shadow-sm"
+                    >
+                      <ShieldAlert className="w-4 h-4" />
+                      <span>🔒 إثبات هوية المتفقد لتفعيل الميزات</span>
+                    </Link>
+                  )
                 )}
 
                 <Link
@@ -2619,13 +2634,20 @@ export default function InspectorBadge({
 ```typescript
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { Download, X, Smartphone, Share } from "lucide-react";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 }
+
+const SESSION_DISMISSED_KEY = "musnad_pwa_dismissed_session";
+const INSTALLED_PERMANENT_KEY = "musnad_pwa_installed";
+
+// In-memory guard so SPA route transitions never re-show the banner once dismissed
+let dismissedInCurrentVisit = false;
 
 export default function InstallPwaBanner() {
   const [deferredPrompt, setDeferredPrompt] =
@@ -2633,45 +2655,114 @@ export default function InstallPwaBanner() {
   const [isVisible, setIsVisible] = useState(false);
   const [isIos, setIsIos] = useState(false);
   const [showIosGuide, setShowIosGuide] = useState(false);
+  const isDismissedRef = useRef<boolean>(false);
 
-  useEffect(() => {
-    // Check if already in standalone mode (already installed as PWA)
-    const isStandalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      (window.navigator as any).standalone === true;
+  const checkIsDismissedOrInstalled = useCallback((): boolean => {
+    if (dismissedInCurrentVisit || isDismissedRef.current) return true;
+    if (typeof window === "undefined") return true;
 
-    if (isStandalone) return;
+    try {
+      const isStandalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        (window.navigator as any).standalone === true;
+      if (isStandalone) return true;
 
-    // Check if user recently dismissed the banner (within 5 days)
-    const dismissedAt = localStorage.getItem("musnad_pwa_banner_dismissed");
-    if (dismissedAt) {
-      const fiveDaysMs = 5 * 24 * 60 * 60 * 1000;
-      if (Date.now() - Number(dismissedAt) < fiveDaysMs) {
-        return;
+      if (localStorage.getItem(INSTALLED_PERMANENT_KEY) === "1") {
+        return true;
       }
+
+      if (sessionStorage.getItem(SESSION_DISMISSED_KEY) === "1") {
+        dismissedInCurrentVisit = true;
+        isDismissedRef.current = true;
+        return true;
+      }
+    } catch {
+      // Ignore storage access errors
     }
 
-    // Detect iOS
+    return false;
+  }, []);
+
+  const markDismissedForSession = useCallback(() => {
+    dismissedInCurrentVisit = true;
+    isDismissedRef.current = true;
+    setIsVisible(false);
+    setShowIosGuide(false);
+    try {
+      sessionStorage.setItem(SESSION_DISMISSED_KEY, "1");
+      // Remove legacy localStorage key if present so session-based rule applies cleanly
+      localStorage.removeItem("musnad_pwa_banner_dismissed");
+    } catch {
+      // Ignore storage errors
+    }
+  }, []);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      // If user logs out ("SIGNED_OUT"), reset session dismissal so it can appear again on next login/visit
+      if (event === "SIGNED_OUT") {
+        dismissedInCurrentVisit = false;
+        isDismissedRef.current = false;
+        try {
+          sessionStorage.removeItem(SESSION_DISMISSED_KEY);
+        } catch {
+          // Ignore
+        }
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (checkIsDismissedOrInstalled()) {
+      setIsVisible(false);
+      return;
+    }
+
     const userAgent = window.navigator.userAgent.toLowerCase();
     const isAppleIos =
       /iphone|ipad|ipod/.test(userAgent) && !(window as any).MSStream;
     setIsIos(isAppleIos);
 
-    // Handler for Android / Chromium browsers
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
+      // Crucial guard: never re-show if user already clicked "لاحقاً" or "X" during this session!
+      if (checkIsDismissedOrInstalled()) {
+        setIsVisible(false);
+        return;
+      }
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setIsVisible(true);
     };
 
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    const handleAppInstalled = () => {
+      dismissedInCurrentVisit = true;
+      isDismissedRef.current = true;
+      setIsVisible(false);
+      try {
+        localStorage.setItem(INSTALLED_PERMANENT_KEY, "1");
+        sessionStorage.setItem(SESSION_DISMISSED_KEY, "1");
+      } catch {
+        // Ignore
+      }
+    };
 
-    // Show for iOS users after a brief 3s delay on mobile screens
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleAppInstalled);
+
+    let iosTimer: ReturnType<typeof setTimeout> | null = null;
     if (isAppleIos && window.innerWidth < 768) {
-      const timer = setTimeout(() => {
-        setIsVisible(true);
+      iosTimer = setTimeout(() => {
+        if (!checkIsDismissedOrInstalled()) {
+          setIsVisible(true);
+        }
       }, 3000);
-      return () => clearTimeout(timer);
     }
 
     return () => {
@@ -2679,8 +2770,10 @@ export default function InstallPwaBanner() {
         "beforeinstallprompt",
         handleBeforeInstallPrompt
       );
+      window.removeEventListener("appinstalled", handleAppInstalled);
+      if (iosTimer) clearTimeout(iosTimer);
     };
-  }, []);
+  }, [checkIsDismissedOrInstalled]);
 
   const handleInstallClick = async () => {
     if (isIos) {
@@ -2694,20 +2787,25 @@ export default function InstallPwaBanner() {
       await deferredPrompt.prompt();
       const choice = await deferredPrompt.userChoice;
       if (choice.outcome === "accepted") {
-        setIsVisible(false);
+        try {
+          localStorage.setItem(INSTALLED_PERMANENT_KEY, "1");
+        } catch {
+          // Ignore
+        }
       }
+      // Hide for the rest of the session whether accepted or dismissed
+      markDismissedForSession();
       setDeferredPrompt(null);
     } catch {
-      setIsVisible(false);
+      markDismissedForSession();
     }
   };
 
   const handleDismiss = () => {
-    setIsVisible(false);
-    localStorage.setItem("musnad_pwa_banner_dismissed", String(Date.now()));
+    markDismissedForSession();
   };
 
-  if (!isVisible) return null;
+  if (!isVisible || checkIsDismissedOrInstalled()) return null;
 
   return (
     <div
@@ -2738,7 +2836,7 @@ export default function InstallPwaBanner() {
             type="button"
             onClick={handleDismiss}
             aria-label="إغلاق التنبيه"
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition shrink-0"
+            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition shrink-0 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -2999,7 +3097,6 @@ export function UserAvatarWithPresence({
         </div>
       )}
 
-      {/* Small green/gray indicator dot centered right at the bottom of the user picture */}
       <span
         className={`absolute ${dotDims} rounded-full border-white dark:border-slate-900 ${presence.dotColorClass}`}
       />
@@ -3163,6 +3260,7 @@ interface RolePersonalizedHubProps {
   viewerRole: string | null;
   viewerName?: string | null;
   viewerStudentGrade?: string | null;
+  viewerIsVerified?: boolean;
 }
 
 type HubRoleTab = "INSTITUTION" | "INSPECTOR" | "TEACHER" | "STUDENT";
@@ -3172,6 +3270,7 @@ export default function RolePersonalizedHub({
   viewerRole,
   viewerName,
   viewerStudentGrade,
+  viewerIsVerified = false,
 }: RolePersonalizedHubProps) {
   const isStaff = viewerRole === "ADMIN" || viewerRole === "MODERATOR";
 
@@ -3289,13 +3388,82 @@ export default function RolePersonalizedHub({
 
   if (!viewerRole) return null;
 
+  const requiresIdentityVerification =
+    !isStaff &&
+    (viewerRole === "INSPECTOR" ||
+      viewerRole === "TEACHER" ||
+      viewerRole === "INSTITUTION") &&
+    !viewerIsVerified;
+
+  if (requiresIdentityVerification) {
+    const roleTitleAr =
+      viewerRole === "INSPECTOR"
+        ? "متفقد تربوي"
+        : viewerRole === "INSTITUTION"
+        ? "مؤسسة تربوية"
+        : "معلم";
+
+    return (
+      <section
+        id="role-personalized-hub"
+        dir="rtl"
+        className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 scroll-mt-24"
+      >
+        <div className="overflow-hidden rounded-3xl border-2 border-amber-300 bg-gradient-to-l from-amber-50 via-white to-orange-50/40 p-6 sm:p-8 shadow-md dark:border-amber-800/80 dark:from-amber-950/40 dark:via-slate-900 dark:to-slate-900">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex items-start gap-4">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-lg shadow-amber-500/25">
+                <ShieldCheck className="h-7 w-7" />
+              </div>
+              <div className="space-y-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-0.5 text-[11px] font-extrabold text-amber-900 dark:bg-amber-950 dark:text-amber-300">
+                  🔒 حماية أمان الفضاء الداخلي — الحساب قيد انتظار إثبات الهوية
+                </span>
+                <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
+                  مرحباً {viewerName || ""}، وصولك إلى الملفات الحساسة والميزات الداخلية لفئة ({roleTitleAr}) مقفل لحين إثبات الهوية
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-3xl">
+                  لضمان أمان المنصة ومنع أي مستخدم غير مخوّل من التسجيل كـ <strong>{roleTitleAr}</strong> للوصول إلى الامتحانات السرية، الإصلاحات، الوثائق الداخلية، أو صلاحيات المتفقد التربوي، يُشترط أولاً إثبات وتوثيق هويتك رسمياً. يمكنك حالياً تصفح المنشورات التعليمية العامة في الأسفل، وفور توثيق حسابك سيُفتح لك الفضاء الداخلي الكامل وميزات فئتك تلقائياً.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+              {viewerRole === "INSPECTOR" && (
+                <Link
+                  href="/inspector/activate"
+                  className="inline-flex items-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 px-4 py-3 text-xs font-extrabold text-white shadow-sm transition"
+                >
+                  <Award className="h-4 w-4" />
+                  <span>تفعيل حساب المتفقد بكود التوثيق</span>
+                </Link>
+              )}
+              <Link
+                href="/profile?tab=verification"
+                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 px-4 py-3 text-xs font-extrabold text-white shadow-sm transition"
+              >
+                <ShieldCheck className="h-4 w-4" />
+                <span>طلب إثبات وتوثيق الهوية الآن</span>
+              </Link>
+              <Link
+                href="/support"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-200 transition"
+              >
+                <span>التواصل مع الإدارة</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section
       id="role-personalized-hub"
       dir="rtl"
       className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 scroll-mt-24"
     >
-      {/* Staff Switcher (Allows ADMIN / MODERATOR to inspect all 4 Role Hubs) */}
       {isStaff && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-purple-200 bg-purple-50/70 px-4 py-3 dark:border-purple-900/60 dark:bg-purple-950/30">
           <div className="flex items-center gap-2 text-xs font-extrabold text-purple-900 dark:text-purple-200">
@@ -3331,9 +3499,6 @@ export default function RolePersonalizedHub({
         </div>
       )}
 
-      {/* =================================================================== */}
-      {/* A. INSTITUTION HUB (قسم نشرات المؤسسات للمؤسسات للتفاعل المشترك)      */}
-      {/* =================================================================== */}
       {activeHub === "INSTITUTION" && (
         <div id="institutions-hub" className="overflow-hidden rounded-3xl border-2 border-indigo-200 bg-white shadow-md dark:border-indigo-900/60 dark:bg-slate-900 scroll-mt-24">
           <div className="border-b border-indigo-100 bg-gradient-to-l from-indigo-50 via-blue-50/40 to-white px-6 py-6 dark:border-slate-800 dark:from-indigo-950/50 dark:via-slate-900 dark:to-slate-900">
@@ -3415,9 +3580,6 @@ export default function RolePersonalizedHub({
         </div>
       )}
 
-      {/* =================================================================== */}
-      {/* B. INSPECTOR HUB (قسم خاص بمنشورات المتفقدين في أعلى الصفحة)          */}
-      {/* =================================================================== */}
       {activeHub === "INSPECTOR" && (
         <div id="inspectors-hub" className="overflow-hidden rounded-3xl border-2 border-amber-300 bg-white shadow-md dark:border-amber-800/70 dark:bg-slate-900 scroll-mt-24">
           <div className="border-b border-amber-100 bg-gradient-to-l from-amber-50 via-orange-50/30 to-white px-6 py-6 dark:border-slate-800 dark:from-amber-950/40 dark:via-slate-900 dark:to-slate-900">
@@ -3505,9 +3667,6 @@ export default function RolePersonalizedHub({
         </div>
       )}
 
-      {/* =================================================================== */}
-      {/* C. TEACHER HUB (قسم في الأعلى للمعلم فيه جميع المنشورات الخاصة بالمعلمين) */}
-      {/* =================================================================== */}
       {activeHub === "TEACHER" && (
         <div id="teachers-hub" className="overflow-hidden rounded-3xl border-2 border-blue-200 bg-white shadow-md dark:border-blue-900/60 dark:bg-slate-900 scroll-mt-24">
           <div className="border-b border-blue-100 bg-gradient-to-l from-blue-50 via-indigo-50/30 to-white px-6 py-6 dark:border-slate-800 dark:from-blue-950/40 dark:via-slate-900 dark:to-slate-900">
@@ -3615,9 +3774,6 @@ export default function RolePersonalizedHub({
         </div>
       )}
 
-      {/* =================================================================== */}
-      {/* D. STUDENT HUB (واجهة التلميذ المخصصة بدون قسم الإدارة)                */}
-      {/* =================================================================== */}
       {activeHub === "STUDENT" && (
         <div
           id="student-hub"
@@ -3853,9 +4009,6 @@ export default function PlatformIdentityAndFaqSection() {
       dir="rtl"
       className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-12 scroll-mt-24"
     >
-      {/* ===================================================================== */}
-      {/* Top Banner & Unified Tab Switcher for "اعرف المزيد"                  */}
-      {/* ===================================================================== */}
       <div className="rounded-3xl border border-blue-200 dark:border-blue-900/60 bg-gradient-to-br from-blue-50/80 via-white to-indigo-50/60 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950/40 p-6 sm:p-8 text-center shadow-sm space-y-4">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 dark:bg-blue-950/80 px-4 py-1 text-xs font-black text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800">
           <Compass className="h-3.5 w-3.5" />
@@ -3870,7 +4023,6 @@ export default function PlatformIdentityAndFaqSection() {
           فضاء تعليمي موحد يجمع رسالة المنصة، دليل مزايا واختصاصات كل فئة مستخدم، وإجابات الأسئلة الشائعة في مكان واحد.
         </p>
 
-        {/* Tab Buttons */}
         <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
           <button
             type="button"
@@ -3919,9 +4071,6 @@ export default function PlatformIdentityAndFaqSection() {
         </div>
       </div>
 
-      {/* ===================================================================== */}
-      {/* 1. قسم «من نحن» — التعريف بهوية منصة المسند وما تؤدي إليه               */}
-      {/* ===================================================================== */}
       {(activeTab === "ALL" || activeTab === "ABOUT") && (
         <section
           id="about-us"
@@ -3992,9 +4141,6 @@ export default function PlatformIdentityAndFaqSection() {
         </section>
       )}
 
-      {/* ===================================================================== */}
-      {/* 2. تفسير لكل فئة من المشتركين — الخصائص والميزات عند التسجيل            */}
-      {/* ===================================================================== */}
       {(activeTab === "ALL" || activeTab === "ROLES") && (
         <section id="roles-guide" className="space-y-8 scroll-mt-24">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -4067,9 +4213,6 @@ export default function PlatformIdentityAndFaqSection() {
         </section>
       )}
 
-      {/* ===================================================================== */}
-      {/* 3. قسم الأسئلة الشائعة التفاعلي                                        */}
-      {/* ===================================================================== */}
       {(activeTab === "ALL" || activeTab === "FAQ") && (
         <section
           id="faq-section"
@@ -4266,7 +4409,6 @@ export default function FilterBar({ grades, subjects, categories }: FilterBarPro
 
   return (
     <div className="mb-8 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      {/* Tunisian School Trimesters — Quick 1-Click Filter Pills */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2.5 pb-3 border-b border-slate-100 dark:border-slate-800/80">
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
@@ -4442,7 +4584,7 @@ export { FilterBar };
 ```typescript
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BadgeCheck, Lock, Users, FileText, FolderOpen } from "lucide-react";
@@ -4475,12 +4617,65 @@ export default function WorksheetCard({
   const [isFavorited, setIsFavorited] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
   const [thumbError, setThumbError] = useState(false);
+  const [healedThumbUrl, setHealedThumbUrl] = useState<string | null>(null);
+
+  const rawThumb = healedThumbUrl || worksheet.thumbnailUrl || null;
   const hasValidThumbnail = Boolean(
-    worksheet.thumbnailUrl &&
+    rawThumb &&
       !thumbError &&
-      !(worksheet.thumbnailUrl.includes('X-Amz-Credential=') &&
-        (worksheet.thumbnailUrl.split('X-Amz-Credential=')[1]?.split('%2F')[0]?.split('/')[0]?.length || 32) !== 32)
+      !(
+        rawThumb.includes("X-Amz-Credential=") &&
+        (rawThumb.split("X-Amz-Credential=")[1]?.split("%2F")[0]?.split("/")[0]
+          ?.length || 32) !== 32
+      )
   );
+
+  // Auto-generate and persist Page 1 thumbnail if a PDF card lacks a valid thumbnail
+  useEffect(() => {
+    if (guestTitleOnly || hasValidThumbnail) return;
+    const lowerName = (worksheet.fileName || "").toLowerCase();
+    if (!lowerName.endsWith(".pdf")) return;
+
+    let cancelled = false;
+    async function autoExtractCardThumbnail() {
+      try {
+        const res = await fetch(
+          `/api/worksheets/${worksheet.id}/file?disposition=inline&stream=1`
+        );
+        if (!res.ok || cancelled) return;
+        const blob = await res.blob();
+        if (cancelled || blob.size === 0) return;
+
+        const pdfFile = new File([blob], worksheet.fileName || "document.pdf", {
+          type: "application/pdf",
+        });
+        const { extractPdfThumbnailAndPages } = await import(
+          "@/lib/utils/pdf-thumbnail"
+        );
+        const { thumbnailFile, thumbnailPreviewUrl, pageCount } =
+          await extractPdfThumbnailAndPages(pdfFile);
+        if (cancelled) return;
+
+        setHealedThumbUrl(thumbnailPreviewUrl);
+        setThumbError(false);
+
+        const fd = new FormData();
+        fd.append("thumbnail", thumbnailFile);
+        if (pageCount > 0) fd.append("pageCount", String(pageCount));
+        await fetch(`/api/worksheets/${worksheet.id}/thumbnail`, {
+          method: "POST",
+          body: fd,
+        });
+      } catch {
+        // Silent fallback to gradient card header
+      }
+    }
+
+    autoExtractCardThumbnail();
+    return () => {
+      cancelled = true;
+    };
+  }, [guestTitleOnly, hasValidThumbnail, worksheet.id, worksheet.fileName]);
 
   const title = worksheet.titleAr || worksheet.title;
   const subjectColor = worksheet.subject?.color || "#2563EB";
@@ -4592,7 +4787,7 @@ export default function WorksheetCard({
         >
           {hasValidThumbnail ? (
             <img
-              src={worksheet.thumbnailUrl!}
+              src={rawThumb!}
               alt={title}
               onError={() => setThumbError(true)}
               className="w-full h-44 object-cover group-hover:scale-102 transition-transform duration-300"
@@ -4638,7 +4833,6 @@ export default function WorksheetCard({
         </Link>
 
         <div className="p-4 space-y-3">
-          {/* Mandatory Classification Badges: المادة + السنة الدراسية + القسم التربوي + نوع الملف */}
           <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
             <span
               className="px-2 py-0.5 rounded-md font-bold text-white"
@@ -4810,6 +5004,7 @@ export default function WorksheetDetailClient({
   const [endorseLoading, setEndorseLoading] = useState<boolean>(false);
   const [viewerRole, setViewerRole] = useState<string | null>(null);
   const [viewerId, setViewerId] = useState<string | null>(null);
+  const [viewerIsVerified, setViewerIsVerified] = useState<boolean>(false);
 
   const [downloadCount, setDownloadCount] = useState<number>(
     initialWorksheet.downloadCount
@@ -4840,6 +5035,50 @@ export default function WorksheetDetailClient({
   const [reportLoading, setReportLoading] = useState(false);
   const [reportSuccess, setReportSuccess] = useState(false);
 
+  // Auto-heal missing PDF thumbnail for existing worksheets (e.g. 596.pdf)
+  useEffect(() => {
+    let cancelled = false;
+    const lowerName = (worksheet.fileName || "").toLowerCase();
+    if (!lowerName.endsWith(".pdf") || worksheet.thumbnailUrl) return;
+
+    async function healMissingThumbnail() {
+      try {
+        const res = await fetch(
+          `/api/worksheets/${worksheet.id}/file?disposition=inline&stream=1`
+        );
+        if (!res.ok || cancelled) return;
+        const blob = await res.blob();
+        if (cancelled || blob.size === 0) return;
+
+        const pdfFile = new File([blob], worksheet.fileName || "document.pdf", {
+          type: "application/pdf",
+        });
+        const { extractPdfThumbnailAndPages } = await import(
+          "@/lib/utils/pdf-thumbnail"
+        );
+        const { thumbnailFile, pageCount } =
+          await extractPdfThumbnailAndPages(pdfFile);
+        if (cancelled) return;
+
+        const fd = new FormData();
+        fd.append("thumbnail", thumbnailFile);
+        if (pageCount > 0) fd.append("pageCount", String(pageCount));
+
+        await fetch(`/api/worksheets/${worksheet.id}/thumbnail`, {
+          method: "POST",
+          body: fd,
+        });
+      } catch {
+        // Silent background self-heal
+      }
+    }
+
+    healMissingThumbnail();
+    return () => {
+      cancelled = true;
+    };
+  }, [worksheet.id, worksheet.fileName, worksheet.thumbnailUrl]);
+
   useEffect(() => {
     let isMounted = true;
     async function checkViewerState() {
@@ -4862,6 +5101,7 @@ export default function WorksheetDetailClient({
           if (meJson.success && meJson.data && isMounted) {
             setViewerRole(meJson.data.role || null);
             setViewerId(meJson.data.id || null);
+            setViewerIsVerified(Boolean(meJson.data.isVerified));
           }
         }
       } catch {
@@ -5048,13 +5288,12 @@ export default function WorksheetDetailClient({
   const displayTitle = worksheet.titleAr || worksheet.title;
   const displayDesc = worksheet.descriptionAr || worksheet.description;
   const subjectColor = worksheet.subject?.color || "#2563EB";
-  const canEndorse = viewerRole === "INSPECTOR" || viewerRole === "ADMIN";
+  const canEndorse = viewerRole === "ADMIN" || (viewerRole === "INSPECTOR" && viewerIsVerified);
   const isOwnerOrAdmin =
     (viewerId && viewerId === worksheet.uploadedBy) || viewerRole === "ADMIN";
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" dir="rtl">
-      {/* Breadcrumb */}
       <nav className="flex items-center justify-between gap-2 text-sm text-slate-500 mb-6">
         <div className="flex items-center gap-2">
           <Link
@@ -5072,7 +5311,6 @@ export default function WorksheetDetailClient({
           </span>
         </div>
 
-        {/* Report & Edit Quick Actions */}
         <div className="flex items-center gap-2">
           {isOwnerOrAdmin && (
             <button
@@ -5097,7 +5335,6 @@ export default function WorksheetDetailClient({
         </div>
       </nav>
 
-      {/* Official Inspector Endorsement Banner */}
       {isEndorsed && (
         <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-transparent border-2 border-amber-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -5120,21 +5357,11 @@ export default function WorksheetDetailClient({
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Right Column: Embedded PDF Viewer & Reviews */}
         <section className="lg:col-span-8 flex flex-col gap-6">
           {(() => {
-            const rawPreviewUrl = worksheet.previewUrl || "";
-            const hasBroken64CharKey =
-              rawPreviewUrl.includes("r2.cloudflarestorage.com") &&
-              rawPreviewUrl.includes("X-Amz-Credential=") &&
-              (rawPreviewUrl
-                .split("X-Amz-Credential=")[1]
-                ?.split("%2F")[0]
-                ?.split("/")[0]?.length || 32) !== 32;
-            const effectivePreviewUrl =
-              !rawPreviewUrl || hasBroken64CharKey
-                ? `/api/worksheets/${worksheet.id}/file?disposition=inline`
-                : rawPreviewUrl;
+            // Route preview through our verified same-origin server endpoint
+            // which checks R2 via HeadObjectCommand and automatically falls back to Supabase Storage!
+            const effectivePreviewUrl = `/api/worksheets/${worksheet.id}/file?disposition=inline&stream=1`;
 
             const lowerFileName = (worksheet.fileName || "").toLowerCase();
             const isImageFile =
@@ -5227,7 +5454,6 @@ export default function WorksheetDetailClient({
           />
         </section>
 
-        {/* Left Column */}
         <aside className="lg:col-span-4 flex flex-col gap-6">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col gap-5">
             <div className="flex flex-wrap items-center gap-2">
@@ -5266,7 +5492,6 @@ export default function WorksheetDetailClient({
               </p>
             )}
 
-            {/* Inspector Endorsement Action Button */}
             {canEndorse && (
               <div className="p-4 rounded-2xl bg-amber-50/90 dark:bg-amber-950/40 border-2 border-amber-300 dark:border-amber-700 space-y-2.5">
                 <div className="flex items-center gap-2 text-xs font-extrabold text-amber-900 dark:text-amber-300">
@@ -5297,7 +5522,6 @@ export default function WorksheetDetailClient({
               </div>
             )}
 
-            {/* Download, Favorite, Share Buttons */}
             <div className="flex flex-col gap-3 pt-2">
               <button
                 onClick={handleDownload}
@@ -5351,7 +5575,6 @@ export default function WorksheetDetailClient({
               </div>
             </div>
 
-            {/* Stats */}
             <div className="border-t border-slate-100 dark:border-slate-800 pt-4 grid grid-cols-4 gap-2 text-center">
               <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-2.5">
                 <span className="block text-xs text-slate-500">التحميلات</span>
@@ -5384,7 +5607,6 @@ export default function WorksheetDetailClient({
               </div>
             </div>
 
-            {/* Publisher Card */}
             <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
@@ -5458,7 +5680,6 @@ export default function WorksheetDetailClient({
         </aside>
       </div>
 
-      {/* Modal 1: Edit Worksheet (with Endorsement Loss Warning on File Change) */}
       {isEditOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl">
@@ -5540,7 +5761,6 @@ export default function WorksheetDetailClient({
                 />
               </div>
 
-              {/* Mandatory Warning Banner if replacing file on an Endorsed worksheet */}
               {replacementFile && isEndorsed && (
                 <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border-2 border-amber-400 text-amber-900 dark:text-amber-200 space-y-2.5">
                   <div className="flex items-start gap-2 text-xs font-extrabold">
@@ -5591,7 +5811,6 @@ export default function WorksheetDetailClient({
         </div>
       )}
 
-      {/* Modal 2: Report Publication */}
       {isReportOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl">
@@ -5747,6 +5966,7 @@ export default function ReviewSection({
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
+  const [currentUserIsVerified, setCurrentUserIsVerified] = useState<boolean>(false);
 
   const [rating, setRating] = useState<number>(5);
   const [hoverRating, setHoverRating] = useState<number>(0);
@@ -5782,7 +6002,10 @@ export default function ReviewSection({
           const meJson = await meRes.json();
           if (meJson.success && meJson.data?.id) {
             myId = meJson.data.id;
-            if (isMounted) setCurrentUserRole(meJson.data.role || null);
+            if (isMounted) {
+              setCurrentUserRole(meJson.data.role || null);
+              setCurrentUserIsVerified(Boolean(meJson.data.isVerified));
+            }
           }
         }
 
@@ -5839,7 +6062,7 @@ export default function ReviewSection({
   };
 
   const isInspectorOrStaff =
-    currentUserRole === "INSPECTOR" ||
+    (currentUserRole === "INSPECTOR" && currentUserIsVerified) ||
     currentUserRole === "MODERATOR" ||
     currentUserRole === "ADMIN";
 
@@ -5940,7 +6163,6 @@ export default function ReviewSection({
         </div>
       </div>
 
-      {/* Add Comment Form */}
       {currentUserId ? (
         <form
           onSubmit={handleSubmit}
@@ -5953,7 +6175,6 @@ export default function ReviewSection({
                 : "أضف تعليقك أو أشر لناشر بـ @username"}
             </h3>
 
-            {/* Inspector / Staff Mode Selector */}
             {isInspectorOrStaff && (
               <div className="flex items-center gap-2">
                 <button
@@ -5990,7 +6211,6 @@ export default function ReviewSection({
             </div>
           )}
 
-          {/* Star Rating */}
           {!isPrivateToPublisher && (
             <div className="mt-3 flex items-center gap-1.5">
               {[1, 2, 3, 4, 5].map((star) => {
@@ -6015,7 +6235,6 @@ export default function ReviewSection({
             </div>
           )}
 
-          {/* Comment Textarea with @username Autocomplete */}
           <div className="relative mt-3">
             <textarea
               rows={3}
@@ -6079,7 +6298,6 @@ export default function ReviewSection({
         </form>
       ) : null}
 
-      {/* Comments List */}
       <div className="mt-6 space-y-4">
         {loading ? (
           <div className="flex items-center justify-center py-8 text-slate-400">
@@ -6176,6 +6394,7 @@ export default function ReviewSection({
     </section>
   );
 }
+
 ```
 
 ---
@@ -6258,9 +6477,6 @@ export default function CurriculumAndAdminExplorer({
 
   return (
     <div id="levels-and-subjects" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mb-12 space-y-10 scroll-mt-24">
-      {/* ===================================================================== */}
-      {/* 1. قسم المستويات الدراسية والمواد (ينقل إلى صفحة المستودع والمواد)      */}
-      {/* ===================================================================== */}
       <section
         id="curriculum-levels-section"
         className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
@@ -6376,9 +6592,6 @@ export default function CurriculumAndAdminExplorer({
         )}
       </section>
 
-      {/* ===================================================================== */}
-      {/* 2. قسم الإدارة والمعاملات والوثائق الإدارية للمعلم                     */}
-      {/* ===================================================================== */}
       <section
         id="administration-section"
         className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 scroll-mt-24"
@@ -6745,6 +6958,7 @@ export default async function HomePage(props: HomePageProps) {
   let viewerRole: string | null = null;
   let viewerName: string | null = null;
   let viewerStudentGrade: string | null = null;
+  let viewerIsVerified: boolean = false;
 
   try {
     const supabase = await createSupabaseServerClient();
@@ -6757,7 +6971,7 @@ export default async function HomePage(props: HomePageProps) {
       try {
         const dbUser = await db.user.findUnique({
           where: { id: user.id },
-          select: { role: true, name: true, studentGrade: true },
+          select: { role: true, name: true, studentGrade: true, isVerified: true },
         });
         viewerRole =
           dbUser?.role ||
@@ -6771,6 +6985,7 @@ export default async function HomePage(props: HomePageProps) {
           dbUser?.studentGrade ||
           (user.user_metadata?.student_grade as string | undefined) ||
           null;
+        viewerIsVerified = Boolean(dbUser?.isVerified);
       } catch {
         viewerRole =
           (user.user_metadata?.role as string | undefined) || "TEACHER";
@@ -6805,7 +7020,8 @@ export default async function HomePage(props: HomePageProps) {
           sort,
         },
         viewerRole,
-        viewerUserId
+        viewerUserId,
+        viewerIsVerified
       ),
       listWorksheets(
         {
@@ -6814,7 +7030,8 @@ export default async function HomePage(props: HomePageProps) {
           sort: "newest",
         },
         viewerRole,
-        viewerUserId
+        viewerUserId,
+        viewerIsVerified
       ),
     ]);
 
@@ -6828,7 +7045,7 @@ export default async function HomePage(props: HomePageProps) {
     isDbConnected = false;
     let visibleDemo = isAuthenticated
       ? DEMO_WORKSHEETS.filter((w) =>
-          canUserAccessWorksheet(w, viewerRole, viewerUserId)
+          canUserAccessWorksheet(w, viewerRole, viewerUserId, viewerIsVerified)
         )
       : DEMO_WORKSHEETS.filter((w) => w.audience === "ALL");
 
@@ -6895,7 +7112,6 @@ export default async function HomePage(props: HomePageProps) {
         </div>
       )}
 
-      {/* Hero Section: المسند */}
       <section className="relative overflow-hidden bg-gradient-to-b from-blue-700 via-indigo-800 to-slate-900 text-white pt-14 pb-16 px-4 sm:px-6 lg:px-8">
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
@@ -6917,7 +7133,6 @@ export default async function HomePage(props: HomePageProps) {
               : "تصفح المستويات الدراسية المعتمدة، المواد التعليمية، الجذاذات، التمارين، الامتحانات، وقسم المعاملات الإدارية."}
           </p>
 
-          {/* Main Quick Navigation Menu Bar inside Hero */}
           <div
             dir="rtl"
             className="pt-2 flex flex-wrap justify-center items-center gap-2.5"
@@ -6986,7 +7201,6 @@ export default async function HomePage(props: HomePageProps) {
             )}
           </div>
 
-          {/* Approved 4 Value Pillars */}
           <div className="pt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto border-t border-white/10 text-xs text-blue-100">
             <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 flex flex-col items-center gap-2">
               <BookCheck className="w-6 h-6 text-amber-300" />
@@ -7016,30 +7230,22 @@ export default async function HomePage(props: HomePageProps) {
         </div>
       </section>
 
-      {/* =================================================================== */}
-      {/* 1. الفضاء المخصص حسب فئة المستخدم في أعلى الصفحة (للمؤسسات / المتفقدين / المعلمين / التلاميذ) */}
-      {/* =================================================================== */}
       {isAuthenticated && (
         <RolePersonalizedHub
           worksheets={explorerWorksheets as any}
           viewerRole={viewerRole}
           viewerName={viewerName}
           viewerStudentGrade={viewerStudentGrade}
+          viewerIsVerified={viewerIsVerified}
         />
       )}
 
-      {/* =================================================================== */}
-      {/* 2. مستودع المستويات المعتمدة + قسم الإدارة (مخفي عن التلاميذ)           */}
-      {/* =================================================================== */}
       <CurriculumAndAdminExplorer
         worksheets={explorerWorksheets as any}
         isAuthenticated={isAuthenticated}
         viewerRole={viewerRole}
       />
 
-      {/* =================================================================== */}
-      {/* 3. قائمة النشرات العامة (#catalog)                                   */}
-      {/* =================================================================== */}
       <section
         id="catalog"
         className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 scroll-mt-24"
@@ -7152,9 +7358,6 @@ export default async function HomePage(props: HomePageProps) {
         )}
       </section>
 
-      {/* =================================================================== */}
-      {/* 4. قسم من نحن + دليل فئات المشتركين والميزات + الأسئلة الشائعة        */}
-      {/* =================================================================== */}
       <PlatformIdentityAndFaqSection />
     </div>
   );
@@ -7197,7 +7400,6 @@ export default function TermsAndIpPolicyPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 py-12 px-4 sm:px-6 lg:px-8" dir="rtl">
       <div className="max-w-4xl mx-auto space-y-10">
-        {/* Navigation Breadcrumb */}
         <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
           <Link href="/" className="hover:text-blue-600 transition flex items-center gap-1">
             <ArrowRight className="w-3.5 h-3.5" />
@@ -7207,7 +7409,6 @@ export default function TermsAndIpPolicyPage() {
           <span className="text-slate-800 dark:text-slate-200">شروط الاستخدام والملكية الفكرية</span>
         </div>
 
-        {/* Hero Header */}
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-700 via-indigo-800 to-slate-900 p-8 sm:p-12 text-white shadow-xl">
           <div className="relative z-10 space-y-4 max-w-2xl">
             <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-blue-200 text-xs font-bold border border-white/15">
@@ -7228,7 +7429,6 @@ export default function TermsAndIpPolicyPage() {
           </div>
         </div>
 
-        {/* Section 1: Intellectual Property & Author Rights */}
         <div className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
           <div className="flex items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-800">
             <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
@@ -7270,7 +7470,6 @@ export default function TermsAndIpPolicyPage() {
           </div>
         </div>
 
-        {/* Section 2: Disclaimer & Institutional Independence */}
         <div className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
           <div className="flex items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-800">
             <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
@@ -7294,7 +7493,6 @@ export default function TermsAndIpPolicyPage() {
           </div>
         </div>
 
-        {/* Section 3: Publishing Charter & Takedown Policy */}
         <div className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
           <div className="flex items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-800">
             <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
@@ -7332,7 +7530,6 @@ export default function TermsAndIpPolicyPage() {
           </div>
         </div>
 
-        {/* Section 4: Data Protection & Privacy */}
         <div className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
           <div className="flex items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-800">
             <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
@@ -7356,7 +7553,6 @@ export default function TermsAndIpPolicyPage() {
           </div>
         </div>
 
-        {/* Contact Support & Infringement Reporting Callout */}
         <div className="p-6 rounded-3xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-blue-950/50 border border-blue-200 dark:border-blue-900 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="space-y-1 text-center sm:text-start">
             <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
@@ -7481,7 +7677,6 @@ export default async function GradeLevelsPage() {
           )}
         </div>
 
-        {/* Approved Grade Levels Only */}
         <section className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center gap-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-700 text-white shadow-lg shadow-blue-700/20 shrink-0">
@@ -7633,7 +7828,6 @@ export default async function GradeSubjectsPage(props: GradeSubjectsPageProps) {
           )}
         </div>
 
-        {/* Grade Header & Materials Repository Grid */}
         <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-6 dark:border-slate-800">
             <div className="flex items-center gap-4">
@@ -7850,7 +8044,6 @@ export default async function SubjectPublicationsPage(
           )}
         </div>
 
-        {/* Subject Header */}
         <div className="mb-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 dark:border-slate-800 dark:bg-slate-900">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-6 dark:border-slate-800">
             <div className="flex items-start gap-4">
@@ -7893,7 +8086,6 @@ export default async function SubjectPublicationsPage(
             </div>
           </div>
 
-          {/* 6 Pedagogical Sub-divisions Filter Tabs (including أخرى) */}
           <div className="mt-5 flex flex-wrap items-center gap-2">
             <Link
               href={`/levels/${gradeInfo.slug}/subjects/${subjectInfo.slug}`}
@@ -7925,7 +8117,6 @@ export default async function SubjectPublicationsPage(
           </div>
         </div>
 
-        {/* Publications Organized by Section */}
         {displayedWorksheets.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-14 text-center dark:border-slate-800 dark:bg-slate-900">
             <FileText className="mx-auto mb-3 h-10 w-10 text-slate-300" />
@@ -8591,7 +8782,6 @@ export default function UploadWorksheetPage() {
           </p>
         </div>
 
-        {/* اختيار القسم: دروس ومواد تعليمية أم وثيقة في قسم الإدارة */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button
             type="button"
@@ -8820,7 +9010,6 @@ export default function UploadWorksheetPage() {
             </div>
           )}
 
-          {/* Quick Trimester Selection Buttons (الثلاثيات المدرسية التونسية) */}
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-2.5">
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
@@ -8866,7 +9055,6 @@ export default function UploadWorksheetPage() {
             </div>
           </div>
 
-          {/* Target Audience Control */}
           <div className="p-4 rounded-2xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 space-y-2">
             <label className="flex items-center gap-2 text-sm font-bold text-blue-950 dark:text-blue-200">
               <Users className="w-4 h-4 text-blue-600" />
@@ -9303,7 +9491,6 @@ export default function PublicPublisherProfilePage() {
           </div>
         </div>
 
-        {/* KPI Bar */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 text-center">
           <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-3.5">
             <span className="text-xs text-slate-500 block">النشرات</span>
@@ -9850,7 +10037,6 @@ function ProfileWorkspaceContent() {
 
   return (
     <main className="max-w-6xl mx-auto px-4 py-8" dir="rtl">
-      {/* Header Profile Card */}
       <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
         <div className="flex items-center gap-4">
           <UserAvatarWithPresence
@@ -10010,7 +10196,6 @@ function ProfileWorkspaceContent() {
         </div>
       )}
 
-      {/* Navigation Tabs */}
       <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-200 dark:border-slate-800 mb-6 pb-2">
         <button
           onClick={() => setActiveTab("uploads")}
@@ -10084,7 +10269,6 @@ function ProfileWorkspaceContent() {
           <span>الاشتراكات</span>
         </button>
 
-        {/* قسم التوثيق مباشرة تحت/بجانب خانة الاشتراكات */}
         <button
           onClick={() => setActiveTab("verification")}
           className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition cursor-pointer ${
@@ -10110,7 +10294,6 @@ function ProfileWorkspaceContent() {
         </button>
       </div>
 
-      {/* TAB: VERIFICATION (قسم التوثيق للمؤسسات والمعلمين والمتفقدين) */}
       {activeTab === "verification" && (
         <section className="max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
           <div className="flex items-start justify-between gap-4 border-b pb-4 border-slate-100 dark:border-slate-800">
@@ -10155,7 +10338,6 @@ function ProfileWorkspaceContent() {
                 </div>
               )}
 
-              {/* Step 1: Request Code from Admin */}
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="space-y-1">
                   <p className="text-xs font-extrabold text-slate-900 dark:text-white">
@@ -10179,7 +10361,6 @@ function ProfileWorkspaceContent() {
                 </button>
               </div>
 
-              {/* Step 2: Enter Code */}
               <form
                 onSubmit={handleActivateVerificationCode}
                 className="space-y-4 pt-2"
@@ -10217,7 +10398,6 @@ function ProfileWorkspaceContent() {
         </section>
       )}
 
-      {/* TAB: EDIT PROFILE */}
       {activeTab === "edit" && (
         <section className="max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm space-y-5">
           <div>
@@ -10317,7 +10497,6 @@ function ProfileWorkspaceContent() {
         </section>
       )}
 
-      {/* TAB: SUBSCRIPTIONS (Copied/Preserved & Marked Coming Soon / سيأتي قريباً) */}
       {activeTab === "subscriptions" && (
         <ArchivedSubscriptionsPlans
           currentPlan={profile.subscriptionPlan || "STANDARD"}
@@ -10326,7 +10505,6 @@ function ProfileWorkspaceContent() {
         />
       )}
 
-      {/* TAB: SETTINGS & ACCOUNT DELETION */}
       {activeTab === "settings" && (
         <section className="max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
           <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
@@ -10380,7 +10558,6 @@ function ProfileWorkspaceContent() {
             </div>
           </div>
 
-          {/* Delete Publisher Account Section */}
           <div className="p-5 rounded-2xl bg-red-50/70 dark:bg-red-950/30 border border-red-200 dark:border-red-900 space-y-3">
             <div className="flex items-center gap-2 text-red-700 dark:text-red-400 font-extrabold text-sm">
               <AlertTriangle className="w-5 h-5 shrink-0" />
@@ -10406,7 +10583,6 @@ function ProfileWorkspaceContent() {
         </section>
       )}
 
-      {/* TAB: FAVORITE PUBLISHERS */}
       {activeTab === "favorite_publishers" && (
         <section>
           {loadingItems ? (
@@ -10466,7 +10642,6 @@ function ProfileWorkspaceContent() {
         </section>
       )}
 
-      {/* TABS: UPLOADS / FAVORITES / DOWNLOADS */}
       {(activeTab === "uploads" ||
         activeTab === "favorites" ||
         activeTab === "downloads") && (
@@ -10724,7 +10899,6 @@ export default function SupportAndCustomerServicePage() {
 
   return (
     <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10" dir="rtl">
-      {/* Header */}
       <div className="text-center max-w-2xl mx-auto space-y-3">
         <div className="w-14 h-14 rounded-2xl bg-blue-600 text-white flex items-center justify-center mx-auto shadow-md">
           <Headphones className="w-7 h-7" />
@@ -10737,7 +10911,6 @@ export default function SupportAndCustomerServicePage() {
         </p>
       </div>
 
-      {/* WhatsApp Direct Support Channels (الإصدار v14.0) */}
       {(() => {
         const isStaff = userRole === "ADMIN" || userRole === "MODERATOR";
         const isInstitutionOrInspector =
@@ -10753,7 +10926,6 @@ export default function SupportAndCustomerServicePage() {
                 : "grid-cols-1 max-w-2xl mx-auto w-full"
             }`}
           >
-            {/* Channel 1: Teachers & Students (27764985) */}
             {showTeacherStudent && (
               <a
                 href="https://wa.me/21627764985?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%20%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9%20%D9%85%D9%86%D8%B5%D8%A9%20%D8%A7%D9%84%D9%85%D8%B3%D9%86%D8%AF%D8%8C%20%D8%A3%D8%AA%D9%88%D8%A7%D8%B5%D9%84%20%D9%85%D8%B9%D9%83%D9%85%20%D8%B9%D8%A8%D8%B1%20%D8%AE%D8%B7%20%D8%A7%D9%84%D9%85%D8%B9%D9%84%D9%85%D9%8A%D9%86%20%D9%88%D8%A7%D9%84%D8%AA%D9%84%D8%A7%D9%85%D9%8A%D8%B0%3A"
@@ -10789,7 +10961,6 @@ export default function SupportAndCustomerServicePage() {
               </a>
             )}
 
-            {/* Channel 2: Institutions & Inspectors (76907101) */}
             {showInstitution && (
               <a
                 href="https://wa.me/21676907101?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%20%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9%20%D9%85%D9%86%D8%B5%D8%A9%20%D8%A7%D9%84%D9%85%D8%B3%D9%86%D8%AF%D8%8C%20%D8%A3%D8%AA%D9%88%D8%A7%D8%B5%D9%84%20%D9%85%D8%B9%D9%83%D9%85%20%D8%B9%D8%A8%D8%B1%20%D8%AE%D8%B7%20%D8%A7%D9%84%D9%85%D8%A4%D8%B3%D8%B3%D8%A7%D8%AA%20%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%88%D9%8A%D8%A9%20%D9%88%D8%A7%D9%84%D9%85%D8%AA%D9%81%D9%82%D8%AF%D9%8A%D9%86%3A"
@@ -10828,7 +10999,6 @@ export default function SupportAndCustomerServicePage() {
         );
       })()}
 
-      {/* Quick Service Selection Cards */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {QUICK_SUPPORT_CARDS.map((card) => {
           const Icon = card.icon;
@@ -10865,7 +11035,6 @@ export default function SupportAndCustomerServicePage() {
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Submit Ticket Form */}
         <section className="lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm space-y-5">
           <h2 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
             <MessageSquare className="w-5 h-5 text-blue-600" />
@@ -10988,9 +11157,7 @@ export default function SupportAndCustomerServicePage() {
           </form>
         </section>
 
-        {/* Live Ticket History & Instant FAQ Guide */}
         <div className="lg:col-span-5 space-y-6">
-          {/* Live User Tickets Tracker */}
           <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
             <h2 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
               <BadgeCheck className="w-4 h-4 text-emerald-600" />
@@ -11050,7 +11217,6 @@ export default function SupportAndCustomerServicePage() {
             )}
           </section>
 
-          {/* Quick FAQ Accordion */}
           <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
             <h2 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
               <HelpCircle className="w-4 h-4 text-amber-600" />
@@ -11989,7 +12155,6 @@ function RegisterContent() {
             </p>
           </div>
 
-          {/* Post-Registration Note on Identity Verification */}
           <div className="p-5 rounded-2xl bg-blue-50/80 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 text-start space-y-2">
             <div className="flex items-center gap-2 text-blue-900 dark:text-blue-200 font-extrabold text-sm">
               <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0" />
@@ -12023,7 +12188,6 @@ function RegisterContent() {
 
   return (
     <div className="max-w-4xl w-full mx-auto space-y-8" dir={t.dir}>
-      {/* Top 4-Role Selector Cards */}
       <div className="space-y-3 text-center">
         <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
           {t.authModal.registerTitle}
@@ -12073,7 +12237,6 @@ function RegisterContent() {
         </div>
       </div>
 
-      {/* Clean Registration Form Card (Zero code alerts or verification warnings during signup) */}
       <div className="max-w-xl mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-lg">
         <div className="flex items-center gap-3.5 pb-5 mb-6 border-b border-slate-100 dark:border-slate-800">
           <div
@@ -12294,7 +12457,6 @@ function RegisterContent() {
         </div>
       </div>
 
-      {/* Terms & Conditions Modal */}
       {showTermsModal && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl">
@@ -12568,13 +12730,11 @@ export default function InspectorDashboardPage() {
   return (
     <div dir="rtl" className="min-h-screen bg-slate-50/70 pb-16 pt-8 dark:bg-slate-950">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {/* Supervisory Hierarchy Bar: Shows Admin Switcher + "Return to Admin Dashboard" ONLY if viewerRole === "ADMIN", otherwise shows Exclusive Inspector Scope Notice */}
         <SupervisoryHierarchyBar
           viewerRole={data.inspector.role}
           currentDashboard="INSPECTOR"
         />
 
-        {/* Header */}
         <div className="mb-8 rounded-3xl border border-amber-200/80 bg-gradient-to-l from-amber-50 via-white to-amber-50/40 p-6 shadow-sm dark:border-amber-900/40 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/20">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -12592,7 +12752,6 @@ export default function InspectorDashboardPage() {
             </button>
           </div>
 
-          {/* KPI Stats */}
           <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
             <div className="rounded-2xl border border-slate-200/80 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
               <span className="text-[11px] font-bold text-slate-500">إجمالي المنشورات للرقابة</span>
@@ -12627,7 +12786,6 @@ export default function InspectorDashboardPage() {
           </div>
         </div>
 
-        {/* Dedicated Top Section for Inspector-Only Publications (للتفاعل بين المتفقدين) */}
         <div className="mb-8 rounded-3xl border-2 border-amber-300/90 bg-white p-6 shadow-sm dark:border-amber-800/70 dark:bg-slate-900">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-amber-100 pb-4 dark:border-slate-800">
             <div>
@@ -12689,7 +12847,6 @@ export default function InspectorDashboardPage() {
           </div>
         )}
 
-        {/* Tabs */}
         <div className="mb-6 flex flex-wrap gap-2 border-b border-slate-200 pb-3 dark:border-slate-800">
           <button
             type="button"
@@ -12729,7 +12886,6 @@ export default function InspectorDashboardPage() {
           </button>
         </div>
 
-        {/* TAB 1: WORKSHEETS ENDORSEMENT & COMMENTS */}
         {activeTab === "worksheets" && (
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
@@ -12834,7 +12990,6 @@ export default function InspectorDashboardPage() {
                           </td>
                           <td className="px-5 py-4">
                             <div className="flex flex-wrap items-center justify-end gap-1.5">
-                              {/* 1. Endorse Toggle */}
                               <button
                                 type="button"
                                 disabled={actionLoadingId === ws.id}
@@ -12849,7 +13004,6 @@ export default function InspectorDashboardPage() {
                                 {ws.isEndorsed ? "إلغاء التوثيق" : "توثيق المنشور"}
                               </button>
 
-                              {/* 2. Pinned Top Comment */}
                               <button
                                 type="button"
                                 onClick={() => {
@@ -12863,7 +13017,6 @@ export default function InspectorDashboardPage() {
                                 تعليق في الصدارة
                               </button>
 
-                              {/* 3. Private Comment Directly to Publisher */}
                               <button
                                 type="button"
                                 onClick={() => {
@@ -12877,7 +13030,6 @@ export default function InspectorDashboardPage() {
                                 تعليق خاص للناشر
                               </button>
 
-                              {/* 4. Direct Report to Admin */}
                               <button
                                 type="button"
                                 onClick={() => {
@@ -12901,7 +13053,6 @@ export default function InspectorDashboardPage() {
           </div>
         )}
 
-        {/* TAB 2: MY PINNED & PRIVATE COMMENTS */}
         {activeTab === "my_comments" && (
           <div className="space-y-3">
             {data.myComments.length === 0 ? (
@@ -12947,7 +13098,6 @@ export default function InspectorDashboardPage() {
           </div>
         )}
 
-        {/* TAB 3: DIRECT REPORTS TO ADMIN */}
         {activeTab === "direct_reports" && (
           <div className="space-y-3">
             {data.myReports.length === 0 ? (
@@ -12983,7 +13133,6 @@ export default function InspectorDashboardPage() {
         )}
       </div>
 
-      {/* Modal: Add Pinned Comment OR Private Comment to Publisher */}
       {selectedWorksheet && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
@@ -13066,7 +13215,6 @@ export default function InspectorDashboardPage() {
         </div>
       )}
 
-      {/* Modal: Direct Report to Top Admin */}
       {reportTargetWs && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
@@ -13350,13 +13498,11 @@ export default function ModeratorDashboardPage() {
   return (
     <div dir="rtl" className="min-h-screen bg-slate-50/70 pb-16 pt-8 dark:bg-slate-950">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {/* Supervisory Hierarchy Bar: Shows Admin Switcher + "Return to Admin Dashboard" ONLY if viewerRole === "ADMIN", otherwise shows Exclusive Moderator Scope Notice */}
         <SupervisoryHierarchyBar
           viewerRole={data.moderator.role}
           currentDashboard="MODERATOR"
         />
 
-        {/* Header */}
         <div className="mb-8 rounded-3xl border border-indigo-200/80 bg-gradient-to-l from-indigo-50 via-white to-indigo-50/40 p-6 shadow-sm dark:border-indigo-900/40 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950/20">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -13415,7 +13561,6 @@ export default function ModeratorDashboardPage() {
           </div>
         )}
 
-        {/* Navigation Tabs */}
         <div className="mb-6 flex flex-wrap gap-2 border-b border-slate-200 pb-3 dark:border-slate-800">
           <button
             type="button"
@@ -13467,7 +13612,6 @@ export default function ModeratorDashboardPage() {
           </button>
         </div>
 
-        {/* Search Bar for Worksheets & Users */}
         {(activeTab === "worksheets" || activeTab === "users") && (
           <div className="mb-4">
             <input
@@ -13480,7 +13624,6 @@ export default function ModeratorDashboardPage() {
           </div>
         )}
 
-        {/* TAB 1: DELETE & MANAGE WORKSHEETS */}
         {activeTab === "worksheets" && (
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className="overflow-x-auto">
@@ -13588,7 +13731,6 @@ export default function ModeratorDashboardPage() {
           </div>
         )}
 
-        {/* TAB 2: BAN USERS & DIRECT COMMUNICATION WITH PUBLISHERS */}
         {activeTab === "users" && (
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className="overflow-x-auto">
@@ -13713,7 +13855,6 @@ export default function ModeratorDashboardPage() {
           </div>
         )}
 
-        {/* TAB 3: TECHNICAL SUPPORT MANAGEMENT */}
         {activeTab === "support" && (
           <div className="space-y-4">
             {data.supportTickets.map((t) => (
@@ -13772,7 +13913,6 @@ export default function ModeratorDashboardPage() {
           </div>
         )}
 
-        {/* TAB 4: REPORTS */}
         {activeTab === "reports" && (
           <div className="space-y-4">
             {data.reports.map((rep) => (
@@ -13831,7 +13971,6 @@ export default function ModeratorDashboardPage() {
         )}
       </div>
 
-      {/* Modal: Direct Communication with Publisher */}
       {dmTargetUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
@@ -14160,13 +14299,11 @@ export default function AdminDashboardPage() {
   return (
     <div dir="rtl" className="min-h-screen bg-slate-50/70 pb-16 pt-8 dark:bg-slate-950">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {/* Unified 3-Tier Supervisory Switcher Bar (Exclusive to ADMIN) */}
         <SupervisoryHierarchyBar
           viewerRole={data.admin.role}
           currentDashboard="ADMIN"
         />
 
-        {/* Top Header */}
         <div className="mb-8 rounded-3xl border border-blue-200/80 bg-gradient-to-l from-blue-50 via-white to-indigo-50/50 p-6 shadow-sm dark:border-blue-900/40 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/20">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -14187,7 +14324,6 @@ export default function AdminDashboardPage() {
             </div>
           </div>
 
-          {/* KPI Cards */}
           <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
             <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
               <span className="text-[11px] font-bold text-slate-500">إجمالي المنشورات</span>
@@ -14253,7 +14389,6 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* Navigation Tabs */}
         <div className="mb-6 flex flex-wrap gap-2 border-b border-slate-200 pb-3 dark:border-slate-800">
           <button
             type="button"
@@ -14341,9 +14476,6 @@ export default function AdminDashboardPage() {
           </button>
         </div>
 
-        {/* ================================================================= */}
-        {/* TAB: EXCLUSIVE ADMIN CODE GENERATOR (إنشاء الأكواد في الداشبورد للمشرف) */}
-        {/* ================================================================= */}
         {activeTab === "codes" && (
           <div className="space-y-6">
             <div className="rounded-3xl border border-amber-200 bg-white p-6 shadow-sm dark:border-amber-900/50 dark:bg-slate-900">
@@ -14422,7 +14554,6 @@ export default function AdminDashboardPage() {
               </form>
             </div>
 
-            {/* Generated Codes Table */}
             <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <div className="overflow-x-auto">
                 <table className="w-full text-right text-xs">
@@ -14517,9 +14648,6 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* ================================================================= */}
-        {/* TAB 1: WORKSHEETS MANAGEMENT                                      */}
-        {/* ================================================================= */}
         {activeTab === "worksheets" && (
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
@@ -14675,9 +14803,6 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* ================================================================= */}
-        {/* TAB 2: USERS, EXCLUSIVE VERIFICATION ACTIVATION, ROLES & BAN      */}
-        {/* ================================================================= */}
         {activeTab === "teachers" && (
           <div className="space-y-4">
             <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
@@ -14745,7 +14870,6 @@ export default function AdminDashboardPage() {
                             </div>
                           </td>
 
-                          {/* Role Selector including MODERATOR & INSPECTOR */}
                           <td className="px-4 py-4">
                             <select
                               value={t.role}
@@ -14765,7 +14889,6 @@ export default function AdminDashboardPage() {
                             </select>
                           </td>
 
-                          {/* Exclusive Admin Direct Verification Toggle */}
                           <td className="px-4 py-4">
                             <button
                               type="button"
@@ -14782,7 +14905,6 @@ export default function AdminDashboardPage() {
                             </button>
                           </td>
 
-                          {/* Generate Per-User Verification Code */}
                           <td className="px-4 py-4">
                             {t.inspectorCode ? (
                               <div className="flex items-center gap-1.5">
@@ -14822,7 +14944,6 @@ export default function AdminDashboardPage() {
                             )}
                           </td>
 
-                          {/* Direct Message & Ban */}
                           <td className="px-5 py-4">
                             <div className="flex items-center justify-end gap-1.5">
                               <button
@@ -14881,7 +15002,6 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* TAB 3: PROFILE EDITS */}
         {activeTab === "profile_edits" && (
           <div className="space-y-4">
             {data.pendingProfileUsers.length === 0 ? (
@@ -14942,7 +15062,6 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* TAB 4: REPORTS (Including Inspector Priority Escalations) */}
         {activeTab === "reports" && (
           <div className="space-y-4">
             {data.reports.map((rep) => (
@@ -15004,7 +15123,6 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* TAB 5: TECHNICAL SUPPORT */}
         {activeTab === "support" && (
           <div className="space-y-4">
             {data.supportTickets.map((t) => (
@@ -15065,9 +15183,6 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* ================================================================= */}
-        {/* TAB: AUDIT LOGS & SECURITY (🛡️ سجل النشاطات والأمن) */}
-        {/* ================================================================= */}
         {activeTab === "audit" && (
           <div className="space-y-6">
             <div className="rounded-3xl border border-violet-200/80 bg-gradient-to-l from-violet-50 via-white to-purple-50/40 p-6 shadow-sm dark:border-violet-900/40 dark:from-slate-900 dark:via-slate-900 dark:to-violet-950/20">
@@ -15093,7 +15208,6 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
-              {/* Filters & Search */}
               <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200/80 pt-4 dark:border-slate-800">
                 <div className="flex flex-1 flex-wrap items-center gap-2 min-w-[280px]">
                   <div className="relative flex-1">
@@ -15134,7 +15248,6 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            {/* Audit Logs Table */}
             <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <div className="overflow-x-auto">
                 <table className="w-full text-right text-xs">
@@ -15270,7 +15383,6 @@ export default function AdminDashboardPage() {
         )}
       </div>
 
-      {/* Direct Message Modal */}
       {dmTargetUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">

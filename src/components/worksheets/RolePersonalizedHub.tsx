@@ -24,6 +24,7 @@ interface RolePersonalizedHubProps {
   viewerRole: string | null;
   viewerName?: string | null;
   viewerStudentGrade?: string | null;
+  viewerIsVerified?: boolean;
 }
 
 type HubRoleTab = "INSTITUTION" | "INSPECTOR" | "TEACHER" | "STUDENT";
@@ -33,6 +34,7 @@ export default function RolePersonalizedHub({
   viewerRole,
   viewerName,
   viewerStudentGrade,
+  viewerIsVerified = false,
 }: RolePersonalizedHubProps) {
   const isStaff = viewerRole === "ADMIN" || viewerRole === "MODERATOR";
 
@@ -150,13 +152,82 @@ export default function RolePersonalizedHub({
 
   if (!viewerRole) return null;
 
+  const requiresIdentityVerification =
+    !isStaff &&
+    (viewerRole === "INSPECTOR" ||
+      viewerRole === "TEACHER" ||
+      viewerRole === "INSTITUTION") &&
+    !viewerIsVerified;
+
+  if (requiresIdentityVerification) {
+    const roleTitleAr =
+      viewerRole === "INSPECTOR"
+        ? "متفقد تربوي"
+        : viewerRole === "INSTITUTION"
+        ? "مؤسسة تربوية"
+        : "معلم";
+
+    return (
+      <section
+        id="role-personalized-hub"
+        dir="rtl"
+        className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 scroll-mt-24"
+      >
+        <div className="overflow-hidden rounded-3xl border-2 border-amber-300 bg-gradient-to-l from-amber-50 via-white to-orange-50/40 p-6 sm:p-8 shadow-md dark:border-amber-800/80 dark:from-amber-950/40 dark:via-slate-900 dark:to-slate-900">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex items-start gap-4">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-lg shadow-amber-500/25">
+                <ShieldCheck className="h-7 w-7" />
+              </div>
+              <div className="space-y-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-0.5 text-[11px] font-extrabold text-amber-900 dark:bg-amber-950 dark:text-amber-300">
+                  🔒 حماية أمان الفضاء الداخلي — الحساب قيد انتظار إثبات الهوية
+                </span>
+                <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
+                  مرحباً {viewerName || ""}، وصولك إلى الملفات الحساسة والميزات الداخلية لفئة ({roleTitleAr}) مقفل لحين إثبات الهوية
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-3xl">
+                  لضمان أمان المنصة ومنع أي مستخدم غير مخوّل من التسجيل كـ <strong>{roleTitleAr}</strong> للوصول إلى الامتحانات السرية، الإصلاحات، الوثائق الداخلية، أو صلاحيات المتفقد التربوي، يُشترط أولاً إثبات وتوثيق هويتك رسمياً. يمكنك حالياً تصفح المنشورات التعليمية العامة في الأسفل، وفور توثيق حسابك سيُفتح لك الفضاء الداخلي الكامل وميزات فئتك تلقائياً.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+              {viewerRole === "INSPECTOR" && (
+                <Link
+                  href="/inspector/activate"
+                  className="inline-flex items-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 px-4 py-3 text-xs font-extrabold text-white shadow-sm transition"
+                >
+                  <Award className="h-4 w-4" />
+                  <span>تفعيل حساب المتفقد بكود التوثيق</span>
+                </Link>
+              )}
+              <Link
+                href="/profile?tab=verification"
+                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 px-4 py-3 text-xs font-extrabold text-white shadow-sm transition"
+              >
+                <ShieldCheck className="h-4 w-4" />
+                <span>طلب إثبات وتوثيق الهوية الآن</span>
+              </Link>
+              <Link
+                href="/support"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-200 transition"
+              >
+                <span>التواصل مع الإدارة</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section
       id="role-personalized-hub"
       dir="rtl"
       className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 scroll-mt-24"
     >
-      {/* Staff Switcher (Allows ADMIN / MODERATOR to inspect all 4 Role Hubs) */}
       {isStaff && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-purple-200 bg-purple-50/70 px-4 py-3 dark:border-purple-900/60 dark:bg-purple-950/30">
           <div className="flex items-center gap-2 text-xs font-extrabold text-purple-900 dark:text-purple-200">
@@ -192,9 +263,6 @@ export default function RolePersonalizedHub({
         </div>
       )}
 
-      {/* =================================================================== */}
-      {/* A. INSTITUTION HUB (قسم نشرات المؤسسات للمؤسسات للتفاعل المشترك)      */}
-      {/* =================================================================== */}
       {activeHub === "INSTITUTION" && (
         <div id="institutions-hub" className="overflow-hidden rounded-3xl border-2 border-indigo-200 bg-white shadow-md dark:border-indigo-900/60 dark:bg-slate-900 scroll-mt-24">
           <div className="border-b border-indigo-100 bg-gradient-to-l from-indigo-50 via-blue-50/40 to-white px-6 py-6 dark:border-slate-800 dark:from-indigo-950/50 dark:via-slate-900 dark:to-slate-900">
@@ -276,9 +344,6 @@ export default function RolePersonalizedHub({
         </div>
       )}
 
-      {/* =================================================================== */}
-      {/* B. INSPECTOR HUB (قسم خاص بمنشورات المتفقدين في أعلى الصفحة)          */}
-      {/* =================================================================== */}
       {activeHub === "INSPECTOR" && (
         <div id="inspectors-hub" className="overflow-hidden rounded-3xl border-2 border-amber-300 bg-white shadow-md dark:border-amber-800/70 dark:bg-slate-900 scroll-mt-24">
           <div className="border-b border-amber-100 bg-gradient-to-l from-amber-50 via-orange-50/30 to-white px-6 py-6 dark:border-slate-800 dark:from-amber-950/40 dark:via-slate-900 dark:to-slate-900">
@@ -366,9 +431,6 @@ export default function RolePersonalizedHub({
         </div>
       )}
 
-      {/* =================================================================== */}
-      {/* C. TEACHER HUB (قسم في الأعلى للمعلم فيه جميع المنشورات الخاصة بالمعلمين) */}
-      {/* =================================================================== */}
       {activeHub === "TEACHER" && (
         <div id="teachers-hub" className="overflow-hidden rounded-3xl border-2 border-blue-200 bg-white shadow-md dark:border-blue-900/60 dark:bg-slate-900 scroll-mt-24">
           <div className="border-b border-blue-100 bg-gradient-to-l from-blue-50 via-indigo-50/30 to-white px-6 py-6 dark:border-slate-800 dark:from-blue-950/40 dark:via-slate-900 dark:to-slate-900">
@@ -476,9 +538,6 @@ export default function RolePersonalizedHub({
         </div>
       )}
 
-      {/* =================================================================== */}
-      {/* D. STUDENT HUB (واجهة التلميذ المخصصة بدون قسم الإدارة)                */}
-      {/* =================================================================== */}
       {activeHub === "STUDENT" && (
         <div
           id="student-hub"

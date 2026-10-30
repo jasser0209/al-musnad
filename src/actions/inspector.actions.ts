@@ -1,16 +1,5 @@
 "use server";
 
-/**
- * Inspector Actions (المستوى الرقابي الأول: المتفقد) & Identity Verification — Al-Musnad v8.0
- *
- * Inspector Powers:
- * 1. وضع علامات التوثيق البيداغوجي للمنشورات (`toggleWorksheetEndorsementAction`)
- * 2. إضافة تعليقات ترى في الصدارة (`addInspectorCommentAction` with `isOfficialDirective: true`)
- * 3. رفع تعليق خاص مباشرة إلى الناشر (`addInspectorCommentAction` with `isPrivateToPublisher: true`)
- * 4. القيام بإبلاغات تصل إلى المشرف مباشرة (`submitInspectorDirectReportToAdminAction` with `isInspectorPriority: true`)
- * 5. تفعيل كود التوثيق الصادر من المشرف (`activateInspectorCodeAction` — يدعم جدول `VerificationCode` وأكواد المستخدمين)
- */
-
 import { revalidatePath } from "next/cache";
 import crypto from "crypto";
 import { db } from "@/lib/db";
@@ -57,12 +46,16 @@ async function requireInspectorOrAdmin() {
     );
   }
 
+  // Strict Security Guard: Unverified Inspector CANNOT access Inspector Dashboard or Inspector Powers
+  if (dbUser.role === Role.INSPECTOR && !dbUser.isVerified) {
+    throw new ForbiddenError(
+      "حسابك كمتفقد تربوي قيد انتظار إثبات الهوية. لضمان أمان المنصة وحماية الصلاحيات الرقابية والملفات الداخلية، لا يمكن لحساب المتفقد الجديد الوصول إلى ميزات المتفقد أو لوحة التحكم إلا بعد إثبات الهوية عبر كود التفعيل الرسمي (/inspector/activate) أو توثيق الحساب من قِبل المشرف العام."
+    );
+  }
+
   return dbUser;
 }
 
-/**
- * جلب بيانات لوحة تحكم المتفقد التربوي (`/inspector/dashboard`)
- */
 export async function getInspectorDashboardData() {
   const inspector = await requireInspectorOrAdmin();
 
@@ -142,11 +135,6 @@ export async function getInspectorDashboardData() {
   };
 }
 
-/**
- * إضافة تعليق من المتفقد:
- * - إما تعليق عام يظهر في الصدارة (`isPrivateToPublisher: false` -> `isOfficialDirective: true`)
- * - أو تعليق خاص يصل مباشرة إلى الناشر (`isPrivateToPublisher: true`)
- */
 export async function addInspectorCommentAction(input: {
   worksheetId: string;
   comment: string;
@@ -175,9 +163,6 @@ export async function addInspectorCommentAction(input: {
   return created;
 }
 
-/**
- * للمتفقد: القيام بإبلاغ عاجل يصل إلى المشرف العام (`ADMIN`) مباشرة
- */
 export async function submitInspectorDirectReportToAdminAction(input: {
   targetType: "WORKSHEET" | "USER";
   targetWorksheetId?: string;
@@ -238,9 +223,6 @@ export async function submitInspectorDirectReportToAdminAction(input: {
   return { success: true, id: report.id };
 }
 
-/**
- * للمشرف العام (حصرًا): توليد كود توثيق لمستخدم محدد
- */
 export async function generateInspectorCodeAdminAction(
   targetUserId: string,
   grantInspectorRole: boolean = false
@@ -313,9 +295,6 @@ export async function generateInspectorCodeAdminAction(
   return updated;
 }
 
-/**
- * طلب توثيق الهوية من داخل صفحة الملف الشخصي (`/profile?tab=verification`)
- */
 export async function requestIdentityVerificationAction() {
   const supabase = await createSupabaseServerClient();
   const {
@@ -345,10 +324,6 @@ export async function requestIdentityVerificationAction() {
   return { requested: true };
 }
 
-/**
- * تفعيل شارة التوثيق (`isVerified`) باستخدام الكود الصادر من المشرف
- * يقبل الأكواد المولدة في جدول `VerificationCode` أو الأكواد المربوطة بـ `user.inspectorCode`
- */
 export async function activateInspectorCodeAction(codeInput: string) {
   const cleanCode = codeInput.trim().toUpperCase();
   if (!cleanCode || cleanCode.length < 4) {
@@ -483,9 +458,6 @@ export async function activateInspectorCodeAction(codeInput: string) {
   return updated;
 }
 
-/**
- * للمتفقد التربوي أو المشرف: وضع أو إزالة علامة الاعتماد البيداغوجي على المنشور
- */
 export async function toggleWorksheetEndorsementAction(worksheetId: string) {
   const supabase = await createSupabaseServerClient();
   const {

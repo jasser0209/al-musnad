@@ -53,7 +53,6 @@ export default function FilterBar({ grades, subjects, categories }: FilterBarPro
 
   return (
     <div className="mb-8 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      {/* Tunisian School Trimesters — Quick 1-Click Filter Pills */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2.5 pb-3 border-b border-slate-100 dark:border-slate-800/80">
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />

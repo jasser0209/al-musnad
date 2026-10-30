@@ -90,7 +90,6 @@ export default async function GradeSubjectsPage(props: GradeSubjectsPageProps) {
           )}
         </div>
 
-        {/* Grade Header & Materials Repository Grid */}
         <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-6 dark:border-slate-800">
             <div className="flex items-center gap-4">

@@ -447,7 +447,6 @@ export default function UploadWorksheetPage() {
           </p>
         </div>
 
-        {/* اختيار القسم: دروس ومواد تعليمية أم وثيقة في قسم الإدارة */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button
             type="button"
@@ -676,7 +675,6 @@ export default function UploadWorksheetPage() {
             </div>
           )}
 
-          {/* Quick Trimester Selection Buttons (الثلاثيات المدرسية التونسية) */}
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-2.5">
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
@@ -722,7 +720,6 @@ export default function UploadWorksheetPage() {
             </div>
           </div>
 
-          {/* Target Audience Control */}
           <div className="p-4 rounded-2xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 space-y-2">
             <label className="flex items-center gap-2 text-sm font-bold text-blue-950 dark:text-blue-200">
               <Users className="w-4 h-4 text-blue-600" />

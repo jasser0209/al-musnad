@@ -217,7 +217,6 @@ function RegisterContent() {
             </p>
           </div>
 
-          {/* Post-Registration Note on Identity Verification */}
           <div className="p-5 rounded-2xl bg-blue-50/80 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 text-start space-y-2">
             <div className="flex items-center gap-2 text-blue-900 dark:text-blue-200 font-extrabold text-sm">
               <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0" />
@@ -251,7 +250,6 @@ function RegisterContent() {
 
   return (
     <div className="max-w-4xl w-full mx-auto space-y-8" dir={t.dir}>
-      {/* Top 4-Role Selector Cards */}
       <div className="space-y-3 text-center">
         <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
           {t.authModal.registerTitle}
@@ -301,7 +299,6 @@ function RegisterContent() {
         </div>
       </div>
 
-      {/* Clean Registration Form Card (Zero code alerts or verification warnings during signup) */}
       <div className="max-w-xl mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-lg">
         <div className="flex items-center gap-3.5 pb-5 mb-6 border-b border-slate-100 dark:border-slate-800">
           <div
@@ -522,7 +519,6 @@ function RegisterContent() {
         </div>
       </div>
 
-      {/* Terms & Conditions Modal */}
       {showTermsModal && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl">

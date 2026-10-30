@@ -130,9 +130,6 @@ export default function PlatformIdentityAndFaqSection() {
       dir="rtl"
       className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-12 scroll-mt-24"
     >
-      {/* ===================================================================== */}
-      {/* Top Banner & Unified Tab Switcher for "اعرف المزيد"                  */}
-      {/* ===================================================================== */}
       <div className="rounded-3xl border border-blue-200 dark:border-blue-900/60 bg-gradient-to-br from-blue-50/80 via-white to-indigo-50/60 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950/40 p-6 sm:p-8 text-center shadow-sm space-y-4">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 dark:bg-blue-950/80 px-4 py-1 text-xs font-black text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800">
           <Compass className="h-3.5 w-3.5" />
@@ -147,7 +144,6 @@ export default function PlatformIdentityAndFaqSection() {
           فضاء تعليمي موحد يجمع رسالة المنصة، دليل مزايا واختصاصات كل فئة مستخدم، وإجابات الأسئلة الشائعة في مكان واحد.
         </p>
 
-        {/* Tab Buttons */}
         <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
           <button
             type="button"
@@ -196,9 +192,6 @@ export default function PlatformIdentityAndFaqSection() {
         </div>
       </div>
 
-      {/* ===================================================================== */}
-      {/* 1. قسم «من نحن» — التعريف بهوية منصة المسند وما تؤدي إليه               */}
-      {/* ===================================================================== */}
       {(activeTab === "ALL" || activeTab === "ABOUT") && (
         <section
           id="about-us"
@@ -269,9 +262,6 @@ export default function PlatformIdentityAndFaqSection() {
         </section>
       )}
 
-      {/* ===================================================================== */}
-      {/* 2. تفسير لكل فئة من المشتركين — الخصائص والميزات عند التسجيل            */}
-      {/* ===================================================================== */}
       {(activeTab === "ALL" || activeTab === "ROLES") && (
         <section id="roles-guide" className="space-y-8 scroll-mt-24">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -344,9 +334,6 @@ export default function PlatformIdentityAndFaqSection() {
         </section>
       )}
 
-      {/* ===================================================================== */}
-      {/* 3. قسم الأسئلة الشائعة التفاعلي                                        */}
-      {/* ===================================================================== */}
       {(activeTab === "ALL" || activeTab === "FAQ") && (
         <section
           id="faq-section"

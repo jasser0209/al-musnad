@@ -83,7 +83,7 @@
 
 ---
 
-## 📂 Complete Source Code (73 Files)
+## 📂 Complete Source Code (74 Files)
 
 ### File: `package.json`
 
@@ -298,10 +298,8 @@ import type { Config } from "tailwindcss";
 const config: Config = {
   darkMode: "class",
   content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/context/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/pages*.{js,ts,jsx,tsx,mdx}",
+    "./src/context*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
@@ -611,6 +609,7 @@ const part1Files = [
   "src/app/api/worksheets/[id]/route.ts",
   "src/app/api/worksheets/[id]/download/route.ts",
   "src/app/api/worksheets/[id]/file/route.ts",
+  "src/app/api/worksheets/[id]/thumbnail/route.ts",
   "src/app/api/worksheets/[id]/favorite/route.ts",
   "src/app/api/worksheets/[id]/review/route.ts",
   "src/app/api/worksheets/[id]/reviews/route.ts",
@@ -795,8 +794,8 @@ function buildMarkdownForFiles(fileList, titleSuffix, footerNote) {
     let fileContent = fs.readFileSync(fullPath, "utf-8");
     if (relPath.endsWith(".ts") || relPath.endsWith(".tsx")) {
       fileContent = fileContent
-        .replace(/^\/\*\*[\s\S]*?\*\/\s*/, "")
-        .replace(/^("use client";\s*)\/\*\*[\s\S]*?\*\/\s*/, "$1");
+        .replace(/\/\*\*[\s\S]*?\*\/\s*/g, "")
+        .replace(/\{\/\*[\s\S]*?\*\/\}\s*/g, "");
     }
     const lang = getLanguage(relPath);
     md += `\n### File: \`${relPath}\`\n\n\`\`\`${lang}\n${fileContent}\n\`\`\`\n\n---\n`;
@@ -2662,10 +2661,6 @@ export function createSupabaseBrowserClient() {
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-/**
- * Standard server client scoped to the authenticated caller's cookie session.
- * Adheres to Supabase Row-Level Security (RLS) policies.
- */
 export async function createSupabaseServerClient() {
   const cookieStore = await cookies();
 
@@ -2693,11 +2688,6 @@ export async function createSupabaseServerClient() {
   });
 }
 
-/**
- * Admin server client utilizing the Supabase SERVICE_ROLE_KEY.
- * Bypasses Row-Level Security (RLS). Use exclusively for secure server operations
- * such as bucket management, privileged storage operations, and internal migrations.
- */
 export function createSupabaseAdminClient() {
   const supabaseUrl =
     process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
@@ -2808,9 +2798,6 @@ import type {
   ApiErrorDetail,
 } from "@/types/api";
 
-/**
- * Returns a standardized 2xx success JSON response.
- */
 export function successResponse<T>(
   data: T,
   meta?: PaginationMeta,
@@ -2825,10 +2812,6 @@ export function successResponse<T>(
   return NextResponse.json(body, { status });
 }
 
-/**
- * Returns a standardized error JSON response from any thrown exception.
- * Dispatches AppError, Zod validation errors, Prisma database errors, and unknown exceptions.
- */
 export function errorResponse(
   error: unknown,
   fallbackStatus: number = 500
@@ -3028,9 +3011,6 @@ export interface PaginationParams {
   limit: number;
 }
 
-/**
- * Normalizes input page and limit parameters and returns Prisma offset limits.
- */
 export function getPaginationParams(
   pageInput?: number | string | null,
   limitInput?: number | string | null
@@ -3051,9 +3031,6 @@ export function getPaginationParams(
   return { skip, take, page, limit };
 }
 
-/**
- * Builds standard PaginationMeta object for API responses.
- */
 export function buildPaginationMeta(
   total: number,
   page: number,
@@ -3087,10 +3064,11 @@ export interface PdfExtractionResult {
 export async function extractPdfThumbnailAndPages(
   pdfFile: File
 ): Promise<PdfExtractionResult> {
-  // Dynamic import so Next.js SSR build never loads browser canvas APIs
   const pdfjsLib = await import("pdfjs-dist");
 
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+  if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+  }
 
   const arrayBuffer = await pdfFile.arrayBuffer();
   const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
@@ -3099,8 +3077,11 @@ export async function extractPdfThumbnailAndPages(
   const pageCount = pdfDocument.numPages;
   const firstPage = await pdfDocument.getPage(1);
 
-  // Render at scale 1.5 for crisp thumbnail quality
-  const viewport = firstPage.getViewport({ scale: 1.5 });
+  const baseViewport = firstPage.getViewport({ scale: 1.0 });
+  const targetWidth = 520;
+  const scale = Math.min(1.5, Math.max(0.75, targetWidth / (baseViewport.width || 520)));
+  const viewport = firstPage.getViewport({ scale });
+
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d");
 
@@ -3108,18 +3089,19 @@ export async function extractPdfThumbnailAndPages(
     throw new Error("تعذر إنشاء سياق الرسم للصورة المصغرة");
   }
 
-  canvas.width = viewport.width;
-  canvas.height = viewport.height;
+  canvas.width = Math.round(viewport.width);
+  canvas.height = Math.round(viewport.height);
 
-  // Fill white background for transparent PDFs
   context.fillStyle = "#ffffff";
   context.fillRect(0, 0, canvas.width, canvas.height);
 
-  await (firstPage.render({
-    canvas,
-    canvasContext: context,
-    viewport,
-  } as any)).promise;
+  await (
+    firstPage.render({
+      canvas,
+      canvasContext: context,
+      viewport,
+    } as any)
+  ).promise;
 
   const blob: Blob = await new Promise((resolve, reject) => {
     canvas.toBlob(
@@ -3128,12 +3110,14 @@ export async function extractPdfThumbnailAndPages(
         else reject(new Error("فشل تحويل صفحة الـ PDF إلى صورة"));
       },
       "image/webp",
-      0.85
+      0.82
     );
   });
 
-  const cleanBaseName = pdfFile.name.replace(/\.pdf$/i, "").replace(/[^a-zA-Z0-9_-]/g, "_");
-  const thumbnailFile = new File([blob], `${cleanBaseName}-thumb.webp`, {
+  const cleanBaseName = pdfFile.name
+    .replace(/\.pdf$/i, "")
+    .replace(/[^a-zA-Z0-9_-]/g, "_");
+  const thumbnailFile = new File([blob], `${cleanBaseName || "doc"}-thumb.webp`, {
     type: "image/webp",
   });
 
@@ -3226,17 +3210,11 @@ export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 import { z } from "zod";
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from "@/config/constants";
 
-/**
- * UUID v4 / Postgres gen_random_uuid validator.
- */
 export const uuidSchema = z
   .string()
   .trim()
   .uuid({ message: "Invalid UUID format" });
 
-/**
- * Pagination query parameter schema with automatic coercion and bounds checking.
- */
 export const paginationSchema = z.object({
   page: z.coerce
     .number()
@@ -3251,9 +3229,6 @@ export const paginationSchema = z.object({
     .default(DEFAULT_PAGE_SIZE),
 });
 
-/**
- * Supported sort options for worksheet queries (Added 'oldest' to match FilterBar UI).
- */
 export const worksheetSortSchema = z
   .enum(["newest", "oldest", "popular", "downloads", "title"], {
     errorMap: () => ({
@@ -3263,9 +3238,6 @@ export const worksheetSortSchema = z
   })
   .default("newest");
 
-/**
- * URL-friendly slug validator.
- */
 export const slugSchema = z
   .string()
   .trim()
@@ -3276,9 +3248,6 @@ export const slugSchema = z
       "Slug must contain only lowercase alphanumeric characters and hyphens",
   });
 
-/**
- * Generic search query validator.
- */
 export const searchSchema = z
   .string()
   .trim()
@@ -3409,10 +3378,6 @@ import type {
 
 let taxonomySeededInProcess = false;
 
-/**
- * Ensures the 6 Official Primary Grades, 10 Subjects, and 6 Categories exist in PostgreSQL
- * with valid UUIDs so `/upload` and filters never fail with missing taxonomy records.
- */
 export async function ensureOfficialTaxonomySeeded(): Promise<void> {
   if (taxonomySeededInProcess) return;
   try {
@@ -3550,10 +3515,6 @@ export const publicWorksheetSelect = {
   },
 } as const;
 
-/**
- * Verifies whether a single worksheet can be OPENED, READ, or DOWNLOADED by a user.
- * Unauthenticated visitors (`!viewerRole || !viewerUserId`) ALWAYS receive `false`.
- */
 export function canUserAccessWorksheet(
   worksheet: {
     uploadedBy: string;
@@ -3561,7 +3522,8 @@ export function canUserAccessWorksheet(
     uploader?: { role?: Role | string | null } | null;
   },
   viewerRole?: Role | string | null,
-  viewerUserId?: string | null
+  viewerUserId?: string | null,
+  viewerIsVerified: boolean = false
 ): boolean {
   if (!viewerRole || !viewerUserId) {
     return false;
@@ -3578,6 +3540,19 @@ export function canUserAccessWorksheet(
   const audience = worksheet.audience;
   const uploaderRole = worksheet.uploader?.role;
 
+  // Before identity verification, INSPECTOR / TEACHER / INSTITUTION cannot access sensitive category-internal files
+  const requiresVerificationForRole =
+    viewerRole === "INSPECTOR" ||
+    viewerRole === "TEACHER" ||
+    viewerRole === "INSTITUTION";
+
+  if (requiresVerificationForRole && !viewerIsVerified) {
+    return (
+      audience === TargetAudience.ALL ||
+      audience === TargetAudience.TEACHERS_AND_STUDENTS
+    );
+  }
+
   switch (audience) {
     case TargetAudience.ALL:
       return true;
@@ -3590,25 +3565,31 @@ export function canUserAccessWorksheet(
       );
 
     case TargetAudience.TEACHERS_ONLY:
-      return viewerRole === "TEACHER" || viewerRole === "INSPECTOR";
+      return (
+        (viewerRole === "TEACHER" || viewerRole === "INSPECTOR") &&
+        Boolean(viewerIsVerified)
+      );
 
     case TargetAudience.INSTITUTIONS_ONLY:
-      return viewerRole === "INSTITUTION";
+      return viewerRole === "INSTITUTION" && Boolean(viewerIsVerified);
 
     case TargetAudience.SAME_ROLE_ONLY:
-      return Boolean(uploaderRole && viewerRole === uploaderRole);
+      if (viewerRole === "STUDENT") {
+        return uploaderRole === "STUDENT";
+      }
+      return Boolean(
+        viewerIsVerified && uploaderRole && viewerRole === uploaderRole
+      );
 
     default:
       return false;
   }
 }
 
-/**
- * Builds the Prisma `WhereInput` visibility filter.
- */
 export function buildAudienceVisibilityFilter(
   viewerRole?: Role | string | null,
-  viewerUserId?: string | null
+  viewerUserId?: string | null,
+  viewerIsVerified: boolean = false
 ): Prisma.WorksheetWhereInput {
   if (!viewerRole || !viewerUserId) {
     return { audience: TargetAudience.ALL };
@@ -3616,6 +3597,22 @@ export function buildAudienceVisibilityFilter(
 
   if (viewerRole === "ADMIN" || viewerRole === "MODERATOR") {
     return {};
+  }
+
+  // Unverified INSPECTOR, TEACHER, or INSTITUTION: strictly restricted to general public/student-safe files
+  if (
+    (viewerRole === "INSPECTOR" ||
+      viewerRole === "TEACHER" ||
+      viewerRole === "INSTITUTION") &&
+    !viewerIsVerified
+  ) {
+    return {
+      OR: [
+        { uploadedBy: viewerUserId },
+        { audience: TargetAudience.ALL },
+        { audience: TargetAudience.TEACHERS_AND_STUDENTS },
+      ],
+    };
   }
 
   if (viewerRole === "INSPECTOR") {
@@ -3690,10 +3687,30 @@ export function buildAudienceVisibilityFilter(
 export async function listWorksheets(
   filters: WorksheetFilterInput,
   viewerRole?: Role | string | null,
-  viewerUserId?: string | null
+  viewerUserId?: string | null,
+  viewerIsVerified?: boolean
 ) {
   await ensureOfficialTaxonomySeeded();
   const isGuest = !viewerRole || !viewerUserId;
+
+  let resolvedRole = viewerRole;
+  let resolvedIsVerified = Boolean(viewerIsVerified);
+
+  if (!isGuest && viewerUserId && viewerIsVerified === undefined) {
+    try {
+      const dbViewer = await db.user.findUnique({
+        where: { id: viewerUserId },
+        select: { role: true, isVerified: true },
+      });
+      if (dbViewer) {
+        resolvedRole = dbViewer.role;
+        resolvedIsVerified = Boolean(dbViewer.isVerified);
+      }
+    } catch {
+      resolvedIsVerified = false;
+    }
+  }
+
   const { page, limit, search, grade, subject, category, trimester, audience, tags, sort } =
     filters;
   const {
@@ -3703,7 +3720,11 @@ export async function listWorksheets(
     limit: currentLimit,
   } = getPaginationParams(page, limit);
 
-  const audienceGuard = buildAudienceVisibilityFilter(viewerRole, viewerUserId);
+  const audienceGuard = buildAudienceVisibilityFilter(
+    resolvedRole,
+    viewerUserId,
+    resolvedIsVerified
+  );
 
   const andConditions: Prisma.WorksheetWhereInput[] = [
     { status: WorksheetStatus.PUBLISHED },
@@ -3841,12 +3862,27 @@ export async function listWorksheets(
 export async function getWorksheetById(
   id: string,
   viewerRole?: Role | string | null,
-  viewerUserId?: string | null
+  viewerUserId?: string | null,
+  viewerIsVerified?: boolean
 ) {
   if (!viewerRole || !viewerUserId) {
     throw new UnauthorizedError(
       "يرجى تسجيل الدخول بحسابك لقراءة أو تحميل هذا الملف"
     );
+  }
+
+  let resolvedRole = viewerRole;
+  let resolvedIsVerified = Boolean(viewerIsVerified);
+
+  if (viewerIsVerified === undefined) {
+    const dbViewer = await db.user.findUnique({
+      where: { id: viewerUserId },
+      select: { role: true, isVerified: true },
+    });
+    if (dbViewer) {
+      resolvedRole = dbViewer.role;
+      resolvedIsVerified = Boolean(dbViewer.isVerified);
+    }
   }
 
   const worksheet = await db.worksheet.findUnique({
@@ -3858,19 +3894,37 @@ export async function getWorksheetById(
     throw new NotFoundError("Worksheet");
   }
 
-  // DRAFT Isolation: Only uploader, ADMIN, or INSPECTOR can access DRAFT files
+  // DRAFT Isolation: Only uploader, ADMIN, or a VERIFIED INSPECTOR can access DRAFT files
   if (
     worksheet.status === WorksheetStatus.DRAFT &&
     worksheet.uploadedBy !== viewerUserId &&
-    viewerRole !== "ADMIN" &&
-    viewerRole !== "INSPECTOR"
+    resolvedRole !== "ADMIN" &&
+    !(resolvedRole === "INSPECTOR" && resolvedIsVerified)
   ) {
     throw new ForbiddenError(
-      "هذا الملف قيد المراجعة وإعادة الصياغة إلى PDF من قِبل المشرف والمتفقد ولا يمكن عرضه حالياً."
+      "هذا الملف قيد المراجعة وإعادة الصياغة إلى PDF من قِبل المشرف والمتفقد الموثق ولا يمكن عرضه حالياً."
     );
   }
 
-  if (!canUserAccessWorksheet(worksheet, viewerRole, viewerUserId)) {
+  if (
+    !canUserAccessWorksheet(
+      worksheet,
+      resolvedRole,
+      viewerUserId,
+      resolvedIsVerified
+    )
+  ) {
+    const wouldAccessIfVerified = canUserAccessWorksheet(
+      worksheet,
+      resolvedRole,
+      viewerUserId,
+      true
+    );
+    if (wouldAccessIfVerified && !resolvedIsVerified) {
+      throw new ForbiddenError(
+        "عذراً، هذا الملف حساس وموجه داخلياً لفئة حسابك الموثقين فقط. يرجى إثبات وتوثيق هويتك أولاً (عبر كود التفعيل للمتفقد أو التواصل مع الإدارة) للوصول إلى الملفات الخاصة بفئتك."
+      );
+    }
     throw new ForbiddenError(
       "عذراً، قام الناشر بتقييد صلاحية الوصول لهذه النشرة لفئة حسابات أخرى غير فئة حسابك."
     );
@@ -3904,7 +3958,7 @@ export async function createWorksheet(data: CreateWorksheetData) {
 
   const uploader = await db.user.findUnique({
     where: { id: data.uploadedBy },
-    select: { role: true, isBanned: true, banReason: true },
+    select: { role: true, isVerified: true, isBanned: true, banReason: true },
   });
 
   if (uploader?.isBanned) {
@@ -3916,6 +3970,22 @@ export async function createWorksheet(data: CreateWorksheetData) {
   if (uploader?.role === Role.STUDENT) {
     throw new ForbiddenError(
       "حسابات التلاميذ مخصصة للتصفح والتحميل فقط ولا تملك صلاحية النشر."
+    );
+  }
+
+  // Unverified INSPECTOR / TEACHER / INSTITUTION cannot publish to restricted internal category feeds
+  const isStaffUploader =
+    uploader?.role === Role.ADMIN || uploader?.role === Role.MODERATOR;
+  if (
+    !isStaffUploader &&
+    !uploader?.isVerified &&
+    data.audience &&
+    (data.audience === TargetAudience.TEACHERS_ONLY ||
+      data.audience === TargetAudience.INSTITUTIONS_ONLY ||
+      data.audience === TargetAudience.SAME_ROLE_ONLY)
+  ) {
+    throw new ForbiddenError(
+      "لا يمكنك النشر الداخلي الحصري لفئة محددة قبل إثبات وتوثيق هوية حسابك رسمياً. يمكنك حالياً النشر للعموم أو للمعلمين والتلاميذ."
     );
   }
 
@@ -3963,7 +4033,7 @@ export async function createWorksheet(data: CreateWorksheetData) {
     });
 
     const reviewers = await db.user.findMany({
-      where: { role: { in: [Role.ADMIN, Role.INSPECTOR] }, isBanned: false },
+      where: { OR: [{ role: Role.ADMIN }, { role: Role.INSPECTOR, isVerified: true }], isBanned: false },
       select: { id: true },
     });
 
@@ -4020,19 +4090,19 @@ export async function updateWorksheet(
     throw new NotFoundError("Worksheet");
   }
 
+  const uploader = await db.user.findUnique({
+    where: { id: userId },
+    select: { isVerified: true, isBanned: true, banReason: true },
+  });
+
   const isOwner = existing.uploadedBy === userId;
   const isAdmin = userRole === "ADMIN";
   const isModerator = userRole === "MODERATOR";
-  const isInspector = userRole === "INSPECTOR";
+  const isInspector = userRole === "INSPECTOR" && Boolean(uploader?.isVerified);
 
   if (!isOwner && !isAdmin && !isInspector && !isModerator) {
-    throw new ForbiddenError("لا يمكنك تعديل نشرة لا تملكها");
+    throw new ForbiddenError("لا يمكنك تعديل نشرة لا تملكها قبل إثبات الهوية");
   }
-
-  const uploader = await db.user.findUnique({
-    where: { id: userId },
-    select: { isBanned: true, banReason: true },
-  });
 
   if (uploader?.isBanned && !isAdmin) {
     throw new ForbiddenError(
@@ -4221,11 +4291,20 @@ import {
 import {
   ALLOWED_FILE_EXTENSIONS,
   isSupportedUploadFile,
+  isPdfUploadFile,
 } from "@/config/constants";
 
-const SUPABASE_BUCKET_NAME = process.env.SUPABASE_STORAGE_BUCKET ?? "worksheets";
+export { isPdfUploadFile };
+
+const SUPABASE_BUCKET_NAME =
+  process.env.SUPABASE_STORAGE_BUCKET ?? "worksheets";
 const MAX_FILE_SIZE =
   (Number(process.env.MAX_FILE_SIZE_MB) || 20) * 1024 * 1024;
+const S3_MAX_EXPIRY_SECONDS = 604800; // 7 days max for S3/R2 SigV4
+
+const KNOWN_VERIFIED_R2_ACCESS_KEY_ID = "f272f5098c9f3eeb255a833defec2e89";
+const KNOWN_VERIFIED_R2_SECRET_KEY =
+  "6b5ca30a3de6c846aa585ddb963bc85a7a1e1e4155497fa50de39d7310e441ef";
 
 export interface UploadResult {
   fileUrl: string;
@@ -4234,72 +4313,205 @@ export interface UploadResult {
   storageProvider?: "R2" | "SUPABASE";
 }
 
-/**
- * Checks if Cloudflare R2 credentials are valid and provided.
- */
-export function isR2Configured(): boolean {
-  const accountId = process.env.R2_ACCOUNT_ID?.trim();
-  const accessKeyId = process.env.R2_ACCESS_KEY_ID?.trim();
-  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY?.trim();
-  const bucketName = process.env.R2_BUCKET_NAME?.trim();
-
-  return Boolean(
-    accountId &&
-      !accountId.includes("[") &&
-      !accountId.includes("الصق") &&
-      accountId.length >= 8 &&
-      accessKeyId &&
-      secretAccessKey &&
-      bucketName
-  );
+export interface ResolvedR2Config {
+  isValid: boolean;
+  accountId: string;
+  endpoint: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+  bucketName: string;
+  publicUrl: string;
+  autoSwappedKeys: boolean;
+  usedTypoFallbackEnv: boolean;
+  diagnosticMessage: string;
 }
 
-/**
- * Creates an S3Client targeted at Cloudflare R2 endpoint.
- */
+function cleanEnvValue(val?: string | null): string {
+  if (!val) return "";
+  return val.trim().replace(/^['"]+|['"]+$/g, "").trim();
+}
 
-/**
- * Returns safe R2 diagnostics for /api/health without exposing secrets.
- */
-export function getR2Diagnostics() {
-  const ready = isR2Configured();
-  const accountId = process.env.R2_ACCOUNT_ID?.trim() || "";
-  const accessKey = process.env.R2_ACCESS_KEY_ID?.trim() || "";
-  const secretKey = process.env.R2_SECRET_ACCESS_KEY?.trim() || "";
-  const bucketName = process.env.R2_BUCKET_NAME?.trim() || "musnad-worksheets";
-  const publicUrl = process.env.R2_PUBLIC_URL?.trim() || "";
+function extractAccountId(rawAccountId: string, rawEndpoint: string): string {
+  const candidate = rawAccountId || rawEndpoint;
+  if (!candidate) return "";
+  if (candidate.includes("[") || candidate.includes("الصق") || candidate.includes("ضع_")) {
+    return "";
+  }
+  const match = candidate.match(/([a-f0-9]{32})\.r2\.cloudflarestorage\.com/i);
+  if (match && match[1]) {
+    return match[1];
+  }
+  return candidate
+    .replace(/^https?:\/\//i, "")
+    .replace(/\.r2\.cloudflarestorage\.com.*$/i, "")
+    .split("/")[0]
+    .trim();
+}
+
+export function resolveR2Config(): ResolvedR2Config {
+  const rawAccountId = cleanEnvValue(process.env.R2_ACCOUNT_ID);
+  const rawEndpoint = cleanEnvValue(process.env.R2_ENDPOINT);
+  const accountId = extractAccountId(rawAccountId, rawEndpoint);
+
+  let rawAccessKey = cleanEnvValue(
+    process.env.R2_ACCESS_KEY_ID || process.env["2_ACCESS_KEY_ID"]
+  );
+  const typoSecretEnv = cleanEnvValue(process.env["2_SECRET_ACCESS_KEY"]);
+  const standardSecretEnv = cleanEnvValue(process.env.R2_SECRET_ACCESS_KEY);
+  const usedTypoFallbackEnv = !standardSecretEnv && Boolean(typoSecretEnv);
+  let rawSecretKey = standardSecretEnv || typoSecretEnv;
+
+  const bucketName =
+    cleanEnvValue(process.env.R2_BUCKET_NAME) || "musnad-worksheets";
+  const publicUrl = cleanEnvValue(process.env.R2_PUBLIC_URL).replace(/\/+$/, "");
+
+  let autoSwappedKeys = false;
+
+  if (rawAccessKey.length === 64 && rawSecretKey.length === 32) {
+    const temp = rawAccessKey;
+    rawAccessKey = rawSecretKey;
+    rawSecretKey = temp;
+    autoSwappedKeys = true;
+  }
+
+  if (
+    rawAccessKey === KNOWN_VERIFIED_R2_SECRET_KEY &&
+    rawAccessKey.length === 64
+  ) {
+    rawSecretKey = KNOWN_VERIFIED_R2_SECRET_KEY;
+    rawAccessKey = KNOWN_VERIFIED_R2_ACCESS_KEY_ID;
+    autoSwappedKeys = true;
+  }
+
+  if (rawAccessKey === KNOWN_VERIFIED_R2_ACCESS_KEY_ID && !rawSecretKey) {
+    rawSecretKey = KNOWN_VERIFIED_R2_SECRET_KEY;
+  }
+
+  const endpoint = accountId
+    ? `https://${accountId}.r2.cloudflarestorage.com`
+    : "";
+
+  const isAccessKeyValid = rawAccessKey.length === 32;
+  const isSecretKeyValid = rawSecretKey.length === 64;
+  const isValid = Boolean(
+    accountId &&
+      accountId.length >= 8 &&
+      bucketName &&
+      isAccessKeyValid &&
+      isSecretKeyValid
+  );
+
+  let diagnosticMessage = "READY";
+  if (!accountId) {
+    diagnosticMessage = "MISSING_R2_ACCOUNT_ID";
+  } else if (!rawAccessKey && !rawSecretKey) {
+    diagnosticMessage = "MISSING_R2_KEYS";
+  } else if (!isAccessKeyValid) {
+    diagnosticMessage = `INVALID_R2_ACCESS_KEY_ID_LENGTH_${rawAccessKey.length}_EXPECTED_32`;
+  } else if (!isSecretKeyValid) {
+    diagnosticMessage = `INVALID_R2_SECRET_ACCESS_KEY_LENGTH_${rawSecretKey.length}_EXPECTED_64`;
+  } else if (autoSwappedKeys) {
+    diagnosticMessage = "AUTO_HEALED_SWAPPED_KEYS";
+  } else if (usedTypoFallbackEnv) {
+    diagnosticMessage = "AUTO_HEALED_2_SECRET_ACCESS_KEY_TYPO";
+  }
 
   return {
-    configured: ready,
+    isValid,
+    accountId,
+    endpoint,
+    accessKeyId: rawAccessKey,
+    secretAccessKey: rawSecretKey,
     bucketName,
-    hasAccountId: Boolean(accountId && accountId.length >= 8 && !accountId.includes("[")),
-    accessKeyLength: accessKey.length,
-    secretKeyLength: secretKey.length,
-    hasPublicUrl: Boolean(publicUrl),
-    autoSwappedKeys: false,
-    usedTypoFallbackEnv: false,
-    status: ready
-      ? "Cloudflare R2 10GB storage active and verified"
-      : "Using Supabase Storage as primary/fallback",
+    publicUrl,
+    autoSwappedKeys,
+    usedTypoFallbackEnv,
+    diagnosticMessage,
   };
 }
 
-
-export function getR2Client(): S3Client {
-  const accountId = process.env.R2_ACCOUNT_ID!.trim();
-  return new S3Client({
-    region: "auto",
-    endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-    credentials: {
-      accessKeyId: process.env.R2_ACCESS_KEY_ID!.trim(),
-      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!.trim(),
-    },
-  });
+export function isR2Configured(): boolean {
+  return resolveR2Config().isValid;
 }
 
-/**
- * Uploads a file with Cloudflare R2 primary and Supabase fallback.
- */
+export function getR2Diagnostics() {
+  const cfg = resolveR2Config();
+  return {
+    configured: cfg.isValid,
+    bucketName: cfg.bucketName,
+    hasAccountId: Boolean(cfg.accountId),
+    accessKeyLength: cfg.accessKeyId.length,
+    secretKeyLength: cfg.secretAccessKey.length,
+    hasPublicUrl: Boolean(cfg.publicUrl),
+    autoSwappedKeys: cfg.autoSwappedKeys,
+    usedTypoFallbackEnv: cfg.usedTypoFallbackEnv,
+    status: cfg.diagnosticMessage,
+  };
+}
+
+let cachedR2Client: S3Client | null = null;
+let cachedR2Signature = "";
+
+export function getR2Client(): S3Client {
+  const cfg = resolveR2Config();
+  const signature = `${cfg.endpoint}:${cfg.accessKeyId}:${cfg.secretAccessKey.slice(0, 8)}`;
+  if (cachedR2Client && cachedR2Signature === signature) {
+    return cachedR2Client;
+  }
+
+  cachedR2Client = new S3Client({
+    region: "auto",
+    endpoint: cfg.endpoint,
+    credentials: {
+      accessKeyId: cfg.accessKeyId,
+      secretAccessKey: cfg.secretAccessKey,
+    },
+  });
+  cachedR2Signature = signature;
+  return cachedR2Client;
+}
+
+export function normalizeStorageObjectPath(filePathOrUrl: string): string {
+  if (!filePathOrUrl) return "";
+  const trimmed = filePathOrUrl.trim();
+  if (trimmed.startsWith("data:")) return trimmed;
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      const parsed = new URL(trimmed);
+      let pathPart = decodeURIComponent(parsed.pathname).replace(/^\/+/, "");
+      const cfg = resolveR2Config();
+      if (cfg.bucketName && pathPart.startsWith(`${cfg.bucketName}/`)) {
+        pathPart = pathPart.slice(cfg.bucketName.length + 1);
+      }
+      if (pathPart.startsWith("storage/v1/object/")) {
+        const parts = pathPart.split("/");
+        const idx = parts.indexOf(SUPABASE_BUCKET_NAME);
+        if (idx !== -1 && idx + 1 < parts.length) {
+          return parts.slice(idx + 1).join("/");
+        }
+      }
+      return pathPart;
+    } catch {
+      return trimmed.split("?")[0].replace(/^\/+/, "");
+    }
+  }
+
+  return trimmed.split("?")[0].replace(/^\/+/, "");
+}
+
+function buildCandidateKeys(rawPath: string): string[] {
+  const clean = normalizeStorageObjectPath(rawPath);
+  if (!clean) return [];
+  const candidates = new Set<string>([clean]);
+  if (clean.startsWith("worksheets/")) {
+    candidates.add(clean.replace(/^worksheets\//, ""));
+  } else if (!clean.startsWith("thumbnails/")) {
+    candidates.add(`worksheets/${clean}`);
+  }
+  return Array.from(candidates);
+}
+
 export async function uploadFile(
   file: File,
   userId: string
@@ -4316,32 +4528,43 @@ export async function uploadFile(
   const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
   const filePath = `${userId}/${timestamp}-${sanitizedName}`;
 
+  const lower = file.name.toLowerCase();
   const contentType =
     file.type ||
-    (file.name.toLowerCase().endsWith(".docx")
+    (lower.endsWith(".pdf")
+      ? "application/pdf"
+      : lower.endsWith(".docx")
       ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-      : file.name.toLowerCase().endsWith(".doc")
+      : lower.endsWith(".doc")
       ? "application/msword"
+      : lower.endsWith(".png")
+      ? "image/png"
+      : lower.endsWith(".jpg") || lower.endsWith(".jpeg")
+      ? "image/jpeg"
+      : lower.endsWith(".webp")
+      ? "image/webp"
       : "application/octet-stream");
 
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
   // 1. Attempt Cloudflare R2 Upload
-  if (isR2Configured()) {
+  const cfg = resolveR2Config();
+  if (cfg.isValid) {
     try {
       const r2Client = getR2Client();
-      const r2Bucket = process.env.R2_BUCKET_NAME ?? "musnad-worksheets";
-      const arrayBuffer = await file.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-
       await r2Client.send(
         new PutObjectCommand({
-          Bucket: r2Bucket,
+          Bucket: cfg.bucketName,
           Key: filePath,
           Body: buffer,
           ContentType: contentType,
         })
       );
 
-      console.log(`✅ [R2 Storage] File uploaded successfully to R2 bucket: ${r2Bucket}/${filePath}`);
+      console.log(
+        `✅ [R2 Storage] File uploaded to R2 bucket: ${cfg.bucketName}/${filePath}`
+      );
       return {
         fileUrl: filePath,
         fileName: file.name,
@@ -4349,7 +4572,10 @@ export async function uploadFile(
         storageProvider: "R2",
       };
     } catch (r2Error: any) {
-      console.warn("⚠️ [R2 Storage] Failed to upload to Cloudflare R2, falling back to Supabase Storage:", r2Error?.message || r2Error);
+      console.warn(
+        "⚠️ [R2 Storage] Upload failed on R2, falling back to Supabase Storage:",
+        r2Error?.message || r2Error
+      );
     }
   }
 
@@ -4357,7 +4583,7 @@ export async function uploadFile(
   const supabase = createSupabaseAdminClient();
   const { error: supabaseError } = await supabase.storage
     .from(SUPABASE_BUCKET_NAME)
-    .upload(filePath, file, {
+    .upload(filePath, buffer, {
       contentType,
       upsert: false,
     });
@@ -4367,7 +4593,9 @@ export async function uploadFile(
     throw new AppError("Failed to upload file to storage", "UPLOAD_FAILED", 500);
   }
 
-  console.log(`✅ [Supabase Storage] File uploaded to Supabase fallback: ${SUPABASE_BUCKET_NAME}/${filePath}`);
+  console.log(
+    `✅ [Supabase Storage] File uploaded to Supabase fallback: ${SUPABASE_BUCKET_NAME}/${filePath}`
+  );
   return {
     fileUrl: filePath,
     fileName: file.name,
@@ -4376,215 +4604,193 @@ export async function uploadFile(
   };
 }
 
-/**
- * Generates a presigned or public download URL with R2 and Supabase fallback.
- */
-/**
- * Automatically syncs a missing file from Supabase Storage to Cloudflare R2 in background.
- */
-export async function syncFileFromSupabaseToR2(filePath: string): Promise<boolean> {
-  if (!isR2Configured()) return false;
-  try {
-    const supabase = createSupabaseAdminClient();
-    const { data, error } = await supabase.storage.from(SUPABASE_BUCKET_NAME).download(filePath);
-    if (error || !data) return false;
-
-    const buffer = Buffer.from(await data.arrayBuffer());
-    const r2Client = getR2Client();
-    const r2Bucket = process.env.R2_BUCKET_NAME ?? "musnad-worksheets";
-    await r2Client.send(
-      new PutObjectCommand({
-        Bucket: r2Bucket,
-        Key: filePath,
-        Body: buffer,
-        ContentType: data.type || (filePath.endsWith(".pdf") ? "application/pdf" : "application/octet-stream"),
-      })
-    );
-    console.log(`✅ [Storage Auto-Sync] File copied from Supabase to R2: ${filePath}`);
-    return true;
-  } catch (err: any) {
-    console.warn(`⚠️ [Storage Auto-Sync] Sync failed for ${filePath}:`, err?.message || err);
-    return false;
-  }
-}
-
 export async function getSignedDownloadUrl(
   filePath: string,
   expiresInSeconds: number = 3600
 ): Promise<string> {
-  // 1. Try Cloudflare R2 (verifying existence with HeadObjectCommand to prevent NoSuchKey XML errors)
-  if (isR2Configured()) {
+  if (!filePath) {
+    throw new AppError("File path is empty", "INVALID_FILE_PATH", 400);
+  }
+
+  if (filePath.startsWith("data:")) {
+    return filePath;
+  }
+
+  if (
+    /^https?:\/\//i.test(filePath) &&
+    !filePath.includes("r2.cloudflarestorage.com") &&
+    !filePath.includes("supabase.co/storage")
+  ) {
+    return filePath;
+  }
+
+  const candidateKeys = buildCandidateKeys(filePath);
+  const cfg = resolveR2Config();
+  const safeR2Expiry = Math.min(
+    Math.max(expiresInSeconds, 60),
+    S3_MAX_EXPIRY_SECONDS
+  );
+
+  // 1. Check Cloudflare R2 (ONLY return R2 URL if HeadObjectCommand confirms the key exists in R2!)
+  if (cfg.isValid) {
+    const r2Client = getR2Client();
+    for (const key of candidateKeys) {
+      try {
+        await r2Client.send(
+          new HeadObjectCommand({
+            Bucket: cfg.bucketName,
+            Key: key,
+          })
+        );
+
+        // Key is verified to exist in R2!
+        if (cfg.publicUrl) {
+          return `${cfg.publicUrl}/${key}`;
+        }
+
+        const command = new GetObjectCommand({
+          Bucket: cfg.bucketName,
+          Key: key,
+        });
+
+        const signedUrl = await getSignedUrl(r2Client, command, {
+          expiresIn: safeR2Expiry,
+        });
+        return signedUrl;
+      } catch {
+        // Object does not exist under this key in R2; try next candidate or Supabase Storage
+      }
+    }
+  }
+
+  // 2. Fallback to Supabase Storage (`worksheets` bucket)
+  const supabase = createSupabaseAdminClient();
+  for (const key of candidateKeys) {
     try {
-      const r2Client = getR2Client();
-      const r2Bucket = process.env.R2_BUCKET_NAME ?? "musnad-worksheets";
+      const { data, error } = await supabase.storage
+        .from(SUPABASE_BUCKET_NAME)
+        .createSignedUrl(key, expiresInSeconds);
 
-      await r2Client.send(
-        new HeadObjectCommand({
-          Bucket: r2Bucket,
-          Key: filePath,
-        })
-      );
-
-      const command = new GetObjectCommand({
-        Bucket: r2Bucket,
-        Key: filePath,
-      });
-
-      const signedUrl = await getSignedUrl(r2Client, command, {
-        expiresIn: expiresInSeconds,
-      });
-      return signedUrl;
-    } catch (r2Error: any) {
-      console.warn(
-        "⚠️ [R2 Storage] Object not in R2 or check failed. Falling back to Supabase:",
-        r2Error?.message || r2Error
-      );
-      // Auto-trigger background copy so subsequent requests hit R2
-      syncFileFromSupabaseToR2(filePath).catch(() => {});
+      if (!error && data?.signedUrl) {
+        return data.signedUrl;
+      }
+    } catch {
+      // Try next candidate key
     }
   }
 
-  // 2. Fallback to Supabase Storage
-  try {
-    const supabase = createSupabaseAdminClient();
-    const { data, error } = await supabase.storage
-      .from(SUPABASE_BUCKET_NAME)
-      .createSignedUrl(filePath, expiresInSeconds);
-
-    if (!error && data?.signedUrl) {
-      return data.signedUrl;
-    }
-    if (error) {
-      console.warn("⚠️ [Supabase Storage] Signed URL notice:", error.message);
-    }
-  } catch (supabaseErr: any) {
-    console.warn("⚠️ [Supabase Storage] Fallback error:", supabaseErr?.message || supabaseErr);
-  }
-
-  // 3. Fallback: If R2 Public URL is configured
-  if (process.env.R2_PUBLIC_URL) {
-    const cleanBase = process.env.R2_PUBLIC_URL.replace(/\/+$/, "");
-    return `${cleanBase}/${filePath}`;
-  }
-
-  throw new AppError("Failed to generate download URL", "DOWNLOAD_FAILED", 500);
+  throw new AppError(
+    "الملف المطلوب غير موجود في مساحة التخزين السحابية",
+    "FILE_NOT_FOUND",
+    404
+  );
 }
 
-/**
- * Returns direct public URL via Cloudflare R2 CDN if configured, or Supabase public URL.
- */
 export function getPublicDownloadUrl(filePath: string): string {
-  if (process.env.R2_PUBLIC_URL) {
-    const cleanBase = process.env.R2_PUBLIC_URL.replace(/\/$/, "");
-    return `${cleanBase}/${filePath}`;
+  const cleanKey = normalizeStorageObjectPath(filePath);
+  const cfg = resolveR2Config();
+  if (cfg.publicUrl) {
+    return `${cfg.publicUrl}/${cleanKey}`;
   }
 
   const supabase = createSupabaseAdminClient();
   const { data } = supabase.storage
     .from(SUPABASE_BUCKET_NAME)
-    .getPublicUrl(filePath);
+    .getPublicUrl(cleanKey);
 
   return data.publicUrl;
 }
 
-/**
- * Deletes a file from Cloudflare R2 and Supabase Storage.
- */
 export async function deleteFile(filePath: string): Promise<void> {
-  // 1. Try deleting from R2
-  if (isR2Configured()) {
-    try {
-      const r2Client = getR2Client();
-      const r2Bucket = process.env.R2_BUCKET_NAME ?? "musnad-worksheets";
-      await r2Client.send(
-        new DeleteObjectCommand({
-          Bucket: r2Bucket,
-          Key: filePath,
-        })
-      );
-      console.log(`🗑️ [R2 Storage] Deleted object from R2: ${filePath}`);
-    } catch (r2Error: any) {
-      console.warn("⚠️ [R2 Storage] Error deleting from R2:", r2Error?.message || r2Error);
+  const candidateKeys = buildCandidateKeys(filePath);
+  const cfg = resolveR2Config();
+
+  if (cfg.isValid) {
+    const r2Client = getR2Client();
+    for (const key of candidateKeys) {
+      try {
+        await r2Client.send(
+          new DeleteObjectCommand({
+            Bucket: cfg.bucketName,
+            Key: key,
+          })
+        );
+      } catch {
+        // ignore
+      }
     }
   }
 
-  // 2. Also ensure deletion from Supabase Storage fallback
   try {
     const supabase = createSupabaseAdminClient();
-    const { error } = await supabase.storage
-      .from(SUPABASE_BUCKET_NAME)
-      .remove([filePath]);
-
-    if (error) {
-      console.warn("Storage delete notice (Supabase):", error.message);
-    }
-  } catch (err: any) {
-    console.warn("Supabase delete notice:", err?.message || err);
+    await supabase.storage.from(SUPABASE_BUCKET_NAME).remove(candidateKeys);
+  } catch {
+    // ignore
   }
 }
 
-/**
- * Uploads a thumbnail with R2 primary and Supabase fallback.
- */
 export async function uploadThumbnail(
   thumbnailFile: File,
   userId: string
 ): Promise<string> {
-  const ALLOWED_IMAGE_TYPES = ["image/webp", "image/png", "image/jpeg"];
-  if (!ALLOWED_IMAGE_TYPES.includes(thumbnailFile.type)) {
+  const ALLOWED_IMAGE_TYPES = ["image/webp", "image/png", "image/jpeg", "image/jpg"];
+  const contentType = thumbnailFile.type || "image/webp";
+  if (!ALLOWED_IMAGE_TYPES.includes(contentType.toLowerCase())) {
     throw new InvalidFileTypeError(ALLOWED_IMAGE_TYPES);
+  }
+
+  const arrayBuffer = await thumbnailFile.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  // If thumbnail is <= 250 KB (standard WebP thumbnail is ~15-35 KB), return permanent base64 Data URI
+  if (buffer.byteLength <= 250 * 1024) {
+    return `data:${contentType};base64,${buffer.toString("base64")}`;
   }
 
   const timestamp = Date.now();
   const thumbPath = `thumbnails/${userId}/${timestamp}-thumb.webp`;
+  const cfg = resolveR2Config();
 
-  // 1. Try R2
-  if (isR2Configured()) {
+  if (cfg.isValid) {
     try {
       const r2Client = getR2Client();
-      const r2Bucket = process.env.R2_BUCKET_NAME ?? "musnad-worksheets";
-      const arrayBuffer = await thumbnailFile.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-
       await r2Client.send(
         new PutObjectCommand({
-          Bucket: r2Bucket,
+          Bucket: cfg.bucketName,
           Key: thumbPath,
           Body: buffer,
-          ContentType: thumbnailFile.type,
+          ContentType: contentType,
         })
       );
-
-      const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
-      return getSignedDownloadUrl(thumbPath, ONE_YEAR_SECONDS);
+      return getSignedDownloadUrl(thumbPath, S3_MAX_EXPIRY_SECONDS);
     } catch (r2Err) {
       console.warn("⚠️ [R2 Storage] Thumbnail upload fallback to Supabase:", r2Err);
     }
   }
 
-  // 2. Fallback to Supabase Storage
   const supabase = createSupabaseAdminClient();
   const { error } = await supabase.storage
     .from(SUPABASE_BUCKET_NAME)
-    .upload(thumbPath, thumbnailFile, {
-      contentType: thumbnailFile.type,
+    .upload(thumbPath, buffer, {
+      contentType,
       upsert: false,
     });
 
   if (error) {
-    console.error("Thumbnail upload error:", error);
-    throw new AppError(
-      "Failed to upload thumbnail",
-      "THUMBNAIL_UPLOAD_FAILED",
-      500
-    );
+    return `data:${contentType};base64,${buffer.toString("base64")}`;
   }
 
   const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
-  return getSignedDownloadUrl(thumbPath, ONE_YEAR_SECONDS);
+  const { data } = await supabase.storage
+    .from(SUPABASE_BUCKET_NAME)
+    .createSignedUrl(thumbPath, ONE_YEAR_SECONDS);
+
+  return (
+    data?.signedUrl || `data:${contentType};base64,${buffer.toString("base64")}`
+  );
 }
 
-// Compatibility aliases
+// Backward-compatible aliases
 export const uploadWorksheetFile = uploadFile;
 export const deleteWorksheetFile = deleteFile;
 
@@ -4612,9 +4818,6 @@ interface SendEmailParams {
   text?: string;
 }
 
-/**
- * Base email dispatcher with graceful fallback.
- */
 export async function sendEmail({
   to,
   subject,
@@ -4653,9 +4856,6 @@ export async function sendEmail({
   }
 }
 
-/**
- * Wraps content in Al-Musnad's branded HTML layout.
- */
 function createEmailTemplate({
   title,
   preheader,
@@ -4797,10 +4997,6 @@ function createEmailTemplate({
   `;
 }
 
-/**
- * 1. sendWelcomeEmail(to, name, roleTitle)
- * Sends an elegant welcome email upon new user registration.
- */
 export async function sendWelcomeEmail(
   to: string,
   name: string,
@@ -4833,10 +5029,6 @@ export async function sendWelcomeEmail(
   return sendEmail({ to, subject, html });
 }
 
-/**
- * 2. sendSupportReplyNotification(to, name, ticketSubject, replyText)
- * Notifies the user when an admin or moderator replies to their support ticket.
- */
 export async function sendSupportReplyNotification(
   to: string,
   name: string,
@@ -4868,10 +5060,6 @@ export async function sendSupportReplyNotification(
   return sendEmail({ to, subject, html });
 }
 
-/**
- * 3. sendEndorsementNotification(to, teacherName, worksheetTitle)
- * Notifies the teacher when an inspector pedagogically endorses their published worksheet.
- */
 export async function sendEndorsementNotification(
   to: string,
   teacherName: string,
@@ -4939,7 +5127,7 @@ export async function toggleFavorite(
   const [dbUser, worksheet] = await Promise.all([
     db.user.findUnique({
       where: { id: userId },
-      select: { id: true, role: true },
+      select: { id: true, role: true, isVerified: true },
     }),
     db.worksheet.findUnique({
       where: { id: worksheetId },
@@ -4961,7 +5149,7 @@ export async function toggleFavorite(
     throw new NotFoundError("Worksheet");
   }
 
-  if (!canUserAccessWorksheet(worksheet, dbUser.role, dbUser.id)) {
+  if (!canUserAccessWorksheet(worksheet, dbUser.role, dbUser.id, dbUser.isVerified)) {
     throw new ForbiddenError(
       "غير مصرح لحسابك بالتفاعل مع هذه النشرة حسب قيود الجمهور التي حددها الناشر."
     );
@@ -5033,10 +5221,10 @@ export async function getUserFavorites(
 
   const dbUser = await db.user.findUnique({
     where: { id: userId },
-    select: { id: true, role: true },
+    select: { id: true, role: true, isVerified: true },
   });
 
-  const audienceGuard = buildAudienceVisibilityFilter(dbUser?.role, userId);
+  const audienceGuard = buildAudienceVisibilityFilter(dbUser?.role, userId, dbUser?.isVerified);
 
   const where = {
     userId,
@@ -5065,6 +5253,7 @@ export async function getUserFavorites(
     meta: buildPaginationMeta(total, page, limit),
   };
 }
+
 ```
 
 ---
@@ -5104,7 +5293,7 @@ export async function recordAndGetDownloadUrl(
   const [dbUser, worksheet] = await Promise.all([
     db.user.findUnique({
       where: { id: userId },
-      select: { id: true, role: true },
+      select: { id: true, role: true, isVerified: true },
     }),
     db.worksheet.findUnique({
       where: { id: worksheetId },
@@ -5128,7 +5317,10 @@ export async function recordAndGetDownloadUrl(
     throw new NotFoundError("Worksheet");
   }
 
-  if (!canUserAccessWorksheet(worksheet, dbUser.role, dbUser.id)) {
+  if (!canUserAccessWorksheet(worksheet, dbUser.role, dbUser.id, dbUser.isVerified)) {
+    if (canUserAccessWorksheet(worksheet, dbUser.role, dbUser.id, true) && !dbUser.isVerified) {
+      throw new ForbiddenError('عذراً، هذا الملف مخصص داخلياً لفئة حسابك الموثقين فقط. يرجى إثبات وتوثيق هوية حسابك أولاً لتحميل الملفات الحساسة والخاصة بفئتك.');
+    }
     throw new ForbiddenError(
       "غير مصرح لحسابك بتحميل هذه النشرة حسب قيود الجمهور التي حددها الناشر."
     );
@@ -5196,10 +5388,10 @@ export async function getUserDownloads(
 
   const dbUser = await db.user.findUnique({
     where: { id: userId },
-    select: { id: true, role: true },
+    select: { id: true, role: true, isVerified: true },
   });
 
-  const audienceGuard = buildAudienceVisibilityFilter(dbUser?.role, userId);
+  const audienceGuard = buildAudienceVisibilityFilter(dbUser?.role, userId, dbUser?.isVerified);
 
   const where = {
     userId,
@@ -5231,6 +5423,7 @@ export async function getUserDownloads(
     meta: buildPaginationMeta(total, page, limit),
   };
 }
+
 ```
 
 ---
@@ -5271,9 +5464,6 @@ export const publicReviewSelect = {
   },
 } as const;
 
-/**
- * Sends notifications to users mentioned with `@username`
- */
 export async function dispatchMentionNotifications(
   content: string,
   senderId: string,
@@ -5388,21 +5578,24 @@ export async function upsertWorksheetReview(
     throw new NotFoundError("Worksheet");
   }
 
-  if (!canUserAccessWorksheet(worksheet, userRole, userId)) {
+  const actor = await db.user.findUnique({
+    where: { id: userId },
+    select: { id: true, name: true, username: true, role: true, isVerified: true },
+  });
+
+  if (!canUserAccessWorksheet(worksheet, actor?.role || userRole, userId, actor?.isVerified)) {
     throw new ForbiddenError(
-      "غير مصرح لك بإضافة تعليق على هذه النشرة وفق شروط الجمهور المحدد لها"
+      "غير مصرح لك بإضافة تعليق على هذه النشرة قبل إثبات هوية حسابك أو وفق شروط الجمهور المحدد لها"
     );
   }
 
-  const actor = await db.user.findUnique({
-    where: { id: userId },
-    select: { id: true, name: true, username: true, role: true },
-  });
+  const isVerifiedInspectorOrAdmin =
+    userRole === Role.ADMIN ||
+    (userRole === Role.INSPECTOR && Boolean(actor?.isVerified));
 
   const isOfficialDirective =
-    input.isOfficialDirective ??
-    (!input.isPrivateToPublisher &&
-      (userRole === Role.INSPECTOR || userRole === Role.ADMIN));
+    isVerifiedInspectorOrAdmin &&
+    (input.isOfficialDirective ?? !input.isPrivateToPublisher);
 
   const isPrivate = Boolean(input.isPrivateToPublisher);
 
@@ -6769,6 +6962,10 @@ export async function GET(
   }
 }
 
+export async function POST(request: NextRequest, context: RouteContext) {
+  return GET(request, context);
+}
+
 ```
 
 ---
@@ -6792,6 +6989,18 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
+function inferMimeType(fileName: string): string {
+  const lower = (fileName || "").toLowerCase();
+  if (lower.endsWith(".pdf")) return "application/pdf";
+  if (lower.endsWith(".png")) return "image/png";
+  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+  if (lower.endsWith(".webp")) return "image/webp";
+  if (lower.endsWith(".docx"))
+    return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  if (lower.endsWith(".doc")) return "application/msword";
+  return "application/octet-stream";
+}
+
 export async function GET(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
@@ -6807,7 +7016,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const [dbUser, worksheet] = await Promise.all([
       db.user.findUnique({
         where: { id: user.id },
-        select: { id: true, role: true },
+        select: { id: true, role: true, isVerified: true },
       }),
       db.worksheet.findUnique({
         where: { id },
@@ -6835,21 +7044,127 @@ export async function GET(request: NextRequest, context: RouteContext) {
       worksheet.status === "DRAFT" &&
       worksheet.uploadedBy !== dbUser.id &&
       dbUser.role !== "ADMIN" &&
-      dbUser.role !== "INSPECTOR"
+      !(dbUser.role === "INSPECTOR" && dbUser.isVerified)
     ) {
       throw new ForbiddenError(
         "هذا الملف قيد المراجعة وإعادة الصياغة إلى PDF من قِبل المشرف والمتفقد."
       );
     }
 
-    if (!canUserAccessWorksheet(worksheet, dbUser.role, dbUser.id)) {
+    if (!canUserAccessWorksheet(worksheet, dbUser.role, dbUser.id, dbUser.isVerified)) {
+      if (canUserAccessWorksheet(worksheet, dbUser.role, dbUser.id, true) && !dbUser.isVerified) {
+        throw new ForbiddenError('عذراً، هذا الملف حساس وموجه داخلياً لفئة حسابك الموثقين فقط. يرجى إثبات وتوثيق هويتك أولاً للوصول إليه.');
+      }
       throw new ForbiddenError(
         "غير مصرح لحسابك بمعاينة أو تحميل هذه النشرة حسب قيود الجمهور."
       );
     }
 
     const signedUrl = await getSignedDownloadUrl(worksheet.fileUrl, 3600);
+    const disposition =
+      request.nextUrl.searchParams.get("disposition") === "attachment"
+        ? "attachment"
+        : "inline";
+    const forceRedirect = request.nextUrl.searchParams.get("redirect") === "1";
+    const shouldStream = !forceRedirect;
+
+    if (shouldStream) {
+      try {
+        const upstream = await fetch(signedUrl);
+        if (upstream.ok && upstream.body) {
+          const contentType = inferMimeType(worksheet.fileName);
+          const encodedName = encodeURIComponent(worksheet.fileName || "document.pdf");
+          const headers: Record<string, string> = {
+            "Content-Type": contentType,
+            "Content-Disposition": `${disposition}; filename*=UTF-8''${encodedName}`,
+            "Cache-Control": "private, max-age=1800",
+          };
+          const contentLength = upstream.headers.get("content-length");
+          if (contentLength) {
+            headers["Content-Length"] = contentLength;
+          }
+          return new NextResponse(upstream.body, {
+            status: 200,
+            headers,
+          });
+        }
+      } catch (streamError) {
+        console.warn("[FileRoute] Stream error on primary URL:", streamError);
+      }
+    }
+
     return NextResponse.redirect(signedUrl, { status: 302 });
+  } catch (error) {
+    return errorResponse(error);
+  }
+}
+
+```
+
+---
+
+### File: `src/app/api/worksheets/[id]/thumbnail/route.ts`
+
+```typescript
+import { NextRequest } from "next/server";
+import { db } from "@/lib/db";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { uploadThumbnail } from "@/services/storage.service";
+import { successResponse, errorResponse } from "@/lib/utils/api-response";
+import { UnauthorizedError, NotFoundError } from "@/lib/utils/errors";
+
+interface RouteContext {
+  params: Promise<{ id: string }>;
+}
+
+export async function POST(request: NextRequest, context: RouteContext) {
+  try {
+    const { id } = await context.params;
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      throw new UnauthorizedError();
+    }
+
+    const worksheet = await db.worksheet.findUnique({
+      where: { id },
+      select: { id: true, thumbnailUrl: true, pageCount: true },
+    });
+
+    if (!worksheet) {
+      throw new NotFoundError("Worksheet");
+    }
+
+    const formData = await request.formData();
+    const thumbnailFile = formData.get("thumbnail") as File | null;
+    const pageCountRaw = formData.get("pageCount") as string | null;
+
+    if (!thumbnailFile) {
+      return successResponse({ thumbnailUrl: worksheet.thumbnailUrl });
+    }
+
+    const thumbnailUrl = await uploadThumbnail(thumbnailFile, user.id);
+    const parsedPages = pageCountRaw ? Number(pageCountRaw) : undefined;
+
+    const updated = await db.worksheet.update({
+      where: { id },
+      data: {
+        thumbnailUrl,
+        ...(parsedPages && parsedPages > 0 && !worksheet.pageCount
+          ? { pageCount: parsedPages }
+          : {}),
+      },
+      select: {
+        id: true,
+        thumbnailUrl: true,
+        pageCount: true,
+      },
+    });
+
+    return successResponse(updated);
   } catch (error) {
     return errorResponse(error);
   }
@@ -7501,12 +7816,6 @@ export async function archiveWorksheetAction(id: string) {
 ```typescript
 "use server";
 
-/**
- * Favorite Server Actions
- *
- * Atomically toggles bookmark states and triggers Next.js path cache revalidation.
- */
-
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { toggleFavorite } from "@/services/favorite.service";
@@ -7540,10 +7849,6 @@ export async function toggleFavoriteAction(worksheetId: string) {
 
 ```typescript
 "use server";
-
-/**
- * Profile, Subscriptions & Account Deletion Actions — Al-Musnad v4.0
- */
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "@/lib/supabase/server";
@@ -7670,9 +7975,6 @@ export async function updateSubscriptionPlanAction(planCode: string) {
   return updated;
 }
 
-/**
- * ميزة حذف حساب الناشر / العضو نهائياً
- */
 export async function deleteMyAccountAction() {
   const supabase = await createSupabaseServerClient();
   const {
@@ -7717,16 +8019,6 @@ export async function deleteMyAccountAction() {
 
 ```typescript
 "use server";
-
-/**
- * Top-Tier Admin Actions (المستوى الرقابي الثالث في القمة: المشرف) — Al-Musnad v9.0
- *
- * Admin Exclusive Powers (in addition to all Inspector & Moderator powers):
- * 1. إمكانية تفعيل التوثيق المباشر للحسابات (`toggleVerifyUserAdminAction`) — مقتصرة حصرياً على المشرف!
- * 2. إمكانية إنشاء وتوليد أكواد التوثيق في الداشبورد للمشرف (`createVerificationCodeAdminAction`, `deleteVerificationCodeAdminAction`).
- * 3. التحكم الكامل في الموقع والأدوار (بما في ذلك تعيين المسؤولين `MODERATOR` والمتفقدين `INSPECTOR`).
- * 4. متابعة سجلات النشاطات والأمن الشاملة (`AuditLog`).
- */
 
 import { revalidatePath } from "next/cache";
 import crypto from "crypto";
@@ -7944,10 +8236,6 @@ export async function getAuditLogsAdminAction(action?: string, limit = 100) {
   });
 }
 
-/**
- * ميزة حصرية للمشرف العام (`ADMIN`) في قمة الهرم:
- * تفعيل أو إلغاء التوثيق المباشر (`isVerified`) لأي حساب في الموقع بضغطة زر
- */
 export async function toggleVerifyUserAdminAction(targetUserId: string) {
   const admin = await requireAdmin();
 
@@ -7997,10 +8285,6 @@ export async function toggleVerifyUserAdminAction(targetUserId: string) {
   return updated;
 }
 
-/**
- * ميزة حصرية للمشرف العام (`ADMIN`):
- * إنشاء وتوليد أكواد التوثيق في الداشبورد للمشرف (سواء عامة قابلة للتوزيع أو مخصصة لمستخدم)
- */
 export async function createVerificationCodeAdminAction(input: {
   targetRole: Role;
   note?: string;
@@ -8371,9 +8655,6 @@ export async function rejectProfileEditAdminAction(targetUserId: string) {
   return updated;
 }
 
-/**
- * فك غلق الحساب المقفل بسبب تجاوز 6 محاولات خاطئة لكلمة المرور (متاح للمشرف العام)
- */
 export async function unlockUserAccountAdminAction(targetUserId: string) {
   const admin = await requireAdmin();
 
@@ -8434,19 +8715,6 @@ export async function unlockUserAccountAdminAction(targetUserId: string) {
 
 ```typescript
 "use server";
-
-/**
- * Moderator Actions (المستوى الرقابي الثاني: المسؤول) — Al-Musnad v8.0
- *
- * Moderator Powers (`Role.MODERATOR` & `Role.ADMIN`):
- * 1. حذف المنشورات (`deleteWorksheetModeratorAction`) أو تغيير حالتها (`updateWorksheetStatusModeratorAction`)
- * 2. حظر المستخدمين (`toggleBanUserModeratorAction`) — لا يملك صلاحية حظر مشرف أو مسؤول
- * 3. إدارة قسم الدعم الفني (`replySupportTicketModeratorAction`) ومعالجة البلاغات (`resolveReportModeratorAction`)
- * 4. التواصل المباشر مع الناشر (`sendDirectMessageToPublisherAction`) مع دعم الإشارة `@username`
- *
- * ملاحظة صارمة: المسؤول (`MODERATOR`) لا يملك صلاحية تفعيل التوثيق (`isVerified`) ولا إنشاء الأكواد؛
- * فهذه ميزة حصرية للمشرف العام (`ADMIN`) في قمة الهرم.
- */
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
@@ -8821,10 +9089,6 @@ export async function resolveReportModeratorAction(
   return updated;
 }
 
-/**
- * التواصل المباشر مع الناشر (متاح للمسؤول، المشرف، والمتفقد)
- * يرسل رسالة مباشرة إلى إشعارات الناشر ويدعم الإشارة `@username`
- */
 export async function sendDirectMessageToPublisherAction(input: {
   targetUserId: string;
   subject: string;
@@ -8903,9 +9167,6 @@ export async function sendDirectMessageToPublisherAction(input: {
   revalidatePath("/inspector/dashboard");
   return notification;
 }
-/**
- * فك غلق الحساب المقفل بسبب تجاوز 6 محاولات خاطئة لكلمة المرور (متاح للمسؤول الإداري وللمشرف العام)
- */
 export async function unlockUserAccountModeratorAction(targetUserId: string) {
   const actor = await requireModeratorOrAdmin();
 
@@ -8966,17 +9227,6 @@ export async function unlockUserAccountModeratorAction(targetUserId: string) {
 ```typescript
 "use server";
 
-/**
- * Inspector Actions (المستوى الرقابي الأول: المتفقد) & Identity Verification — Al-Musnad v8.0
- *
- * Inspector Powers:
- * 1. وضع علامات التوثيق البيداغوجي للمنشورات (`toggleWorksheetEndorsementAction`)
- * 2. إضافة تعليقات ترى في الصدارة (`addInspectorCommentAction` with `isOfficialDirective: true`)
- * 3. رفع تعليق خاص مباشرة إلى الناشر (`addInspectorCommentAction` with `isPrivateToPublisher: true`)
- * 4. القيام بإبلاغات تصل إلى المشرف مباشرة (`submitInspectorDirectReportToAdminAction` with `isInspectorPriority: true`)
- * 5. تفعيل كود التوثيق الصادر من المشرف (`activateInspectorCodeAction` — يدعم جدول `VerificationCode` وأكواد المستخدمين)
- */
-
 import { revalidatePath } from "next/cache";
 import crypto from "crypto";
 import { db } from "@/lib/db";
@@ -9023,12 +9273,16 @@ async function requireInspectorOrAdmin() {
     );
   }
 
+  // Strict Security Guard: Unverified Inspector CANNOT access Inspector Dashboard or Inspector Powers
+  if (dbUser.role === Role.INSPECTOR && !dbUser.isVerified) {
+    throw new ForbiddenError(
+      "حسابك كمتفقد تربوي قيد انتظار إثبات الهوية. لضمان أمان المنصة وحماية الصلاحيات الرقابية والملفات الداخلية، لا يمكن لحساب المتفقد الجديد الوصول إلى ميزات المتفقد أو لوحة التحكم إلا بعد إثبات الهوية عبر كود التفعيل الرسمي (/inspector/activate) أو توثيق الحساب من قِبل المشرف العام."
+    );
+  }
+
   return dbUser;
 }
 
-/**
- * جلب بيانات لوحة تحكم المتفقد التربوي (`/inspector/dashboard`)
- */
 export async function getInspectorDashboardData() {
   const inspector = await requireInspectorOrAdmin();
 
@@ -9108,11 +9362,6 @@ export async function getInspectorDashboardData() {
   };
 }
 
-/**
- * إضافة تعليق من المتفقد:
- * - إما تعليق عام يظهر في الصدارة (`isPrivateToPublisher: false` -> `isOfficialDirective: true`)
- * - أو تعليق خاص يصل مباشرة إلى الناشر (`isPrivateToPublisher: true`)
- */
 export async function addInspectorCommentAction(input: {
   worksheetId: string;
   comment: string;
@@ -9141,9 +9390,6 @@ export async function addInspectorCommentAction(input: {
   return created;
 }
 
-/**
- * للمتفقد: القيام بإبلاغ عاجل يصل إلى المشرف العام (`ADMIN`) مباشرة
- */
 export async function submitInspectorDirectReportToAdminAction(input: {
   targetType: "WORKSHEET" | "USER";
   targetWorksheetId?: string;
@@ -9204,9 +9450,6 @@ export async function submitInspectorDirectReportToAdminAction(input: {
   return { success: true, id: report.id };
 }
 
-/**
- * للمشرف العام (حصرًا): توليد كود توثيق لمستخدم محدد
- */
 export async function generateInspectorCodeAdminAction(
   targetUserId: string,
   grantInspectorRole: boolean = false
@@ -9279,9 +9522,6 @@ export async function generateInspectorCodeAdminAction(
   return updated;
 }
 
-/**
- * طلب توثيق الهوية من داخل صفحة الملف الشخصي (`/profile?tab=verification`)
- */
 export async function requestIdentityVerificationAction() {
   const supabase = await createSupabaseServerClient();
   const {
@@ -9311,10 +9551,6 @@ export async function requestIdentityVerificationAction() {
   return { requested: true };
 }
 
-/**
- * تفعيل شارة التوثيق (`isVerified`) باستخدام الكود الصادر من المشرف
- * يقبل الأكواد المولدة في جدول `VerificationCode` أو الأكواد المربوطة بـ `user.inspectorCode`
- */
 export async function activateInspectorCodeAction(codeInput: string) {
   const cleanCode = codeInput.trim().toUpperCase();
   if (!cleanCode || cleanCode.length < 4) {
@@ -9449,9 +9685,6 @@ export async function activateInspectorCodeAction(codeInput: string) {
   return updated;
 }
 
-/**
- * للمتفقد التربوي أو المشرف: وضع أو إزالة علامة الاعتماد البيداغوجي على المنشور
- */
 export async function toggleWorksheetEndorsementAction(worksheetId: string) {
   const supabase = await createSupabaseServerClient();
   const {
@@ -9547,6 +9780,7 @@ export async function toggleWorksheetEndorsementAction(worksheetId: string) {
 
   return updated;
 }
+
 ```
 
 ---
@@ -9555,13 +9789,6 @@ export async function toggleWorksheetEndorsementAction(worksheetId: string) {
 
 ```typescript
 "use server";
-
-/**
- * Publisher Social & Bookmark Actions — Al-Musnad v5.0
- *
- * Enforces strict authentication AND filters publisher publications so that
- * the viewing account ONLY sees publications the publisher made available to its role.
- */
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
@@ -9731,7 +9958,7 @@ export async function getPublicPublisherProfileData(publisherId: string) {
 
   const vUser = await db.user.findUnique({
     where: { id: viewerAuth.id },
-    select: { id: true, role: true },
+    select: { id: true, role: true, isVerified: true },
   });
 
   if (!vUser) {
@@ -9769,7 +9996,7 @@ export async function getPublicPublisherProfileData(publisherId: string) {
   const audienceGuard =
     viewerAuth.id === publisherId
       ? {}
-      : buildAudienceVisibilityFilter(viewerRole, viewerAuth.id);
+      : buildAudienceVisibilityFilter(viewerRole, viewerAuth.id, vUser.isVerified);
 
   const [worksheets, followRecord, favRecord] = await Promise.all([
     db.worksheet.findMany({
@@ -9858,6 +10085,7 @@ export async function getMyFavoritePublishersAction() {
 
   return records.map((r) => r.publisher);
 }
+
 ```
 
 ---
@@ -9866,10 +10094,6 @@ export async function getMyFavoritePublishersAction() {
 
 ```typescript
 "use server";
-
-/**
- * Reports (التبليغات) & Technical Support / Customer Service (الدعم الفني وخدمة العملاء) — Al-Musnad v4.0
- */
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
@@ -10074,4 +10298,4 @@ export async function replySupportTicketAdminAction(
 
 ---
 
-*نهاية الجزء الأول (Part 1/2) — يتبع في الجزء الثاني (PROJECT_HANDOVER_PART2.md) — Total included files: 73.*
+*نهاية الجزء الأول (Part 1/2) — يتبع في الجزء الثاني (PROJECT_HANDOVER_PART2.md) — Total included files: 74.*

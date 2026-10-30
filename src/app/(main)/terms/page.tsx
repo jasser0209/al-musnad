@@ -28,7 +28,6 @@ export default function TermsAndIpPolicyPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 py-12 px-4 sm:px-6 lg:px-8" dir="rtl">
       <div className="max-w-4xl mx-auto space-y-10">
-        {/* Navigation Breadcrumb */}
         <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
           <Link href="/" className="hover:text-blue-600 transition flex items-center gap-1">
             <ArrowRight className="w-3.5 h-3.5" />
@@ -38,7 +37,6 @@ export default function TermsAndIpPolicyPage() {
           <span className="text-slate-800 dark:text-slate-200">شروط الاستخدام والملكية الفكرية</span>
         </div>
 
-        {/* Hero Header */}
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-700 via-indigo-800 to-slate-900 p-8 sm:p-12 text-white shadow-xl">
           <div className="relative z-10 space-y-4 max-w-2xl">
             <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-blue-200 text-xs font-bold border border-white/15">
@@ -59,7 +57,6 @@ export default function TermsAndIpPolicyPage() {
           </div>
         </div>
 
-        {/* Section 1: Intellectual Property & Author Rights */}
         <div className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
           <div className="flex items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-800">
             <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
@@ -101,7 +98,6 @@ export default function TermsAndIpPolicyPage() {
           </div>
         </div>
 
-        {/* Section 2: Disclaimer & Institutional Independence */}
         <div className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
           <div className="flex items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-800">
             <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
@@ -125,7 +121,6 @@ export default function TermsAndIpPolicyPage() {
           </div>
         </div>
 
-        {/* Section 3: Publishing Charter & Takedown Policy */}
         <div className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
           <div className="flex items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-800">
             <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
@@ -163,7 +158,6 @@ export default function TermsAndIpPolicyPage() {
           </div>
         </div>
 
-        {/* Section 4: Data Protection & Privacy */}
         <div className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
           <div className="flex items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-800">
             <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
@@ -187,7 +181,6 @@ export default function TermsAndIpPolicyPage() {
           </div>
         </div>
 
-        {/* Contact Support & Infringement Reporting Callout */}
         <div className="p-6 rounded-3xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-blue-950/50 border border-blue-200 dark:border-blue-900 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="space-y-1 text-center sm:text-start">
             <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">

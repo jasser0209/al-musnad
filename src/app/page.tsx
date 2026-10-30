@@ -246,6 +246,7 @@ export default async function HomePage(props: HomePageProps) {
   let viewerRole: string | null = null;
   let viewerName: string | null = null;
   let viewerStudentGrade: string | null = null;
+  let viewerIsVerified: boolean = false;
 
   try {
     const supabase = await createSupabaseServerClient();
@@ -258,7 +259,7 @@ export default async function HomePage(props: HomePageProps) {
       try {
         const dbUser = await db.user.findUnique({
           where: { id: user.id },
-          select: { role: true, name: true, studentGrade: true },
+          select: { role: true, name: true, studentGrade: true, isVerified: true },
         });
         viewerRole =
           dbUser?.role ||
@@ -272,6 +273,7 @@ export default async function HomePage(props: HomePageProps) {
           dbUser?.studentGrade ||
           (user.user_metadata?.student_grade as string | undefined) ||
           null;
+        viewerIsVerified = Boolean(dbUser?.isVerified);
       } catch {
         viewerRole =
           (user.user_metadata?.role as string | undefined) || "TEACHER";
@@ -306,7 +308,8 @@ export default async function HomePage(props: HomePageProps) {
           sort,
         },
         viewerRole,
-        viewerUserId
+        viewerUserId,
+        viewerIsVerified
       ),
       listWorksheets(
         {
@@ -315,7 +318,8 @@ export default async function HomePage(props: HomePageProps) {
           sort: "newest",
         },
         viewerRole,
-        viewerUserId
+        viewerUserId,
+        viewerIsVerified
       ),
     ]);
 
@@ -329,7 +333,7 @@ export default async function HomePage(props: HomePageProps) {
     isDbConnected = false;
     let visibleDemo = isAuthenticated
       ? DEMO_WORKSHEETS.filter((w) =>
-          canUserAccessWorksheet(w, viewerRole, viewerUserId)
+          canUserAccessWorksheet(w, viewerRole, viewerUserId, viewerIsVerified)
         )
       : DEMO_WORKSHEETS.filter((w) => w.audience === "ALL");
 
@@ -396,7 +400,6 @@ export default async function HomePage(props: HomePageProps) {
         </div>
       )}
 
-      {/* Hero Section: المسند */}
       <section className="relative overflow-hidden bg-gradient-to-b from-blue-700 via-indigo-800 to-slate-900 text-white pt-14 pb-16 px-4 sm:px-6 lg:px-8">
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
@@ -418,7 +421,6 @@ export default async function HomePage(props: HomePageProps) {
               : "تصفح المستويات الدراسية المعتمدة، المواد التعليمية، الجذاذات، التمارين، الامتحانات، وقسم المعاملات الإدارية."}
           </p>
 
-          {/* Main Quick Navigation Menu Bar inside Hero */}
           <div
             dir="rtl"
             className="pt-2 flex flex-wrap justify-center items-center gap-2.5"
@@ -487,7 +489,6 @@ export default async function HomePage(props: HomePageProps) {
             )}
           </div>
 
-          {/* Approved 4 Value Pillars */}
           <div className="pt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto border-t border-white/10 text-xs text-blue-100">
             <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 flex flex-col items-center gap-2">
               <BookCheck className="w-6 h-6 text-amber-300" />
@@ -517,30 +518,22 @@ export default async function HomePage(props: HomePageProps) {
         </div>
       </section>
 
-      {/* =================================================================== */}
-      {/* 1. الفضاء المخصص حسب فئة المستخدم في أعلى الصفحة (للمؤسسات / المتفقدين / المعلمين / التلاميذ) */}
-      {/* =================================================================== */}
       {isAuthenticated && (
         <RolePersonalizedHub
           worksheets={explorerWorksheets as any}
           viewerRole={viewerRole}
           viewerName={viewerName}
           viewerStudentGrade={viewerStudentGrade}
+          viewerIsVerified={viewerIsVerified}
         />
       )}
 
-      {/* =================================================================== */}
-      {/* 2. مستودع المستويات المعتمدة + قسم الإدارة (مخفي عن التلاميذ)           */}
-      {/* =================================================================== */}
       <CurriculumAndAdminExplorer
         worksheets={explorerWorksheets as any}
         isAuthenticated={isAuthenticated}
         viewerRole={viewerRole}
       />
 
-      {/* =================================================================== */}
-      {/* 3. قائمة النشرات العامة (#catalog)                                   */}
-      {/* =================================================================== */}
       <section
         id="catalog"
         className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 scroll-mt-24"
@@ -653,9 +646,6 @@ export default async function HomePage(props: HomePageProps) {
         )}
       </section>
 
-      {/* =================================================================== */}
-      {/* 4. قسم من نحن + دليل فئات المشتركين والميزات + الأسئلة الشائعة        */}
-      {/* =================================================================== */}
       <PlatformIdentityAndFaqSection />
     </div>
   );

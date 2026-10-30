@@ -1,12 +1,19 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { Download, X, Smartphone, Share } from "lucide-react";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 }
+
+const SESSION_DISMISSED_KEY = "musnad_pwa_dismissed_session";
+const INSTALLED_PERMANENT_KEY = "musnad_pwa_installed";
+
+// In-memory guard so SPA route transitions never re-show the banner once dismissed
+let dismissedInCurrentVisit = false;
 
 export default function InstallPwaBanner() {
   const [deferredPrompt, setDeferredPrompt] =
@@ -14,45 +21,114 @@ export default function InstallPwaBanner() {
   const [isVisible, setIsVisible] = useState(false);
   const [isIos, setIsIos] = useState(false);
   const [showIosGuide, setShowIosGuide] = useState(false);
+  const isDismissedRef = useRef<boolean>(false);
 
-  useEffect(() => {
-    // Check if already in standalone mode (already installed as PWA)
-    const isStandalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      (window.navigator as any).standalone === true;
+  const checkIsDismissedOrInstalled = useCallback((): boolean => {
+    if (dismissedInCurrentVisit || isDismissedRef.current) return true;
+    if (typeof window === "undefined") return true;
 
-    if (isStandalone) return;
+    try {
+      const isStandalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        (window.navigator as any).standalone === true;
+      if (isStandalone) return true;
 
-    // Check if user recently dismissed the banner (within 5 days)
-    const dismissedAt = localStorage.getItem("musnad_pwa_banner_dismissed");
-    if (dismissedAt) {
-      const fiveDaysMs = 5 * 24 * 60 * 60 * 1000;
-      if (Date.now() - Number(dismissedAt) < fiveDaysMs) {
-        return;
+      if (localStorage.getItem(INSTALLED_PERMANENT_KEY) === "1") {
+        return true;
       }
+
+      if (sessionStorage.getItem(SESSION_DISMISSED_KEY) === "1") {
+        dismissedInCurrentVisit = true;
+        isDismissedRef.current = true;
+        return true;
+      }
+    } catch {
+      // Ignore storage access errors
     }
 
-    // Detect iOS
+    return false;
+  }, []);
+
+  const markDismissedForSession = useCallback(() => {
+    dismissedInCurrentVisit = true;
+    isDismissedRef.current = true;
+    setIsVisible(false);
+    setShowIosGuide(false);
+    try {
+      sessionStorage.setItem(SESSION_DISMISSED_KEY, "1");
+      // Remove legacy localStorage key if present so session-based rule applies cleanly
+      localStorage.removeItem("musnad_pwa_banner_dismissed");
+    } catch {
+      // Ignore storage errors
+    }
+  }, []);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      // If user logs out ("SIGNED_OUT"), reset session dismissal so it can appear again on next login/visit
+      if (event === "SIGNED_OUT") {
+        dismissedInCurrentVisit = false;
+        isDismissedRef.current = false;
+        try {
+          sessionStorage.removeItem(SESSION_DISMISSED_KEY);
+        } catch {
+          // Ignore
+        }
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (checkIsDismissedOrInstalled()) {
+      setIsVisible(false);
+      return;
+    }
+
     const userAgent = window.navigator.userAgent.toLowerCase();
     const isAppleIos =
       /iphone|ipad|ipod/.test(userAgent) && !(window as any).MSStream;
     setIsIos(isAppleIos);
 
-    // Handler for Android / Chromium browsers
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
+      // Crucial guard: never re-show if user already clicked "لاحقاً" or "X" during this session!
+      if (checkIsDismissedOrInstalled()) {
+        setIsVisible(false);
+        return;
+      }
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setIsVisible(true);
     };
 
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    const handleAppInstalled = () => {
+      dismissedInCurrentVisit = true;
+      isDismissedRef.current = true;
+      setIsVisible(false);
+      try {
+        localStorage.setItem(INSTALLED_PERMANENT_KEY, "1");
+        sessionStorage.setItem(SESSION_DISMISSED_KEY, "1");
+      } catch {
+        // Ignore
+      }
+    };
 
-    // Show for iOS users after a brief 3s delay on mobile screens
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleAppInstalled);
+
+    let iosTimer: ReturnType<typeof setTimeout> | null = null;
     if (isAppleIos && window.innerWidth < 768) {
-      const timer = setTimeout(() => {
-        setIsVisible(true);
+      iosTimer = setTimeout(() => {
+        if (!checkIsDismissedOrInstalled()) {
+          setIsVisible(true);
+        }
       }, 3000);
-      return () => clearTimeout(timer);
     }
 
     return () => {
@@ -60,8 +136,10 @@ export default function InstallPwaBanner() {
         "beforeinstallprompt",
         handleBeforeInstallPrompt
       );
+      window.removeEventListener("appinstalled", handleAppInstalled);
+      if (iosTimer) clearTimeout(iosTimer);
     };
-  }, []);
+  }, [checkIsDismissedOrInstalled]);
 
   const handleInstallClick = async () => {
     if (isIos) {
@@ -75,20 +153,25 @@ export default function InstallPwaBanner() {
       await deferredPrompt.prompt();
       const choice = await deferredPrompt.userChoice;
       if (choice.outcome === "accepted") {
-        setIsVisible(false);
+        try {
+          localStorage.setItem(INSTALLED_PERMANENT_KEY, "1");
+        } catch {
+          // Ignore
+        }
       }
+      // Hide for the rest of the session whether accepted or dismissed
+      markDismissedForSession();
       setDeferredPrompt(null);
     } catch {
-      setIsVisible(false);
+      markDismissedForSession();
     }
   };
 
   const handleDismiss = () => {
-    setIsVisible(false);
-    localStorage.setItem("musnad_pwa_banner_dismissed", String(Date.now()));
+    markDismissedForSession();
   };
 
-  if (!isVisible) return null;
+  if (!isVisible || checkIsDismissedOrInstalled()) return null;
 
   return (
     <div
@@ -119,7 +202,7 @@ export default function InstallPwaBanner() {
             type="button"
             onClick={handleDismiss}
             aria-label="إغلاق التنبيه"
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition shrink-0"
+            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition shrink-0 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>

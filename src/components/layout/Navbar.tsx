@@ -455,7 +455,6 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-18 py-3 gap-4">
-          {/* Brand Logo: المسند */}
           <div className="flex items-center gap-6">
             <Link href="/" className="flex items-center gap-2.5 group shrink-0">
               <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center font-black text-xl shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
@@ -493,9 +492,7 @@ export default function Navbar() {
             </nav>
           </div>
 
-          {/* Action Area */}
           <div className="hidden md:flex items-center gap-2.5">
-            {/* Language Switcher */}
             <div className="relative" ref={langMenuRef}>
               <button
                 type="button"
@@ -539,7 +536,6 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Theme Toggle */}
             <button
               type="button"
               onClick={toggleTheme}
@@ -556,7 +552,6 @@ export default function Navbar() {
 
             <div className="h-5 w-px bg-slate-200 dark:bg-slate-700 mx-0.5" />
 
-            {/* Authenticated vs Unauthenticated */}
             {!loading && user ? (
               <div className="flex items-center gap-2.5">
                 {user.role !== "STUDENT" && !user.isBanned && (
@@ -569,7 +564,6 @@ export default function Navbar() {
                   </Link>
                 )}
 
-                {/* Notification Bell Icon */}
                 <div className="relative" ref={notifMenuRef}>
                   <button
                     type="button"
@@ -652,7 +646,6 @@ export default function Navbar() {
                   )}
                 </div>
 
-                {/* Unified Role-Distinguished Username Box & Dropdown Menu (Full Name + Colored Rank Border) */}
                 <div className="relative" ref={profileMenuRef}>
                   <button
                     type="button"
@@ -689,7 +682,6 @@ export default function Navbar() {
                         onClick={() => setProfileMenuOpen(false)}
                       />
                       <div className="absolute top-full mt-2 end-0 z-20 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-2.5 space-y-1">
-                        {/* User Summary, Role Hint & Presence Switcher */}
                         <div className="px-3 py-2.5 border-b border-slate-100 dark:border-slate-800 mb-1 space-y-2.5">
                           <div className="flex items-center justify-between gap-2">
                             <div className="truncate">
@@ -759,7 +751,6 @@ export default function Navbar() {
                           </div>
                         </div>
 
-                        {/* 1. ملفي الشخصي */}
                         <Link
                           href="/profile"
                           onClick={() => setProfileMenuOpen(false)}
@@ -769,7 +760,6 @@ export default function Navbar() {
                           <span>{t.nav.profile}</span>
                         </Link>
 
-                        {/* 2. صفحتي العامة كناشر */}
                         <Link
                           href={`/publisher/${user.id}`}
                           onClick={() => setProfileMenuOpen(false)}
@@ -779,7 +769,6 @@ export default function Navbar() {
                           <span>صفحتي العامة كناشر</span>
                         </Link>
 
-                        {/* 3. شارة الرتبة المدمجة مع لوحة التحكم مباشرة أسفل الملف الشخصي وصفحتي العامة كناشر */}
                         {user.role === "ADMIN" && (
                           <div className="my-1.5 p-2 rounded-2xl bg-gradient-to-l from-purple-50 via-blue-50 to-indigo-50 dark:from-purple-950/50 dark:via-slate-800 dark:to-indigo-950/40 border border-purple-200 dark:border-purple-800/70 space-y-1.5">
                             <Link
@@ -836,20 +825,47 @@ export default function Navbar() {
 
                         {user.role === "INSPECTOR" && (
                           <div className="my-1.5 p-1.5 rounded-2xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/70">
-                            <Link
-                              href="/inspector/dashboard"
-                              onClick={() => setProfileMenuOpen(false)}
-                              className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-xs font-black shadow-sm transition"
-                            >
-                              <span className="flex items-center gap-2">
-                                <BadgeCheck className="w-4 h-4 shrink-0" />
-                                <span>متفقد معتمد • لوحة التحكم</span>
-                              </span>
-                              <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-md">
-                                دخول
-                              </span>
-                            </Link>
+                            {user.isVerified ? (
+                              <Link
+                                href="/inspector/dashboard"
+                                onClick={() => setProfileMenuOpen(false)}
+                                className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-xs font-black shadow-sm transition"
+                              >
+                                <span className="flex items-center gap-2">
+                                  <BadgeCheck className="w-4 h-4 shrink-0" />
+                                  <span>متفقد معتمد • لوحة التحكم</span>
+                                </span>
+                                <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-md">
+                                  دخول
+                                </span>
+                              </Link>
+                            ) : (
+                              <Link
+                                href="/inspector/activate"
+                                onClick={() => setProfileMenuOpen(false)}
+                                className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-black shadow-sm transition"
+                              >
+                                <span className="flex items-center gap-2">
+                                  <ShieldAlert className="w-4 h-4 shrink-0" />
+                                  <span>إثبات هوية المتفقد لتفعيل الميزات</span>
+                                </span>
+                                <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-md">
+                                  تفعيل 🔒
+                                </span>
+                              </Link>
+                            )}
                           </div>
+                        )}
+
+                        {(user.role === "TEACHER" || user.role === "INSTITUTION") && !user.isVerified && (
+                          <Link
+                            href="/profile?tab=verification"
+                            onClick={() => setProfileMenuOpen(false)}
+                            className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-300 text-[11px] font-extrabold transition"
+                          >
+                            <span>🔒 إثبات الهوية لفتح الملفات الخاصة بفئتك</span>
+                            <span className="underline">توثيق</span>
+                          </Link>
                         )}
 
                         <Link
@@ -940,7 +956,6 @@ export default function Navbar() {
             ) : null}
           </div>
 
-          {/* Mobile Controls */}
           <div className="flex items-center gap-2 md:hidden">
             <button
               type="button"
@@ -982,7 +997,6 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 pt-3 pb-6 space-y-3">
           <nav className="flex flex-col gap-1">
@@ -1043,7 +1057,6 @@ export default function Navbar() {
                   صفحتي العامة كناشر
                 </Link>
 
-                {/* Merged Supervisory Badge + Control Panel right below Profile & Public Publisher Page */}
                 {user.role === "ADMIN" && (
                   <Link
                     href="/admin/dashboard"
@@ -1065,14 +1078,25 @@ export default function Navbar() {
                   </Link>
                 )}
                 {user.role === "INSPECTOR" && (
-                  <Link
-                    href="/inspector/dashboard"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white text-xs font-extrabold shadow-sm"
-                  >
-                    <BadgeCheck className="w-4 h-4" />
-                    <span>متفقد معتمد • لوحة التحكم</span>
-                  </Link>
+                  user.isVerified ? (
+                    <Link
+                      href="/inspector/dashboard"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white text-xs font-extrabold shadow-sm"
+                    >
+                      <BadgeCheck className="w-4 h-4" />
+                      <span>متفقد معتمد • لوحة التحكم</span>
+                    </Link>
+                  ) : (
+                    <Link
+                      href="/inspector/activate"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-amber-600 text-white text-xs font-extrabold shadow-sm"
+                    >
+                      <ShieldAlert className="w-4 h-4" />
+                      <span>🔒 إثبات هوية المتفقد لتفعيل الميزات</span>
+                    </Link>
+                  )
                 )}
 
                 <Link

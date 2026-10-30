@@ -1,9 +1,5 @@
 "use server";
 
-/**
- * Profile, Subscriptions & Account Deletion Actions — Al-Musnad v4.0
- */
-
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
@@ -129,9 +125,6 @@ export async function updateSubscriptionPlanAction(planCode: string) {
   return updated;
 }
 
-/**
- * ميزة حذف حساب الناشر / العضو نهائياً
- */
 export async function deleteMyAccountAction() {
   const supabase = await createSupabaseServerClient();
   const {

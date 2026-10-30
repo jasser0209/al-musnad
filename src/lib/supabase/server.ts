@@ -1,10 +1,6 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-/**
- * Standard server client scoped to the authenticated caller's cookie session.
- * Adheres to Supabase Row-Level Security (RLS) policies.
- */
 export async function createSupabaseServerClient() {
   const cookieStore = await cookies();
 
@@ -32,11 +28,6 @@ export async function createSupabaseServerClient() {
   });
 }
 
-/**
- * Admin server client utilizing the Supabase SERVICE_ROLE_KEY.
- * Bypasses Row-Level Security (RLS). Use exclusively for secure server operations
- * such as bucket management, privileged storage operations, and internal migrations.
- */
 export function createSupabaseAdminClient() {
   const supabaseUrl =
     process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";

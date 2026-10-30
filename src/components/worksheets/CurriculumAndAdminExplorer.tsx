@@ -73,9 +73,6 @@ export default function CurriculumAndAdminExplorer({
 
   return (
     <div id="levels-and-subjects" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mb-12 space-y-10 scroll-mt-24">
-      {/* ===================================================================== */}
-      {/* 1. قسم المستويات الدراسية والمواد (ينقل إلى صفحة المستودع والمواد)      */}
-      {/* ===================================================================== */}
       <section
         id="curriculum-levels-section"
         className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
@@ -191,9 +188,6 @@ export default function CurriculumAndAdminExplorer({
         )}
       </section>
 
-      {/* ===================================================================== */}
-      {/* 2. قسم الإدارة والمعاملات والوثائق الإدارية للمعلم                     */}
-      {/* ===================================================================== */}
       <section
         id="administration-section"
         className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 scroll-mt-24"

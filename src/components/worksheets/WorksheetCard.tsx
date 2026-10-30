@@ -249,7 +249,6 @@ export default function WorksheetCard({
         </Link>
 
         <div className="p-4 space-y-3">
-          {/* Mandatory Classification Badges: المادة + السنة الدراسية + القسم التربوي + نوع الملف */}
           <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
             <span
               className="px-2 py-0.5 rounded-md font-bold text-white"
